@@ -24,7 +24,9 @@ rule test_all
       all_rules += [ run $(fileb)  /boost/container//boost_container /boost/timer//boost_timer
       :  # additional args
       :  # test-files
-      :  # requirements
+      :  <toolset>gcc:<cxxflags>-Wextra
+         <toolset>gcc:<cxxflags>-Werror
+         <toolset>gcc:<cxxflags>-std=c++11
       ] ;
    }
 
