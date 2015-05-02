@@ -1,16 +1,10 @@
+#define BOOST_CONTAINER_DEVECTOR_ALLOC_STATS
 #include <boost/container/devector.hpp>
-
-namespace boost{
-namespace container {
-namespace test{
-
-}  //namespace test{
-}  //namespace container {
-}  //namespace boost{
+#undef BOOST_CONTAINER_DEVECTOR_ALLOC_STATS
 
 using namespace boost::container;
 
-int main()
+int test_push_pop()
 {
   devector<unsigned> dv;
 
@@ -42,6 +36,13 @@ int main()
 
   if (! dv.empty()) return 6;
 
+  return 0;
+}
+
+int test_range_for()
+{
+  devector<unsigned> dv;
+
   for (unsigned i = 0; i < 100; ++i)
   {
     dv.push_front(i);
@@ -50,9 +51,57 @@ int main()
   unsigned exp = 99;
   for (auto&& act : dv)
   {
-    if (act != exp) return 7;
+    if (act != exp) return 1;
     --exp;
   }
+
+  return 0;
+}
+
+int test_reserve()
+{
+  devector<unsigned> dv;
+  dv.reserve_back(100);
+  for (unsigned i = 0; i < 100; ++i)
+  {
+    dv.push_back(i);
+  }
+
+  if (dv.capacity_alloc_count != 1) return 1;
+
+  dv.reserve_front(100);
+  for (unsigned i = 0; i < 100; ++i)
+  {
+    dv.push_front(i);
+  }
+
+  if (dv.capacity_alloc_count != 2) return 2;
+
+  return 0;
+}
+
+int test_push_front_back_alloc()
+{
+  devector<unsigned> dv;
+
+  for (unsigned i = 0; i < 5; ++i)
+  {
+    dv.push_front(i);
+    dv.push_back(i);
+  }
+
+  if (dv.capacity_alloc_count != 1) return 1;
+
+  return 0;
+}
+
+int main()
+{
+  int err = 0;
+  if ((err = test_push_pop()))  return 10 + err;
+  if ((err = test_range_for())) return 20 + err;
+  if ((err = test_reserve()))   return 30 + err;
+  if ((err = test_push_front_back_alloc()))   return 40 + err;
 
   return 0;
 }

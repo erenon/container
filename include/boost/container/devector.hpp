@@ -6,6 +6,8 @@
 #include <cstddef> // ptrdiff_t
 #include <cstring> // memcpy
 
+#include <boost/assert.hpp>
+
 namespace boost {
 namespace container {
 
@@ -36,15 +38,15 @@ public:
   typedef T& reference;
 
   devector()
-    :_capacity_begin(),
-     _elem_begin(),
-     _capacity_size(),
-     _elem_size()
+    :_buffer(),
+     _capacity(),
+     _front_index(),
+     _back_index()
   {}
 
   ~devector()
   {
-    if (_capacity_begin) { delete[] _capacity_begin; }
+    if (_buffer) { delete[] _buffer; }
   }
 
   // for scaffolding only
@@ -60,90 +62,124 @@ public:
   void reserve_front(size_type new_capacity)
   {
     // front capacity > new_capacity
-    if (_capacity_begin + _capacity_size - _elem_begin >= new_capacity) { return; }
+    if (_capacity - _front_index >= new_capacity) { return; }
 
-    ptrdiff_t start = _elem_begin - _capacity_begin;
-    reallocate_at(new_capacity, start);
+    reallocate_at(new_capacity, _front_index);
+
+    BOOST_ASSERT(invariants_ok());
   }
 
   void reserve_back(size_type new_capacity)
   {
-    // back capacity > new_capacity
-    ptrdiff_t need = _elem_begin + _elem_size - _capacity_begin - new_capacity;
-    if (need <= 0) { return; }
+    // back capacity >= new_capacity
+    if (_capacity - _front_index >= new_capacity) { return; }
 
-    reallocate_at(new_capacity, need);
+    reallocate_at(new_capacity, _front_index);
+
+    BOOST_ASSERT(invariants_ok());
   }
 
   void push_front(const T& t)
   {
-    if (_elem_begin <= _capacity_begin)
+    if (_front_index <= 0)
     {
-      size_type new_capacity = (_capacity_size) ? _capacity_size * 2 : 10;
-      size_type start = (_capacity_size) ? _capacity_size : 5; // TODO cap vs. size?
+      size_type new_capacity = (_capacity) ? _capacity * 2 : 10;
+      size_type start = (_capacity) ? _capacity : 5; // TODO cap vs. size?
       reallocate_at(new_capacity, start);
     }
 
-    --_elem_begin;
-    *_elem_begin = t;
-    ++_elem_size;
+    --_front_index;
+    *(_buffer + _front_index) = t;
+
+    BOOST_ASSERT(invariants_ok());
   }
 
   void push_back(const T& t)
   {
-    if (_elem_begin + _elem_size >= _capacity_begin + _capacity_size)
+    if (_back_index >= _capacity)
     {
-      size_type new_capacity = (_capacity_size) ? _capacity_size * 2 : 10;
-      size_type start = _elem_begin - _capacity_begin;
-      reallocate_at(new_capacity, start);
+      size_type new_capacity = (_capacity) ? _capacity * 2 : 10;
+      reallocate_at(new_capacity, _front_index);
     }
 
-    *(_elem_begin + _elem_size) = t;
-    ++_elem_size;
+    *(_buffer + _back_index) = t;
+    ++_back_index;
+
+    BOOST_ASSERT(invariants_ok());
   }
 
   void pop_front()
   {
-    ++_elem_begin;
-    --_elem_size;
+    ++_front_index;
+    BOOST_ASSERT(invariants_ok());
   }
 
   void pop_back()
   {
-    --_elem_size;
+    --_back_index;
+    BOOST_ASSERT(invariants_ok());
   }
 
   void resize(size_type count); // { resize_back(count); }
   void resize_front(size_type count);
   void resize_back(size_type count);
 
-  pointer begin() { return _elem_begin; }
-  pointer end()   { return _elem_begin + _elem_size; }
+  pointer begin() { return _buffer + _front_index; }
+  pointer end()   { return _buffer + _back_index; }
 
-  size_type size() const { return _elem_size; }
-  bool empty() const { return !_elem_size; }
+  size_type size() const { return _back_index - _front_index; }
+  bool empty() const { return _front_index == _back_index; }
 
-  reference operator[](size_type i) { return *(_elem_begin + i); }
+  reference operator[](size_type i) { return *(begin() + i); }
 
 private:
   void reallocate_at(size_type new_capacity, size_type capacity_offset)
   {
-    _capacity_size = new_capacity;
-    pointer new_capacity_begin = new T[_capacity_size];
+    _capacity = new_capacity;
+    pointer new_capacity_begin = new T[_capacity];
 
-    memcpy(new_capacity_begin + capacity_offset, _elem_begin, _elem_size * sizeof(T));
+    #ifdef BOOST_CONTAINER_DEVECTOR_ALLOC_STATS
+    ++capacity_alloc_count;
+    #endif // BOOST_CONTAINER_DEVECTOR_ALLOC_STATS
 
-    if (_capacity_begin) { delete[] _capacity_begin; }
-    _capacity_begin = new_capacity_begin;
+    memcpy(
+      new_capacity_begin + capacity_offset,
+      _buffer + _front_index,
+      (_back_index - _front_index) * sizeof(T)
+    );
 
-    _elem_begin = _capacity_begin + capacity_offset;
+    if (_buffer) { delete[] _buffer; }
+    _buffer = new_capacity_begin;
+
+    _back_index = _back_index - _front_index + capacity_offset;
+    _front_index = capacity_offset;
+
+    BOOST_ASSERT(invariants_ok());
   }
 
-  pointer _capacity_begin;
-  pointer _elem_begin;
+  bool invariants_ok()
+  {
+    return
+       _front_index <= _back_index
+    && _back_index <= _capacity;
+  }
 
-  size_type _capacity_size;
-  size_type _elem_size;
+  pointer   _buffer;
+  size_type _capacity;
+  size_type _front_index;
+  size_type _back_index;
+
+#ifdef BOOST_CONTAINER_DEVECTOR_ALLOC_STATS
+public:
+  size_type elem_copy_count = 0;
+  size_type capacity_alloc_count = 0;
+
+  void reset_alloc_stats()
+  {
+    elem_copy_count = 0;
+    capacity_alloc_count = 0;
+  }
+#endif // BOOST_CONTAINER_DEVECTOR_ALLOC_STATS
 };
 
 }} // namespace boost::container
