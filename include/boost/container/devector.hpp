@@ -5,8 +5,10 @@
 #include <memory>
 #include <cstddef> // ptrdiff_t
 #include <cstring> // memcpy
+#include <type_traits>
 
 #include <boost/assert.hpp>
+#include <boost/aligned_storage.hpp>
 
 namespace boost {
 namespace container {
@@ -19,15 +21,23 @@ namespace container {
  *  - proper overload resolution
  *  - allocator
  *  - iterator
- *  - small buffer optimization
  */
 
-struct DefaultSmallBufferPolicy {};
+/**
+ * N: number of objects in the small buffer
+ *
+ * TODO: separate front/back store
+ */
+template <unsigned N>
+struct devector_store_n
+{
+  BOOST_STATIC_CONSTANT(unsigned, size = N);
+};
 
 template <
   typename T,
   typename Allocator = std::allocator<T>,
-  typename SmallBufferPolicy = DefaultSmallBufferPolicy
+  typename SmallBufferPolicy = devector_store_n<0>
 >
 class devector
 {
@@ -38,16 +48,10 @@ public:
   typedef T& reference;
 
   devector()
-    :_buffer(),
-     _capacity(),
+    :_capacity(storage_t::size),
      _front_index(),
      _back_index()
   {}
-
-  ~devector()
-  {
-    if (_buffer) { delete[] _buffer; }
-  }
 
   // for scaffolding only
   static_assert(std::is_pod<T>::value, "Must be POD now");
@@ -89,7 +93,7 @@ public:
     }
 
     --_front_index;
-    *(_buffer + _front_index) = t;
+    *(_storage._buffer + _front_index) = t;
 
     BOOST_ASSERT(invariants_ok());
   }
@@ -102,7 +106,7 @@ public:
       reallocate_at(new_capacity, _front_index);
     }
 
-    *(_buffer + _back_index) = t;
+    *(_storage._buffer + _back_index) = t;
     ++_back_index;
 
     BOOST_ASSERT(invariants_ok());
@@ -124,8 +128,8 @@ public:
   void resize_front(size_type count);
   void resize_back(size_type count);
 
-  pointer begin() { return _buffer + _front_index; }
-  pointer end()   { return _buffer + _back_index; }
+  pointer begin() { return _storage._buffer + _front_index; }
+  pointer end()   { return _storage._buffer + _back_index; }
 
   size_type size() const { return _back_index - _front_index; }
   bool empty() const { return _front_index == _back_index; }
@@ -135,21 +139,29 @@ public:
 private:
   void reallocate_at(size_type new_capacity, size_type capacity_offset)
   {
-    _capacity = new_capacity;
-    pointer new_capacity_begin = new T[_capacity];
+    pointer new_capacity_begin;
+    if (new_capacity <= storage_t::size)
+    {
+      _capacity = storage_t::size;
+      new_capacity_begin = _storage.address();
+    }
+    else
+    {
+      _capacity = new_capacity;
+      new_capacity_begin = new T[_capacity];
 
-    #ifdef BOOST_CONTAINER_DEVECTOR_ALLOC_STATS
-    ++capacity_alloc_count;
-    #endif // BOOST_CONTAINER_DEVECTOR_ALLOC_STATS
+      #ifdef BOOST_CONTAINER_DEVECTOR_ALLOC_STATS
+      ++capacity_alloc_count;
+      #endif // BOOST_CONTAINER_DEVECTOR_ALLOC_STATS
+    }
 
     memcpy(
       new_capacity_begin + capacity_offset,
-      _buffer + _front_index,
+      _storage._buffer + _front_index,
       (_back_index - _front_index) * sizeof(T)
     );
 
-    if (_buffer) { delete[] _buffer; }
-    _buffer = new_capacity_begin;
+    _storage.reset(new_capacity_begin);
 
     _back_index = _back_index - _front_index + capacity_offset;
     _front_index = capacity_offset;
@@ -161,11 +173,53 @@ private:
   {
     return
        _front_index <= _back_index
-    && _back_index <= _capacity;
+    && _back_index <= _capacity
+    && storage_t::size <= _capacity;
   }
 
-  pointer   _buffer;
+  // Small buffer
+
+  typedef boost::aligned_storage<
+    sizeof(T) * SmallBufferPolicy::size,
+    std::alignment_of<T>::value
+  > small_buffer;
+
+  // Achieve optimal space by leveraging EBO
+  struct storage_t : small_buffer
+  {
+    BOOST_STATIC_CONSTANT(unsigned, size = SmallBufferPolicy::size);
+
+    storage_t()
+      :_buffer(address())
+    {}
+
+    ~storage_t()
+    {
+      if (_buffer != address()) { delete[] _buffer; }
+    }
+
+    T* address()
+    {
+      return static_cast<T*>(small_buffer::address());
+    }
+
+    const T* address() const
+    {
+      return static_cast<const T*>(small_buffer::address());
+    }
+
+    void reset(T* new_buffer)
+    {
+      if (_buffer != address()) { delete[] _buffer; }
+      _buffer = new_buffer;
+    }
+
+    T* _buffer;
+  };
+
+  storage_t _storage;
   size_type _capacity;
+
   size_type _front_index;
   size_type _back_index;
 

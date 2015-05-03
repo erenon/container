@@ -95,13 +95,41 @@ int test_push_front_back_alloc()
   return 0;
 }
 
+int test_small_buffer()
+{
+  devector<unsigned, std::allocator<unsigned>, devector_store_n<128>> dv;
+
+  for (unsigned i = 0; i < 128; ++i)
+  {
+    dv.push_back(i);
+  }
+
+  if (dv.capacity_alloc_count != 0) return 1;
+
+  dv.push_back(0);
+
+  if (dv.capacity_alloc_count != 1) return 2;
+
+  return 0;
+}
+
 int main()
 {
+  static_assert(
+    sizeof(devector<unsigned>) <=
+       sizeof(devector<unsigned>::pointer)
+     + sizeof(devector<unsigned>::size_type) * 3
+     + sizeof(devector<unsigned>::size_type) * 2 // statistics
+     + sizeof(devector<unsigned>::size_type) // padding
+    ,"devector too large"
+  );
+
   int err = 0;
   if ((err = test_push_pop()))  return 10 + err;
   if ((err = test_range_for())) return 20 + err;
   if ((err = test_reserve()))   return 30 + err;
   if ((err = test_push_front_back_alloc()))   return 40 + err;
+  if ((err = test_small_buffer())) return 50 + err;
 
   return 0;
 }
