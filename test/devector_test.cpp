@@ -4,6 +4,65 @@
 
 using namespace boost::container;
 
+struct test_exception {};
+
+struct throwing_elem
+{
+  static int throw_on_ctor_after /*= -1*/;
+  static int throw_on_copy_after /*= -1*/;
+  static int throw_on_move_after /*= -1*/;
+
+  throwing_elem()
+  {
+    maybe_throw(throw_on_ctor_after);
+
+    _dummy_member = new int(123);
+  }
+
+  ~throwing_elem()
+  {
+    if (_dummy_member)
+    {
+      delete _dummy_member;
+    }
+  }
+
+  throwing_elem(const throwing_elem&)
+  {
+    maybe_throw(throw_on_copy_after);
+
+    _dummy_member = new int(123);
+  }
+
+  throwing_elem(throwing_elem&& rhs)
+  {
+    maybe_throw(throw_on_move_after);
+
+    _dummy_member = rhs._dummy_member;
+    rhs._dummy_member = nullptr;
+  }
+
+private:
+  void maybe_throw(int& counter)
+  {
+    if (counter > 0)
+    {
+      --counter;
+      if (counter == 0)
+      {
+        --counter;
+        throw test_exception();
+      }
+    }
+  }
+
+  int* _dummy_member; // for leak detection
+};
+
+int throwing_elem::throw_on_ctor_after = -1;
+int throwing_elem::throw_on_copy_after = -1;
+int throwing_elem::throw_on_move_after = -1;
+
 int test_push_pop()
 {
   devector<unsigned> dv;
@@ -113,6 +172,100 @@ int test_small_buffer()
   return 0;
 }
 
+typedef devector<unsigned> devector_u;
+typedef devector<unsigned, std::allocator<unsigned>, devector_small_buffer_policy<8, 8>> small_devector_u;
+
+void test_constructor()
+{
+  { // zero sized small buffer
+    devector_u a;
+    BOOST_ASSERT(a.size() == 0);
+    BOOST_ASSERT(a.capacity() == 0);
+
+    devector_u b(devector_u::allocator_type{});
+    BOOST_ASSERT(b.size() == 0);
+    BOOST_ASSERT(b.capacity() == 0);
+
+    devector_u c(16, reserve_only_tag{});
+    BOOST_ASSERT(c.size() == 0);
+    BOOST_ASSERT(c.capacity() == 16);
+
+    devector_u d(16);
+    BOOST_ASSERT(d.size() == 16);
+    BOOST_ASSERT(d.capacity() == 16);
+
+    devector_u e(16, 123u);
+    BOOST_ASSERT(e.size() == 16);
+    BOOST_ASSERT(e.capacity() == 16);
+
+    for (auto&& elem : e)
+    {
+      BOOST_ASSERT(elem == 123u);
+    }
+
+    try
+    {
+      throwing_elem::throw_on_ctor_after = 4;
+      devector<throwing_elem> f(8);
+      BOOST_ASSERT(false);
+    }
+    catch (...) {}
+
+    try
+    {
+      throwing_elem::throw_on_copy_after = 4;
+      throwing_elem elem;
+      devector<throwing_elem> g(8, elem);
+      BOOST_ASSERT(false);
+    }
+    catch (...) {}
+  }
+
+  { // with small buffer
+    small_devector_u a;
+    BOOST_ASSERT(a.size() == 0);
+    BOOST_ASSERT(a.capacity() == 16);
+
+    small_devector_u b(small_devector_u::allocator_type{});
+    BOOST_ASSERT(b.size() == 0);
+    BOOST_ASSERT(b.capacity() == 16);
+
+    small_devector_u c(6, reserve_only_tag{});
+    BOOST_ASSERT(c.size() == 0);
+    BOOST_ASSERT(c.capacity() == 16);
+
+    small_devector_u d(6);
+    BOOST_ASSERT(d.size() == 6);
+    BOOST_ASSERT(d.capacity() == 16);
+
+    small_devector_u e(6, 123u);
+    BOOST_ASSERT(e.size() == 6);
+    BOOST_ASSERT(e.capacity() == 16);
+
+    for (auto&& elem : e)
+    {
+      BOOST_ASSERT(elem == 123u);
+    }
+
+    try
+    {
+      throwing_elem::throw_on_ctor_after = 4;
+      devector<throwing_elem> f(8);
+      BOOST_ASSERT(false);
+    }
+    catch (...) {}
+
+    try
+    {
+      throwing_elem::throw_on_copy_after = 4;
+      throwing_elem elem;
+      devector<throwing_elem> g(8, elem);
+      BOOST_ASSERT(false);
+    }
+    catch (...) {}
+  }
+}
+
 int main()
 {
   static_assert(
@@ -123,6 +276,8 @@ int main()
      + sizeof(devector<unsigned>::size_type) // padding
     ,"devector too large"
   );
+
+  test_constructor();
 
   int err = 0;
   if ((err = test_push_pop()))  return 10 + err;

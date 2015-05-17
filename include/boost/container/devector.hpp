@@ -604,7 +604,7 @@ private:
 
     storage_t() : _capacity(small_buffer_size) {}
     storage_t(size_type capacity)
-      : _capacity((std::max)(capacity, small_buffer_size))
+      : _capacity((std::max)(capacity, size_type{small_buffer_size}))
     {}
 
     T* small_buffer_address()
