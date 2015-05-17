@@ -90,7 +90,7 @@ int test_push_front_back_alloc()
     dv.push_back(i);
   }
 
-  if (dv.capacity_alloc_count != 1) return 1;
+  if (dv.capacity_alloc_count != 2) return 1;
 
   return 0;
 }
