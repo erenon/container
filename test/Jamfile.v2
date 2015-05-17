@@ -27,6 +27,9 @@ rule test_all
       :  <toolset>gcc:<cxxflags>-Wextra
          <toolset>gcc:<cxxflags>-Werror
          <toolset>gcc:<cxxflags>-std=c++11
+         <toolset>clang:<cxxflags>-Wextra
+         <toolset>clang:<cxxflags>-Werror
+         <toolset>clang:<cxxflags>-std=c++11
       ] ;
    }
 
