@@ -1,3 +1,5 @@
+#include <cstring> // memcmp
+
 #define BOOST_CONTAINER_DEVECTOR_ALLOC_STATS
 #include <boost/container/devector.hpp>
 #undef BOOST_CONTAINER_DEVECTOR_ALLOC_STATS
@@ -335,6 +337,161 @@ void test_begin_end()
   BOOST_ASSERT(boost::algorithm::equal(expected.rbegin(), expected.rend(), cactual.rbegin(), cactual.rend()));
 }
 
+void test_empty()
+{
+  devector_u a;
+  BOOST_ASSERT(a.empty());
+
+  small_devector_u b;
+  BOOST_ASSERT(b.empty());
+
+  devector_u c(16, reserve_only_tag{});
+  BOOST_ASSERT(c.empty());
+
+  devector_u d{1, 2, 3};
+  BOOST_ASSERT(! d.empty());
+
+  devector_u e(1);
+  BOOST_ASSERT(! e.empty());
+}
+
+void test_size()
+{
+  devector_u a;
+  BOOST_ASSERT(a.size() == 0);
+
+  small_devector_u b;
+  BOOST_ASSERT(b.size() == 0);
+
+  devector_u c(16, reserve_only_tag{});
+  BOOST_ASSERT(c.size() == 0);
+
+  devector_u d{1, 2, 3};
+  BOOST_ASSERT(d.size() == 3);
+
+  devector_u e(3);
+  BOOST_ASSERT(e.size() == 3);
+}
+
+void test_capacity()
+{
+  devector_u a;
+  BOOST_ASSERT(a.capacity() == 0);
+
+  small_devector_u b;
+  BOOST_ASSERT(b.capacity() == 16);
+
+  devector_u c(16, reserve_only_tag{});
+  BOOST_ASSERT(c.capacity() == 16);
+}
+
+// TODO test_resize
+// TODO test_reserve
+// TODO test_shrink_to_fit
+
+void test_index_operator()
+{
+  { // non-const []
+    devector_u a{1, 2, 3, 4, 5};
+
+    BOOST_ASSERT(a[0] == 1);
+    BOOST_ASSERT(a[4] == 5);
+    BOOST_ASSERT(&a[3] == &a[0] + 3);
+
+    a[0] = 100;
+    BOOST_ASSERT(a[0] == 100);
+  }
+
+  { // const []
+    const devector_u a{1, 2, 3, 4, 5};
+
+    BOOST_ASSERT(a[0] == 1);
+    BOOST_ASSERT(a[4] == 5);
+    BOOST_ASSERT(&a[3] == &a[0] + 3);
+  }
+}
+
+void test_at()
+{
+  { // non-const at
+    devector_u a{1, 2, 3};
+
+    BOOST_ASSERT(a.at(0) == 1);
+    a.at(0) = 100;
+    BOOST_ASSERT(a.at(0) == 100);
+
+    try
+    {
+      a.at(3);
+      BOOST_ASSERT(false);
+    } catch (const std::out_of_range&) {}
+  }
+
+  { // const at
+    const devector_u a{1, 2, 3};
+
+    BOOST_ASSERT(a.at(0) == 1);
+
+    try
+    {
+      a.at(3);
+      BOOST_ASSERT(false);
+    } catch (const std::out_of_range&) {}
+  }
+}
+
+void test_front()
+{
+  { // non-const front
+    devector_u a{1, 2, 3};
+    BOOST_ASSERT(a.front() == 1);
+    a.front() = 100;
+    BOOST_ASSERT(a.front() == 100);
+  }
+
+  { // const front
+    const devector_u a{1, 2, 3};
+    BOOST_ASSERT(a.front() == 1);
+  }
+}
+
+void test_back()
+{
+  { // non-const back
+    devector_u a{1, 2, 3};
+    BOOST_ASSERT(a.back() == 3);
+    a.back() = 100;
+    BOOST_ASSERT(a.back() == 100);
+  }
+
+  { // const back
+    const devector_u a{1, 2, 3};
+    BOOST_ASSERT(a.back() == 3);
+  }
+}
+
+void test_data()
+{
+  unsigned c_array[] = {1, 2, 3, 4};
+
+  { // non-const data
+    devector_u a(c_array, c_array + 4);
+    BOOST_ASSERT(a.data() == &a.front());
+
+    BOOST_ASSERT(std::memcmp(c_array, a.data(), 4 * sizeof(unsigned)) == 0);
+
+    *(a.data()) = 100;
+    BOOST_ASSERT(a.front() == 100);
+  }
+
+  { // const data
+    const devector_u a(c_array, c_array + 4);
+    BOOST_ASSERT(a.data() == &a.front());
+
+    BOOST_ASSERT(std::memcmp(c_array, a.data(), 4 * sizeof(unsigned)) == 0);
+  }
+}
+
 int main()
 {
   static_assert(
@@ -348,6 +505,14 @@ int main()
 
   test_constructor();
   test_begin_end();
+  test_empty();
+  test_size();
+  test_capacity();
+  test_index_operator();
+  test_at();
+  test_front();
+  test_back();
+  test_data();
 
   int err = 0;
   if ((err = test_push_pop()))  return 10 + err;

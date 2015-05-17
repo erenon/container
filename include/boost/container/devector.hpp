@@ -352,34 +352,34 @@ public:
 
   const_reference at(size_type n) const
   {
-    if (size() >= n) { return *this[n]; }
-    throw_out_of_range("devector::at out of range");
+    if (size() <= n) { throw_out_of_range("devector::at out of range"); }
+    return (*this)[n];
   }
 
   reference at(size_type n)
   {
-    if (size() >= n) { return *this[n]; }
-    throw_out_of_range("devector::at out of range");
+    if (size() <= n) { throw_out_of_range("devector::at out of range"); }
+    return (*this)[n];
   }
 
   reference front()
   {
-    return *this[0];
+    return (*this)[0];
   }
 
   const_reference front() const
   {
-    return *this[0];
+    return (*this)[0];
   }
 
   reference back()
   {
-    return *this[size() - 1];
+    return (*this)[size() - 1];
   }
 
   const_reference back() const
   {
-    return *this[size() - 1];
+    return (*this)[size() - 1];
   }
 
   // data access
