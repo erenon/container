@@ -295,11 +295,44 @@ void test_constructor()
     {
       throwing_elem::throw_on_copy_after = 4;
       throwing_elem elem;
-      devector<throwing_elem> g(8, elem);
+      small_devector_thr te(8, elem);
+      BOOST_ASSERT(false);
+    }
+    catch (...) {}
+
+    try
+    {
+      std::vector<throwing_elem> source(8);
+      throwing_elem::throw_on_copy_after = 4;
+      small_devector_thr tf(source.begin(), source.end());
+      BOOST_ASSERT(false);
+    }
+    catch (...) {}
+
+    try
+    {
+      throwing_elem::throw_on_copy_after = 2;
+      small_devector_thr tg{throwing_elem{}, throwing_elem{}, throwing_elem{}};
       BOOST_ASSERT(false);
     }
     catch (...) {}
   }
+}
+
+void test_begin_end()
+{
+  std::vector<unsigned> expected{1, 2, 3, 4, 5, 6, 7, 8};
+  devector_u actual{1, 2, 3, 4, 5, 6, 7, 8};
+
+  BOOST_ASSERT(boost::algorithm::equal(expected.begin(), expected.end(), actual.begin(), actual.end()));
+  BOOST_ASSERT(boost::algorithm::equal(expected.rbegin(), expected.rend(), actual.rbegin(), actual.rend()));
+  BOOST_ASSERT(boost::algorithm::equal(expected.cbegin(), expected.cend(), actual.cbegin(), actual.cend()));
+  BOOST_ASSERT(boost::algorithm::equal(expected.crbegin(), expected.crend(), actual.crbegin(), actual.crend()));
+
+  const devector_u cactual{1, 2, 3, 4, 5, 6, 7, 8};
+
+  BOOST_ASSERT(boost::algorithm::equal(expected.begin(), expected.end(), cactual.begin(), cactual.end()));
+  BOOST_ASSERT(boost::algorithm::equal(expected.rbegin(), expected.rend(), cactual.rbegin(), cactual.rend()));
 }
 
 int main()
@@ -314,6 +347,7 @@ int main()
   );
 
   test_constructor();
+  test_begin_end();
 
   int err = 0;
   if ((err = test_push_pop()))  return 10 + err;

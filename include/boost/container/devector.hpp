@@ -234,22 +234,22 @@ public:
 
   reverse_iterator rbegin() noexcept
   {
-    return reverse_iterator(_buffer + _back_index - 1);
+    return reverse_iterator(_buffer + _back_index);
   }
 
   const_reverse_iterator rbegin() const noexcept
   {
-    return const_reverse_iterator(_buffer + _back_index - 1);
+    return const_reverse_iterator(_buffer + _back_index);
   }
 
   reverse_iterator rend() noexcept
   {
-    return reverse_iterator(_buffer + _front_index - 1);
+    return reverse_iterator(_buffer + _front_index);
   }
 
   const_reverse_iterator rend() const noexcept
   {
-    return const_reverse_iterator(_buffer + _front_index - 1);
+    return const_reverse_iterator(_buffer + _front_index);
   }
 
   const_iterator cbegin() const noexcept
@@ -264,12 +264,12 @@ public:
 
   const_reverse_iterator crbegin() const noexcept
   {
-    return const_reverse_iterator(_buffer + _back_index - 1);
+    return const_reverse_iterator(_buffer + _back_index);
   }
 
   const_reverse_iterator crend() const noexcept
   {
-    return const_reverse_iterator(_buffer + _front_index - 1);
+    return const_reverse_iterator(_buffer + _front_index);
   }
 
   // capacity
