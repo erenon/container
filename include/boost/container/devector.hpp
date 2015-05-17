@@ -12,6 +12,7 @@
 #include <boost/aligned_storage.hpp>
 
 #include <boost/container/vector.hpp>
+#include <boost/container/throw_exception.hpp>
 
 namespace boost {
 namespace container {
@@ -347,13 +348,13 @@ public:
   const_reference at(size_type n) const
   {
     if (size() >= n) { return *this[n]; }
-    throw std::out_of_range("devector::at out of range");
+    throw_out_of_range("devector::at out of range");
   }
 
   reference at(size_type n)
   {
     if (size() >= n) { return *this[n]; }
-    throw std::out_of_range("devector::at out of range");
+    throw_out_of_range("devector::at out of range");
   }
 
   reference front()
