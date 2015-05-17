@@ -13,6 +13,7 @@
 
 #include <boost/container/vector.hpp>
 #include <boost/container/throw_exception.hpp>
+#include <boost/container/detail/iterators.hpp>
 
 namespace boost {
 namespace container {
@@ -60,6 +61,8 @@ class devector : Allocator
   // Destroy already constructed elements
   typedef typename container_detail::vector_value_traits<Allocator>::ArrayDestructor construction_guard;
 
+  typedef constant_iterator<T, int> cvalue_iterator;
+
 // Standard Interface
 public:
   // types:
@@ -94,7 +97,7 @@ public:
   explicit devector(size_type n, reserve_only_tag, const Allocator& allocator = Allocator())
     :Allocator(allocator),
      _storage(n),
-     _buffer(allocate(n)),
+     _buffer(allocate(_storage._capacity)),
      _front_index(),
      _back_index()
   {}
@@ -102,10 +105,13 @@ public:
   explicit devector(size_type n, const Allocator& allocator = Allocator())
     :Allocator(allocator),
      _storage(n),
-     _buffer(allocate(n)),
+     _buffer(allocate(_storage._capacity)),
      _front_index(),
      _back_index(n)
   {
+    // Cannot use construct_from_range/constant_iterator and copy_range,
+    // because we are not allowed to default construct T
+
     allocation_guard buffer_guard(_buffer, get_allocator_ref(), _storage._capacity);
     if (is_small()) { buffer_guard.release(); } // avoid disposing small buffer
 
@@ -131,32 +137,23 @@ public:
   devector(size_type n, const T& value, const Allocator& allocator = Allocator())
     :Allocator(allocator),
      _storage(n),
-     _buffer(allocate(n)),
+     _buffer(allocate(_storage._capacity)),
      _front_index(),
      _back_index(n)
   {
-    allocation_guard buffer_guard(_buffer, get_allocator_ref(), _storage._capacity);
-    if (is_small()) { buffer_guard.release(); } // avoid disposing small buffer
-
-    construction_guard copy_guard(_buffer, get_allocator_ref(), 0u);
-
-    for (size_type i = 0; i < n; ++i)
-    {
-      std::allocator_traits<Allocator>::construct(get_allocator_ref(), _buffer + i, value);
-
-      copy_guard.increment_size(1u);
-
-      #ifdef BOOST_CONTAINER_DEVECTOR_ALLOC_STATS
-        ++elem_copy_count;
-      #endif
-    }
-
-    copy_guard.release();
-    buffer_guard.release();
+    construct_from_range(cvalue_iterator(value, n), cvalue_iterator());
   }
 
   template <class InputIterator>
-  devector(InputIterator first, InputIterator last, const Allocator& allocator = Allocator());
+  devector(InputIterator first, InputIterator last, const Allocator& allocator = Allocator())
+    :Allocator(allocator),
+     _storage(std::distance(first, last)),
+     _buffer(allocate(_storage._capacity)),
+     _front_index(),
+     _back_index(std::distance(first, last))
+  {
+    construct_from_range(first, last);
+  }
 
   devector(const devector& x);
   devector(devector&&) noexcept;
@@ -175,7 +172,15 @@ public:
   template <class U, class A, class SBP, class GP>
   devector(devector<U, A, SBP, GP>&&, const Allocator& allocator);
 
-  devector(std::initializer_list<T>, const Allocator& allocator = Allocator());
+  devector(const std::initializer_list<T>& range, const Allocator& allocator = Allocator())
+  :Allocator(allocator),
+   _storage(range.size()),
+   _buffer(allocate(_storage._capacity)),
+   _front_index(),
+   _back_index(range.size())
+  {
+    construct_from_range(range.begin(), range.end());
+  }
 
   ~devector()
   {
@@ -574,6 +579,36 @@ private:
     _front_index = buffer_offset;
 
     BOOST_ASSERT(invariants_ok());
+  }
+
+  template <typename Iterator>
+  void construct_from_range(Iterator begin, Iterator end)
+  {
+    allocation_guard buffer_guard(_buffer, get_allocator_ref(), _storage._capacity);
+    if (is_small()) { buffer_guard.release(); } // avoid disposing small buffer
+
+    copy_range(begin, end, _buffer);
+
+    buffer_guard.release();
+  }
+
+  template <typename Iterator>
+  void copy_range(Iterator begin, Iterator end, pointer dest)
+  {
+    construction_guard copy_guard(dest, get_allocator_ref(), 0u);
+
+    for (; begin != end; ++begin, ++dest)
+    {
+      std::allocator_traits<Allocator>::construct(get_allocator_ref(), dest, *begin);
+
+      copy_guard.increment_size(1u);
+
+      #ifdef BOOST_CONTAINER_DEVECTOR_ALLOC_STATS
+        ++elem_copy_count;
+      #endif
+    }
+
+    copy_guard.release();
   }
 
   bool invariants_ok()

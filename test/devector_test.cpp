@@ -2,6 +2,8 @@
 #include <boost/container/devector.hpp>
 #undef BOOST_CONTAINER_DEVECTOR_ALLOC_STATS
 
+#include <boost/algorithm/cxx14/equal.hpp>
+
 using namespace boost::container;
 
 struct test_exception {};
@@ -174,6 +176,7 @@ int test_small_buffer()
 
 typedef devector<unsigned> devector_u;
 typedef devector<unsigned, std::allocator<unsigned>, devector_small_buffer_policy<8, 8>> small_devector_u;
+typedef devector<throwing_elem, std::allocator<throwing_elem>, devector_small_buffer_policy<8, 8>> small_devector_thr;
 
 void test_constructor()
 {
@@ -203,10 +206,18 @@ void test_constructor()
       BOOST_ASSERT(elem == 123u);
     }
 
+    std::vector<unsigned> source{1, 2, 3};
+
+    devector_u f(source.begin(), source.end());
+    BOOST_ASSERT(boost::algorithm::equal(source.begin(), source.end(), f.begin(), f.end()));
+
+    devector_u g{1, 2, 3};
+    BOOST_ASSERT(boost::algorithm::equal(source.begin(), source.end(), g.begin(), g.end()));
+
     try
     {
       throwing_elem::throw_on_ctor_after = 4;
-      devector<throwing_elem> f(8);
+      devector<throwing_elem> td(8);
       BOOST_ASSERT(false);
     }
     catch (...) {}
@@ -215,7 +226,24 @@ void test_constructor()
     {
       throwing_elem::throw_on_copy_after = 4;
       throwing_elem elem;
-      devector<throwing_elem> g(8, elem);
+      devector<throwing_elem> te(8, elem);
+      BOOST_ASSERT(false);
+    }
+    catch (...) {}
+
+    try
+    {
+      std::vector<throwing_elem> source(8);
+      throwing_elem::throw_on_copy_after = 4;
+      devector<throwing_elem> tf(source.begin(), source.end());
+      BOOST_ASSERT(false);
+    }
+    catch (...) {}
+
+    try
+    {
+      throwing_elem::throw_on_copy_after = 2;
+      devector<throwing_elem> tg{throwing_elem{}, throwing_elem{}, throwing_elem{}};
       BOOST_ASSERT(false);
     }
     catch (...) {}
@@ -247,10 +275,18 @@ void test_constructor()
       BOOST_ASSERT(elem == 123u);
     }
 
+    std::vector<unsigned> source{1, 2, 3};
+
+    small_devector_u f(source.begin(), source.end());
+    BOOST_ASSERT(boost::algorithm::equal(source.begin(), source.end(), f.begin(), f.end()));
+
+    small_devector_u g{1, 2, 3};
+    BOOST_ASSERT(boost::algorithm::equal(source.begin(), source.end(), g.begin(), g.end()));
+
     try
     {
       throwing_elem::throw_on_ctor_after = 4;
-      devector<throwing_elem> f(8);
+      small_devector_thr td(8);
       BOOST_ASSERT(false);
     }
     catch (...) {}
