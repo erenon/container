@@ -319,20 +319,18 @@ public:
 
   void reserve_front(size_type new_capacity)
   {
-    // front capacity > new_capacity
-    if (_back_index >= new_capacity) { return; }
+    if (front_capacity() >= new_capacity) { return; }
 
-    reallocate_at(new_capacity, _front_index);
+    reallocate_at(new_capacity + back_capacity(), _front_index + new_capacity);
 
     BOOST_ASSERT(invariants_ok());
   }
 
   void reserve_back(size_type new_capacity)
   {
-    // back capacity >= new_capacity
-    if (_storage._capacity - _front_index >= new_capacity) { return; }
+    if (back_capacity() >= new_capacity) { return; }
 
-    reallocate_at(new_capacity, _front_index);
+    reallocate_at(new_capacity + front_capacity(), _front_index);
 
     BOOST_ASSERT(invariants_ok());
   }
@@ -498,6 +496,16 @@ private:
     {
       std::allocator_traits<Allocator>::deallocate(get_allocator_ref(), _buffer, _storage._capacity);
     }
+  }
+
+  size_type front_capacity()
+  {
+    return _back_index;
+  }
+
+  size_type back_capacity()
+  {
+    return _storage._capacity - _front_index;
   }
 
   size_type calculate_new_capacity(size_type requested_capacity)

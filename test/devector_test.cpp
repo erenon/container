@@ -121,28 +121,6 @@ int test_range_for()
   return 0;
 }
 
-int test_reserve()
-{
-  devector<unsigned> dv;
-  dv.reserve_back(100);
-  for (unsigned i = 0; i < 100; ++i)
-  {
-    dv.push_back(i);
-  }
-
-  if (dv.capacity_alloc_count != 1) return 1;
-
-  dv.reserve_front(100);
-  for (unsigned i = 0; i < 100; ++i)
-  {
-    dv.push_front(i);
-  }
-
-  if (dv.capacity_alloc_count != 2) return 2;
-
-  return 0;
-}
-
 int test_push_front_back_alloc()
 {
   devector<unsigned> dv;
@@ -386,7 +364,67 @@ void test_capacity()
 }
 
 // TODO test_resize
-// TODO test_reserve
+
+void test_reserve_front()
+{
+  // test allocation statistics
+  devector<unsigned> a;
+
+  a.reserve_front(100);
+  for (unsigned i = 0; i < 100; ++i)
+  {
+    a.push_front(i);
+  }
+
+  BOOST_ASSERT(a.capacity_alloc_count == 1);
+
+  // test SBO
+  devector<unsigned, std::allocator<unsigned>, devector_small_buffer_policy<8, 0>> b;
+  b.reserve_front(4);
+  b.reserve_front(6);
+  b.reserve_front(4);
+
+  BOOST_ASSERT(b.capacity_alloc_count == 0);
+
+  // test SBO, front is empty
+  devector<unsigned, std::allocator<unsigned>, devector_small_buffer_policy<0, 8>> c;
+  c.reserve_front(4);
+  c.reserve_front(6);
+  c.reserve_front(4);
+
+  BOOST_ASSERT(c.capacity_alloc_count == 2);
+}
+
+void test_reserve_back()
+{
+  // test allocation statistics
+  devector<unsigned> a;
+
+  a.reserve_back(100);
+  for (unsigned i = 0; i < 100; ++i)
+  {
+    a.push_back(i);
+  }
+
+  BOOST_ASSERT(a.capacity_alloc_count == 1);
+
+  // test SBO, back is empty
+  devector<unsigned, std::allocator<unsigned>, devector_small_buffer_policy<0, 8>> b;
+  b.reserve_back(4);
+  b.reserve_back(6);
+  b.reserve_back(4);
+
+  BOOST_ASSERT(b.capacity_alloc_count == 0);
+
+  // test SBO, back is empty
+  devector<unsigned, std::allocator<unsigned>, devector_small_buffer_policy<8, 0>> c;
+  c.reserve_back(4);
+  c.reserve_back(6);
+  c.reserve_back(4);
+
+  BOOST_ASSERT(c.capacity_alloc_count == 2);
+}
+
 // TODO test_shrink_to_fit
 
 void test_index_operator()
@@ -508,6 +546,8 @@ int main()
   test_empty();
   test_size();
   test_capacity();
+  test_reserve_back();
+  test_reserve_front();
   test_index_operator();
   test_at();
   test_front();
@@ -517,7 +557,6 @@ int main()
   int err = 0;
   if ((err = test_push_pop()))  return 10 + err;
   if ((err = test_range_for())) return 20 + err;
-  if ((err = test_reserve()))   return 30 + err;
   if ((err = test_push_front_back_alloc()))   return 40 + err;
   if ((err = test_small_buffer())) return 50 + err;
 
