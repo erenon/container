@@ -1,4 +1,5 @@
 #include <cstring> // memcmp
+#include <iostream>
 
 #define BOOST_CONTAINER_DEVECTOR_ALLOC_STATS
 #include <boost/container/devector.hpp>
@@ -66,6 +67,48 @@ private:
 int throwing_elem::throw_on_ctor_after = -1;
 int throwing_elem::throw_on_copy_after = -1;
 int throwing_elem::throw_on_move_after = -1;
+
+template <typename Range>
+void printRange(std::ostream& out, const Range& range)
+{
+  out << '[';
+  bool first = true;
+  for (auto&& elem : range)
+  {
+    if (first) { first = false; }
+    else { out << ','; }
+
+    out << elem;
+  }
+  out << ']';
+}
+
+template <class T, class Allocator, class SBP, class GP>
+std::ostream& operator<<(std::ostream& out, const devector<T, Allocator, SBP, GP>& devec)
+{
+  printRange(out, devec);
+  return out;
+}
+
+template <typename T>
+std::ostream& operator<<(std::ostream& out, const std::vector<T>& vec)
+{
+  printRange(out, vec);
+  return out;
+}
+
+template <typename Devector>
+void assert_equals(const Devector& actual, const std::vector<typename Devector::value_type>& expected)
+{
+  bool equals = boost::algorithm::equal(actual.begin(), actual.end(), expected.begin(), expected.end());
+
+  if (!equals)
+  {
+    std::cerr << actual << " != " << expected << " (actual != expected)" << std::endl;
+
+    BOOST_ASSERT(false);
+  }
+}
 
 int test_push_pop()
 {
@@ -189,10 +232,10 @@ void test_constructor()
     std::vector<unsigned> source{1, 2, 3};
 
     devector_u f(source.begin(), source.end());
-    BOOST_ASSERT(boost::algorithm::equal(source.begin(), source.end(), f.begin(), f.end()));
+    assert_equals(f, source);
 
     devector_u g{1, 2, 3};
-    BOOST_ASSERT(boost::algorithm::equal(source.begin(), source.end(), g.begin(), g.end()));
+    assert_equals(g, source);
 
     try
     {
@@ -258,10 +301,10 @@ void test_constructor()
     std::vector<unsigned> source{1, 2, 3};
 
     small_devector_u f(source.begin(), source.end());
-    BOOST_ASSERT(boost::algorithm::equal(source.begin(), source.end(), f.begin(), f.end()));
+    assert_equals(f, source);
 
     small_devector_u g{1, 2, 3};
-    BOOST_ASSERT(boost::algorithm::equal(source.begin(), source.end(), g.begin(), g.end()));
+    assert_equals(g, source);
 
     try
     {
