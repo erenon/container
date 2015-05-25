@@ -342,6 +342,29 @@ void test_constructor()
   }
 }
 
+void test_copy_constructor()
+{
+  devector_u a{1, 2, 3, 4, 5};
+  devector_u b(a);
+
+  BOOST_ASSERT(a == b);
+
+  devector_u c(a, std::allocator<unsigned>{});
+  BOOST_ASSERT(a == c);
+
+  small_devector_u d(a);
+  BOOST_ASSERT(a == d);
+
+  try
+  {
+    devector<throwing_elem> source(8);
+    throwing_elem::throw_on_copy_after = 4;
+    devector<throwing_elem> e(source);
+    BOOST_ASSERT(false);
+  }
+  catch (...) {}
+}
+
 void test_begin_end()
 {
   std::vector<unsigned> expected{1, 2, 3, 4, 5, 6, 7, 8};
@@ -679,6 +702,7 @@ int main()
   );
 
   test_constructor();
+  test_copy_constructor();
   test_begin_end();
   test_empty();
   test_size();

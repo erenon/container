@@ -155,32 +155,28 @@ public:
     construct_from_range(first, last);
   }
 
-  devector(const devector& x);
+  devector(const devector& x)
+    :devector(x.begin(), x.end())
+  {}
+
+  devector(const devector& x, const Allocator& allocator)
+    :devector(x.begin(), x.end(), allocator)
+  {}
+
+  template <class U, class A, class SBP, class GP>
+  devector(const devector<U, A, SBP, GP>& x, const Allocator& allocator = Allocator())
+    :devector(x.begin(), x.end(), allocator)
+  {}
+
   devector(devector&&) noexcept;
-  devector(const devector&, const Allocator& allocator);
   devector(devector&&, const Allocator& allocator);
 
   template <class U, class A, class SBP, class GP>
-  devector(const devector<U, A, SBP, GP>& x);
-
-  template <class U, class A, class SBP, class GP>
-  devector(devector<U, A, SBP, GP>&&) noexcept;
-
-  template <class U, class A, class SBP, class GP>
-  devector(const devector<U, A, SBP, GP>&, const Allocator& allocator);
-
-  template <class U, class A, class SBP, class GP>
-  devector(devector<U, A, SBP, GP>&&, const Allocator& allocator);
+  devector(devector<U, A, SBP, GP>&&, const Allocator& allocator = Allocator());
 
   devector(const std::initializer_list<T>& range, const Allocator& allocator = Allocator())
-  :Allocator(allocator),
-   _storage(range.size()),
-   _buffer(allocate(_storage._capacity)),
-   _front_index(),
-   _back_index(range.size())
-  {
-    construct_from_range(range.begin(), range.end());
-  }
+    :devector(range.begin(), range.end(), allocator)
+  {}
 
   ~devector()
   {
