@@ -749,41 +749,40 @@ public:
 #endif // BOOST_CONTAINER_DEVECTOR_ALLOC_STATS
 };
 
-
-template <class T, class Allocator, class SBP, class GP>
-bool operator==(const devector<T, Allocator, SBP, GP>& x, const devector<T, Allocator, SBP, GP>& y)
+template <class T, class AllocatorX, class SBPX, class GPX, class AllocatorY, class SBPY, class GPY>
+bool operator==(const devector<T, AllocatorX, SBPX, GPX>& x, const devector<T, AllocatorY, SBPY, GPY>& y)
 {
-  if (x.size() != y.size) { return false; }
+  if (x.size() != y.size()) { return false; }
   return std::equal(x.begin(), x.end(), y.begin());
 }
 
-template <class T, class Allocator, class SBP, class GP>
-bool operator< (const devector<T, Allocator, SBP, GP>& x, const devector<T, Allocator, SBP, GP>& y)
+template <class T, class AllocatorX, class SBPX, class GPX, class AllocatorY, class SBPY, class GPY>
+bool operator< (const devector<T, AllocatorX, SBPX, GPX>& x, const devector<T, AllocatorY, SBPY, GPY>& y)
 {
   return std::lexicographical_compare( x.begin(), x.end(),
                                        y.begin(), y.end() );
 }
 
-template <class T, class Allocator, class SBP, class GP>
-bool operator!=(const devector<T, Allocator, SBP, GP>& x, const devector<T, Allocator, SBP, GP>& y)
+template <class T, class AllocatorX, class SBPX, class GPX, class AllocatorY, class SBPY, class GPY>
+bool operator!=(const devector<T, AllocatorX, SBPX, GPX>& x, const devector<T, AllocatorY, SBPY, GPY>& y)
 {
   return !(x == y);
 }
 
-template <class T, class Allocator, class SBP, class GP>
-bool operator> (const devector<T, Allocator, SBP, GP>& x, const devector<T, Allocator, SBP, GP>& y)
+template <class T, class AllocatorX, class SBPX, class GPX, class AllocatorY, class SBPY, class GPY>
+bool operator> (const devector<T, AllocatorX, SBPX, GPX>& x, const devector<T, AllocatorY, SBPY, GPY>& y)
 {
   return (y < x);
 }
 
-template <class T, class Allocator, class SBP, class GP>
-bool operator>=(const devector<T, Allocator, SBP, GP>& x, const devector<T, Allocator, SBP, GP>& y)
+template <class T, class AllocatorX, class SBPX, class GPX, class AllocatorY, class SBPY, class GPY>
+bool operator>=(const devector<T, AllocatorX, SBPX, GPX>& x, const devector<T, AllocatorY, SBPY, GPY>& y)
 {
   return !(x < y);
 }
 
-template <class T, class Allocator, class SBP, class GP>
-bool operator<=(const devector<T, Allocator, SBP, GP>& x, const devector<T, Allocator, SBP, GP>& y)
+template <class T, class AllocatorX, class SBPX, class GPX, class AllocatorY, class SBPY, class GPY>
+bool operator<=(const devector<T, AllocatorX, SBPX, GPX>& x, const devector<T, AllocatorY, SBPY, GPY>& y)
 {
   return !(y < x);
 }
