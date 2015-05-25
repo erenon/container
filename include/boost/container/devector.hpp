@@ -533,7 +533,7 @@ private:
 
   void deallocate_buffer()
   {
-    if (! is_small())
+    if (! is_small() && _buffer)
     {
       std::allocator_traits<Allocator>::deallocate(get_allocator_ref(), _buffer, _storage._capacity);
     }

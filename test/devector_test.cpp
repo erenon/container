@@ -365,6 +365,13 @@ void test_copy_constructor()
   catch (...) {}
 }
 
+void test_destructor()
+{
+  devector_u a;
+  small_devector_u b;
+  devector<throwing_elem> c(3);
+}
+
 void test_begin_end()
 {
   std::vector<unsigned> expected{1, 2, 3, 4, 5, 6, 7, 8};
@@ -703,6 +710,7 @@ int main()
 
   test_constructor();
   test_copy_constructor();
+  test_destructor();
   test_begin_end();
   test_empty();
   test_size();
