@@ -180,6 +180,7 @@ public:
 
   ~devector()
   {
+    destroy_elements(_buffer + _front_index, _buffer + _back_index);
     deallocate_buffer();
   }
 
@@ -531,6 +532,14 @@ private:
     }
   }
 
+  void destroy_elements(pointer begin, pointer end)
+  {
+    for (; begin != end; ++begin)
+    {
+      std::allocator_traits<Allocator>::destroy(get_allocator_ref(), begin);
+    }
+  }
+
   void deallocate_buffer()
   {
     if (! is_small() && _buffer)
@@ -569,7 +578,7 @@ private:
 
   void guarded_move_or_copy(pointer dst, pointer begin, pointer end)
   {
-    construction_guard copy_guard(_buffer, get_allocator_ref(), 0u);
+    construction_guard copy_guard(dst, get_allocator_ref(), 0u);
 
     for (; begin != end; ++begin, ++dst)
     {
@@ -619,6 +628,7 @@ private:
       elem_copy_count += size();
     #endif
 
+    destroy_elements(_buffer + _front_index, _buffer + _back_index);
     deallocate_buffer();
 
     _buffer = new_buffer;
@@ -663,7 +673,7 @@ private:
   template <typename... Args>
   void construct_n(pointer buffer, size_type n, Args... args)
   {
-    construction_guard copy_guard(buffer, get_allocator_ref(), 0u);
+    construction_guard ctr_guard(buffer, get_allocator_ref(), 0u);
 
     for (size_type i = 0; i < n; ++i)
     {
@@ -673,10 +683,10 @@ private:
         std::forward<Args>(args)...
       );
 
-      copy_guard.increment_size(1u);
+      ctr_guard.increment_size(1u);
     }
 
-    copy_guard.release();
+    ctr_guard.release();
   }
 
   bool invariants_ok()
