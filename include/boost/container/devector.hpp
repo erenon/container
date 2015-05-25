@@ -303,14 +303,59 @@ public:
     return _storage._capacity - _back_index;
   }
 
-  void resize(size_type sz); // { resize_back(sz); }
-  void resize(size_type sz, const T& c); // { resize_back(sz, c); }
+  void resize(size_type sz) { resize_back(sz); }
+  void resize(size_type sz, const T& c) { resize_back(sz, c); }
 
   void resize_front(size_type sz);
   void resize_front(size_type sz, const T& c);
 
-  void resize_back(size_type sz);
-  void resize_back(size_type sz, const T& c);
+  void resize_back(size_type sz)
+  {
+    if (sz > size())
+    {
+      if (sz > capacity())
+      {
+        reallocate_at(sz + _front_index, _front_index);
+      }
+
+      size_type n = sz - size();
+      construct_n(_buffer + _back_index, n);
+      _back_index += n;
+    }
+    else
+    {
+      while (size() > sz)
+      {
+        pop_back();
+      }
+    }
+
+    BOOST_ASSERT(invariants_ok());
+  }
+
+  void resize_back(size_type sz, const T& c)
+  {
+    if (sz > size())
+    {
+      if (sz > capacity())
+      {
+        reallocate_at(sz + _front_index, _front_index);
+      }
+
+      size_type n = sz - size();
+      construct_n(_buffer + _back_index, n, c);
+      _back_index += n;
+    }
+    else
+    {
+      while (size() > sz)
+      {
+        pop_back();
+      }
+    }
+
+    BOOST_ASSERT(invariants_ok());
+  }
 
   // reserve promise:
   // after reserve_[front,back](n), n - size() push_[front,back] will not allocate
@@ -614,6 +659,25 @@ private:
       #ifdef BOOST_CONTAINER_DEVECTOR_ALLOC_STATS
         ++elem_copy_count;
       #endif
+    }
+
+    copy_guard.release();
+  }
+
+  template <typename... Args>
+  void construct_n(pointer buffer, size_type n, Args... args)
+  {
+    construction_guard copy_guard(buffer, get_allocator_ref(), 0u);
+
+    for (size_type i = 0; i < n; ++i)
+    {
+      std::allocator_traits<Allocator>::construct(
+        get_allocator_ref(),
+        buffer + i,
+        std::forward<Args>(args)...
+      );
+
+      copy_guard.increment_size(1u);
     }
 
     copy_guard.release();

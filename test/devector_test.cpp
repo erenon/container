@@ -406,7 +406,101 @@ void test_capacity()
   BOOST_ASSERT(c.capacity() == 16);
 }
 
-// TODO test_resize
+void test_resize_back()
+{
+  // size < required, alloc needed
+  devector_u a{1, 2, 3, 4, 5};
+  a.resize_back(8);
+  assert_equals(a, {1, 2, 3, 4, 5, 0, 0, 0});
+
+  // size < required, but capacity provided
+  devector_u b{1, 2, 3, 4, 5};
+  b.reserve(16);
+  b.resize_back(8);
+  assert_equals(b, {1, 2, 3, 4, 5, 0, 0, 0});
+
+  // size < required, copy or move throws
+  devector<throwing_elem> c(5);
+  throwing_elem::throw_on_copy_after = 3;
+  throwing_elem::throw_on_move_after = 3;
+
+  try
+  {
+    c.resize(10);
+    BOOST_ASSERT(false);
+  }
+  catch (...) {}
+
+  // TODO test contents of c
+
+  // size < required, constructor throws
+  devector<throwing_elem> d(5);
+  throwing_elem::throw_on_ctor_after = 3;
+
+  try
+  {
+    d.resize(10);
+    BOOST_ASSERT(false);
+  }
+  catch (...) {}
+
+  // TODO test contents of d
+
+  // size >= required
+  devector_u e{1, 2, 3, 4, 5, 6};
+  e.resize_back(4);
+  assert_equals(e, {1, 2, 3, 4});
+}
+
+void test_resize_back_copy()
+{
+  unsigned x = 123;
+
+  // size < required, alloc needed
+  devector_u a{1, 2, 3, 4, 5};
+  a.resize_back(8, x);
+  assert_equals(a, {1, 2, 3, 4, 5, 123, 123, 123});
+
+  // size < required, but capacity provided
+  devector_u b{1, 2, 3, 4, 5};
+  b.reserve(16);
+  b.resize_back(8, x);
+  assert_equals(b, {1, 2, 3, 4, 5, 123, 123, 123});
+
+  // size < required, copy or move throws
+  throwing_elem thr_x;
+
+  devector<throwing_elem> c(5);
+  throwing_elem::throw_on_copy_after = 3;
+  throwing_elem::throw_on_move_after = 3;
+
+  try
+  {
+    c.resize(10, thr_x);
+    BOOST_ASSERT(false);
+  }
+  catch (...) {}
+
+  // TODO test contents of c
+
+  // size < required, constructor throws
+  devector<throwing_elem> d(5);
+  throwing_elem::throw_on_ctor_after = 3;
+
+  try
+  {
+    d.resize(10, thr_x);
+    BOOST_ASSERT(false);
+  }
+  catch (...) {}
+
+  // TODO test contents of d
+
+  // size >= required
+  devector_u e{1, 2, 3, 4, 5, 6};
+  e.resize_back(4, x);
+  assert_equals(e, {1, 2, 3, 4});
+}
 
 void test_reserve_front()
 {
@@ -589,6 +683,8 @@ int main()
   test_empty();
   test_size();
   test_capacity();
+  test_resize_back();
+  test_resize_back_copy();
   test_reserve_back();
   test_reserve_front();
   test_index_operator();
