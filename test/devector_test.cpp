@@ -16,35 +16,55 @@ struct throwing_elem
   static int throw_on_ctor_after /*= -1*/;
   static int throw_on_copy_after /*= -1*/;
   static int throw_on_move_after /*= -1*/;
+  static int next_index          /*=  0*/;
 
   throwing_elem()
   {
     maybe_throw(throw_on_ctor_after);
 
-    _dummy_member = new int(123);
+    _index = new int(next_index++);
+
+//    std::cout << "THR Ctor "  << _index << std::endl;
   }
 
   ~throwing_elem()
   {
-    if (_dummy_member)
+//    std::cout << "THR Dtor "  << _index << std::endl;
+
+    if (_index)
     {
-      delete _dummy_member;
+      delete _index;
     }
   }
 
-  throwing_elem(const throwing_elem&)
+  throwing_elem(const throwing_elem& rhs)
   {
     maybe_throw(throw_on_copy_after);
 
-    _dummy_member = new int(123);
+    _index = new int(*rhs._index);
+
+//    std::cout << "THR Copy Ctor "  << _index << std::endl;
   }
 
   throwing_elem(throwing_elem&& rhs)
   {
     maybe_throw(throw_on_move_after);
 
-    _dummy_member = rhs._dummy_member;
-    rhs._dummy_member = nullptr;
+    _index = rhs._index;
+    rhs._index = nullptr;
+
+//    std::cout << "THR Move Ctor "  << _index << std::endl;
+  }
+
+  friend bool operator==(const throwing_elem& a, const throwing_elem& b)
+  {
+    return *(a._index) == *(b._index);
+  }
+
+  friend std::ostream& operator<<(std::ostream& out, const throwing_elem& thr)
+  {
+    out << thr._index;
+    return out;
   }
 
 private:
@@ -61,12 +81,13 @@ private:
     }
   }
 
-  int* _dummy_member; // for leak detection
+  int* _index; // for leak detection
 };
 
 int throwing_elem::throw_on_ctor_after = -1;
 int throwing_elem::throw_on_copy_after = -1;
 int throwing_elem::throw_on_move_after = -1;
+int throwing_elem::next_index = 0;
 
 template <typename Range>
 void printRange(std::ostream& out, const Range& range)
@@ -451,30 +472,32 @@ void test_resize_back()
 
   // size < required, copy or move throws
   devector<throwing_elem> c(5);
+  std::vector<throwing_elem> c_origi(c.begin(), c.end());
   throwing_elem::throw_on_copy_after = 3;
   throwing_elem::throw_on_move_after = 3;
 
   try
   {
-    c.resize(10);
+    c.resize_back(10);
     BOOST_ASSERT(false);
   }
   catch (...) {}
 
-  // TODO test contents of c
+  assert_equals(c, c_origi);
 
   // size < required, constructor throws
   devector<throwing_elem> d(5);
+  std::vector<throwing_elem> d_origi(d.begin(), d.end());
   throwing_elem::throw_on_ctor_after = 3;
 
   try
   {
-    d.resize(10);
+    d.resize_back(10);
     BOOST_ASSERT(false);
   }
   catch (...) {}
 
-  // TODO test contents of d
+  assert_equals(d, d_origi);
 
   // size >= required
   devector_u e{1, 2, 3, 4, 5, 6};
@@ -501,30 +524,32 @@ void test_resize_back_copy()
   throwing_elem thr_x;
 
   devector<throwing_elem> c(5);
+  std::vector<throwing_elem> c_origi(c.begin(), c.end());
   throwing_elem::throw_on_copy_after = 3;
   throwing_elem::throw_on_move_after = 3;
 
   try
   {
-    c.resize(10, thr_x);
+    c.resize_back(10, thr_x);
     BOOST_ASSERT(false);
   }
   catch (...) {}
 
-  // TODO test contents of c
+  assert_equals(c, c_origi);
 
   // size < required, constructor throws
   devector<throwing_elem> d(5);
+  std::vector<throwing_elem> d_origi(d.begin(), d.end());
   throwing_elem::throw_on_ctor_after = 3;
 
   try
   {
-    d.resize(10, thr_x);
+    d.resize_back(10, thr_x);
     BOOST_ASSERT(false);
   }
   catch (...) {}
 
-  // TODO test contents of d
+  assert_equals(d, d_origi);
 
   // size >= required
   devector_u e{1, 2, 3, 4, 5, 6};
