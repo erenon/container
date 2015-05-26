@@ -310,7 +310,7 @@ public:
   {
     if (sz > size())
     {
-      if (sz > capacity())
+      if (sz > back_capacity())
       {
         reallocate_at(sz + _front_index, _front_index);
       }
@@ -334,7 +334,7 @@ public:
   {
     if (sz > size())
     {
-      if (sz > capacity())
+      if (sz > back_capacity())
       {
         reallocate_at(sz + _front_index, _front_index);
       }

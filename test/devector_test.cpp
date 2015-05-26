@@ -503,6 +503,16 @@ void test_resize_back()
   devector_u e{1, 2, 3, 4, 5, 6};
   e.resize_back(4);
   assert_equals(e, {1, 2, 3, 4});
+
+  // size < required, has front small buffer, fits back small buffer
+  small_devector_u f;
+  f.resize_back(4);
+  assert_equals(f, {0, 0, 0, 0});
+
+  // size < required, has front small buffer, does not fit back small buffer
+  small_devector_u g;
+  g.resize_back(16);
+  assert_equals(g, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
 }
 
 void test_resize_back_copy()
@@ -555,6 +565,16 @@ void test_resize_back_copy()
   devector_u e{1, 2, 3, 4, 5, 6};
   e.resize_back(4, x);
   assert_equals(e, {1, 2, 3, 4});
+
+  // size < required, has front small buffer, fits back small buffer
+  small_devector_u f;
+  f.resize_back(4, x);
+  assert_equals(f, {123, 123, 123, 123});
+
+  // size < required, has front small buffer, does not fit back small buffer
+  small_devector_u g;
+  g.resize_back(16, x);
+  assert_equals(g, {123, 123, 123, 123, 123, 123, 123, 123, 123, 123, 123, 123, 123, 123, 123, 123});
 }
 
 void test_reserve_front()
