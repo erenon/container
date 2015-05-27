@@ -522,6 +522,11 @@ void test_resize_back()
   small_devector_u g;
   g.resize_back(16);
   assert_equals(g, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
+
+  // size = required
+  devector_u h{1, 2, 3, 4};
+  h.resize_back(4);
+  assert_equals(h, {1, 2, 3, 4});
 }
 
 void test_resize_back_copy()
@@ -561,7 +566,7 @@ void test_resize_back_copy()
   // size < required, constructor throws
   devector<throwing_elem> d(5);
   std::vector<throwing_elem> d_origi(d.begin(), d.end());
-  throwing_elem::throw_on_ctor_after = 3;
+  throwing_elem::throw_on_copy_after = 3;
 
   try
   {
@@ -586,6 +591,11 @@ void test_resize_back_copy()
   small_devector_u g;
   g.resize_back(16, x);
   assert_equals(g, {123, 123, 123, 123, 123, 123, 123, 123, 123, 123, 123, 123, 123, 123, 123, 123});
+
+  // size = required
+  devector_u h{1, 2, 3, 4};
+  h.resize_back(4, x);
+  assert_equals(h, {1, 2, 3, 4});
 }
 
 void test_reserve_front()
