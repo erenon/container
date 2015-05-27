@@ -473,7 +473,7 @@ void test_resize_back()
 
   // size < required, but capacity provided
   devector_u b{1, 2, 3, 4, 5};
-  b.reserve(16);
+  b.reserve_back(16);
   b.resize_back(8);
   assert_equals(b, {1, 2, 3, 4, 5, 0, 0, 0});
 
@@ -535,7 +535,7 @@ void test_resize_back_copy()
 
   // size < required, but capacity provided
   devector_u b{1, 2, 3, 4, 5};
-  b.reserve(16);
+  b.reserve_back(16);
   b.resize_back(8, x);
   assert_equals(b, {1, 2, 3, 4, 5, 123, 123, 123});
 

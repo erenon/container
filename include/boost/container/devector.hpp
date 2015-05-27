@@ -363,7 +363,7 @@ public:
   {
     if (front_capacity() >= new_capacity) { return; }
 
-    reallocate_at(new_capacity + back_capacity(), _front_index + new_capacity);
+    reallocate_at(new_capacity + back_free_capacity(), new_capacity - size());
 
     BOOST_ASSERT(invariants_ok());
   }
@@ -372,7 +372,7 @@ public:
   {
     if (back_capacity() >= new_capacity) { return; }
 
-    reallocate_at(new_capacity + front_capacity(), _front_index);
+    reallocate_at(new_capacity + front_free_capacity(), _front_index);
 
     BOOST_ASSERT(invariants_ok());
   }
