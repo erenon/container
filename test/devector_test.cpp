@@ -6,6 +6,7 @@
 #undef BOOST_CONTAINER_DEVECTOR_ALLOC_STATS
 
 #include <boost/algorithm/cxx14/equal.hpp>
+#include <boost/move/core.hpp> // BOOST_MOVABLE_BUT_NOT_COPYABLE
 
 using namespace boost::container;
 
@@ -95,6 +96,75 @@ int throwing_elem::throw_on_ctor_after = -1;
 int throwing_elem::throw_on_copy_after = -1;
 int throwing_elem::throw_on_move_after = -1;
 int throwing_elem::next_index = 0;
+
+struct only_movable
+{
+  BOOST_MOVABLE_BUT_NOT_COPYABLE(only_movable)
+
+public:
+  static int next_index          /*=  0*/;
+
+  only_movable() : _index(next_index++)
+  {
+//    std::cout << "OM Ctor " << _index << std::endl;
+  }
+
+  only_movable(only_movable&& rhs)
+    :_index(rhs._index)
+  {
+//    std::cout << "OM Move Ctor " << _index << std::endl;
+    rhs._index = -1;
+  }
+
+  void operator=(only_movable&& rhs)
+  {
+    std::swap(_index, rhs._index);
+  }
+
+  ~only_movable()
+  {
+//    std::cout << "OM Dtor " << _index << std::endl;
+  }
+
+  friend bool operator==(const only_movable& a, const only_movable& b)
+  {
+    return a._index == b._index;
+  }
+
+  friend std::ostream& operator<<(std::ostream& out, const only_movable& om)
+  {
+    out << om._index;
+    return out;
+  }
+
+private:
+  int _index;
+};
+
+int only_movable::next_index = 0;
+
+struct no_default_ctor
+{
+  no_default_ctor(int a, int b, int c)
+    :_a(a), _b(b), _c(c)
+  {}
+
+  friend bool operator==(const no_default_ctor& a, const no_default_ctor& b)
+  {
+    return a._a == b._a && a._b == b._b && a._c == b._c;
+  }
+
+  friend std::ostream& operator<<(std::ostream& out, const no_default_ctor& ndc)
+  {
+    out << '(' << ndc._a << ", " << ndc._b << ", " << ndc._c << ')';
+    return out;
+  }
+
+private:
+  int _a;
+  int _b;
+  int _c;
+};
 
 template <typename Range>
 void printRange(std::ostream& out, const Range& range)
@@ -899,7 +969,70 @@ void test_data()
   }
 }
 
+void test_emplace_front()
+{
+  devector<no_default_ctor> a;
+
+  a.emplace_front(1, 2, 3);
+  a.emplace_front(4, 5, 6);
+  a.emplace_front(7, 8, 9);
+
+  std::vector<no_default_ctor> expected;
+  expected.emplace_back(7, 8, 9);
+  expected.emplace_back(4, 5, 6);
+  expected.emplace_back(1, 2, 3);
+
+  assert_equals(a, expected);
+
+//  devector<throwing_elem> b(4);
+//  auto origi_begin = b.begin();
+//
+//  try
+//  {
+//    throwing_elem::throw_on_ctor_after = 1;
+//    b.emplace_front();
+//    BOOST_ASSERT(false);
+//  }
+//  catch (...) {}
+//
+//  auto new_begin = b.begin();
+//
+//  BOOST_ASSERT(origi_begin == new_begin);
+//  BOOST_ASSERT(b.size() == 4);
+}
+
 // TODO test push_front
+
+void test_push_front_rvalue()
+{
+  only_movable::next_index = 0;
+  std::vector<only_movable> expected(16);
+  std::reverse(expected.begin(), expected.end());
+
+  std::cout << "vec ctor done\n";
+
+  only_movable::next_index = 0;
+  devector<only_movable> a;
+
+  for (std::size_t i = 0; i < 16; ++i)
+  {
+    only_movable elem;
+    a.push_front(std::move(elem));
+  }
+
+  assert_equals(a, expected);
+
+  only_movable::next_index = 0;
+  devector<only_movable> b;
+
+  for (std::size_t i = 0; i < 16; ++i)
+  {
+    b.push_front(only_movable{});
+  }
+
+  assert_equals(b, expected);
+}
+
 // TODO test pop_front
 // TODO test push_back
 // TODO test pop_back
@@ -939,6 +1072,8 @@ int main()
   test_front();
   test_back();
   test_data();
+  test_emplace_front();
+  test_push_front_rvalue();
 
   int err = 0;
   if ((err = test_push_pop()))  return 10 + err;

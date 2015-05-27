@@ -483,24 +483,35 @@ public:
   // modifiers:
 
   template <class... Args>
-  void emplace_front(Args&&... args);
-
-  void push_front(const T& x)
+  void emplace_front(Args&&... args)
   {
-    if (_front_index <= 0)
-    {
-      size_type new_capacity = calculate_new_capacity(_storage._capacity + 1);
-      size_type start = new_capacity - _storage._capacity;
-      reallocate_at(new_capacity, start);
-    }
+    ensure_free_front();
 
+    std::allocator_traits<Allocator>::construct(
+      get_allocator_ref(), _buffer + _front_index - 1,
+      std::forward<Args>(args)...
+    );
     --_front_index;
-    std::allocator_traits<Allocator>::construct(get_allocator_ref(), _buffer + _front_index, x);
 
     BOOST_ASSERT(invariants_ok());
   }
 
-//  void push_front(T&& x);
+  void push_front(const T& x)
+  {
+    ensure_free_front();
+
+    std::allocator_traits<Allocator>::construct(
+      get_allocator_ref(), _buffer + _front_index - 1, x
+    );
+    --_front_index;
+
+    BOOST_ASSERT(invariants_ok());
+  }
+
+  void push_front(T&& x)
+  {
+    emplace_front(std::move(x));
+  }
 
   void pop_front()
   {
@@ -641,6 +652,10 @@ private:
     copy_guard.release();
   }
 
+  // TODO when reallocating, we have to construct/copy/move the new elements
+  // first, to maintain a strong exception guarantee, when creation throws
+  // (no iterator invalidation). Currently, the old elements are moved/copied first.
+
   void reallocate_at(size_type new_capacity, size_type buffer_offset)
   {
     BOOST_ASSERT(new_capacity > storage_t::small_buffer_size);
@@ -742,6 +757,25 @@ private:
     }
 
     ctr_guard.release();
+  }
+
+  void ensure_free_front()
+  {
+    if (_front_index <= 0)
+    {
+      size_type new_capacity = calculate_new_capacity(_storage._capacity + 1);
+      size_type start = new_capacity - _storage._capacity;
+      reallocate_at(new_capacity, start);
+    }
+  }
+
+  void ensure_free_back()
+  {
+    if (_back_index >= _storage._capacity)
+    {
+      size_type new_capacity = calculate_new_capacity(_storage._capacity + 1);
+      reallocate_at(new_capacity, _front_index);
+    }
   }
 
   bool invariants_ok()
