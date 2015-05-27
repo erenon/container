@@ -67,6 +67,13 @@ struct throwing_elem
     return out;
   }
 
+  static void do_not_throw()
+  {
+    throw_on_ctor_after = -1;
+    throw_on_copy_after = -1;
+    throw_on_move_after = -1;
+  }
+
 private:
   void maybe_throw(int& counter)
   {
@@ -483,6 +490,8 @@ void test_resize_back()
   }
   catch (...) {}
 
+  throwing_elem::do_not_throw();
+
   assert_equals(c, c_origi);
 
   // size < required, constructor throws
@@ -544,6 +553,8 @@ void test_resize_back_copy()
     BOOST_ASSERT(false);
   }
   catch (...) {}
+
+  throwing_elem::do_not_throw();
 
   assert_equals(c, c_origi);
 
