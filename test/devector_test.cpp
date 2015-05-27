@@ -259,6 +259,7 @@ void test_constructor()
 
     std::vector<unsigned> source{1, 2, 3};
 
+    // TODO use input iterator instead
     devector_u f(source.begin(), source.end());
     assert_equals(f, source);
 
@@ -328,6 +329,7 @@ void test_constructor()
 
     std::vector<unsigned> source{1, 2, 3};
 
+    // TODO use input iterator instead
     small_devector_u f(source.begin(), source.end());
     assert_equals(f, source);
 
@@ -896,6 +898,17 @@ void test_data()
     BOOST_ASSERT(std::memcmp(c_array, a.data(), 4 * sizeof(unsigned)) == 0);
   }
 }
+
+// TODO test push_front
+// TODO test pop_front
+// TODO test push_back
+// TODO test pop_back
+// TODO test emplace
+// TODO test insert
+// TODO test erase
+// TODO test swap
+// TODO test clear
+// TODO test comparison operators
 
 int main()
 {
