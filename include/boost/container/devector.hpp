@@ -613,13 +613,21 @@ private:
     || std::is_nothrow_copy_constructible<T>::value
     )
     {
-      move_or_copy(new_buffer, _buffer, _buffer + size());
+      move_or_copy(
+        new_buffer + buffer_offset,
+        _buffer + _front_index,
+        _buffer + _back_index
+      );
     }
     else
     {
       allocation_guard new_buffer_guard(new_buffer, get_allocator_ref(), new_capacity);
 
-      guarded_move_or_copy(new_buffer, _buffer, _buffer + size());
+      guarded_move_or_copy(
+        new_buffer + buffer_offset,
+        _buffer + _front_index,
+        _buffer + _back_index
+      );
 
       new_buffer_guard.release();
     }
