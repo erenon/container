@@ -303,8 +303,55 @@ public:
   void resize(size_type sz) { resize_back(sz); }
   void resize(size_type sz, const T& c) { resize_back(sz, c); }
 
-  void resize_front(size_type sz);
-  void resize_front(size_type sz, const T& c);
+  void resize_front(size_type sz)
+  {
+    if (sz > size())
+    {
+      size_type n = sz - size();
+
+      if (sz > front_capacity())
+      {
+        reallocate_at(sz + back_free_capacity(), n);
+      }
+
+      construct_n(_buffer + _front_index - n, n);
+      _front_index -= n;
+    }
+    else
+    {
+      while (size() > sz)
+      {
+        pop_front();
+      }
+    }
+
+    BOOST_ASSERT(invariants_ok());
+  }
+
+  void resize_front(size_type sz, const T& c)
+  {
+    if (sz > size())
+    {
+      size_type n = sz - size();
+
+      if (sz > front_capacity())
+      {
+        reallocate_at(sz + back_free_capacity(), n);
+      }
+
+      construct_n(_buffer + _front_index - n, n, c);
+      _front_index -= n;
+    }
+    else
+    {
+      while (size() > sz)
+      {
+        pop_front();
+      }
+    }
+
+    BOOST_ASSERT(invariants_ok());
+  }
 
   void resize_back(size_type sz)
   {

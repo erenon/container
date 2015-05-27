@@ -464,6 +464,140 @@ void test_capacity()
   BOOST_ASSERT(c.capacity() == 16);
 }
 
+void test_resize_front()
+{
+  // size < required, alloc needed
+  devector_u a{1, 2, 3, 4, 5};
+  a.resize_front(8);
+  assert_equals(a, {0, 0, 0, 1, 2, 3, 4, 5});
+
+  // size < required, but capacity provided
+  devector_u b{1, 2, 3, 4, 6};
+  b.reserve_front(16);
+  b.resize_front(8);
+  assert_equals(b, {0, 0, 0, 1, 2, 3, 4, 6});
+
+  // size < required, copy or move throws
+  devector<throwing_elem> c(5);
+  std::vector<throwing_elem> c_origi(c.begin(), c.end());
+  throwing_elem::throw_on_copy_after = 3;
+  throwing_elem::throw_on_move_after = 3;
+
+  try
+  {
+    c.resize_front(10);
+    BOOST_ASSERT(false);
+  }
+  catch (...) {}
+
+  throwing_elem::do_not_throw();
+
+  assert_equals(c, c_origi);
+
+  // size < required, constructor throws
+  devector<throwing_elem> d(5);
+  std::vector<throwing_elem> d_origi(d.begin(), d.end());
+  throwing_elem::throw_on_ctor_after = 3;
+
+  try
+  {
+    d.resize_front(10);
+    BOOST_ASSERT(false);
+  }
+  catch (...) {}
+
+  assert_equals(d, d_origi);
+
+  // size >= required
+  devector_u e{1, 2, 3, 4, 5, 6};
+  e.resize_front(4);
+  assert_equals(e, {3, 4, 5, 6});
+
+  // size < required, has back small buffer, fits front small buffer
+  small_devector_u f;
+  f.resize_front(4);
+  assert_equals(f, {0, 0, 0, 0});
+
+  // size < required, has back small buffer, does not fit front small buffer
+  small_devector_u g;
+  g.resize_front(16);
+  assert_equals(g, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
+
+  // size = required
+  devector_u h{1, 2, 3, 4};
+  h.resize_front(4);
+  assert_equals(h, {1, 2, 3, 4});
+}
+
+void test_resize_front_copy()
+{
+  unsigned x = 123;
+
+  // size < required, alloc needed
+  devector_u a{1, 2, 3, 4, 5};
+  a.resize_front(8, x);
+  assert_equals(a, {123, 123, 123, 1, 2, 3, 4, 5});
+
+  // size < required, but capacity provided
+  devector_u b{1, 2, 3, 4, 5};
+  b.reserve_front(16);
+  b.resize_front(8, x);
+  assert_equals(b, {123, 123, 123, 1, 2, 3, 4, 5});
+
+  // size < required, copy or move throws
+  throwing_elem thr_x;
+
+  devector<throwing_elem> c(5);
+  std::vector<throwing_elem> c_origi(c.begin(), c.end());
+  throwing_elem::throw_on_copy_after = 3;
+  throwing_elem::throw_on_move_after = 3;
+
+  try
+  {
+    c.resize_front(10, thr_x);
+    BOOST_ASSERT(false);
+  }
+  catch (...) {}
+
+  throwing_elem::do_not_throw();
+
+  assert_equals(c, c_origi);
+
+  // size < required, constructor throws
+  devector<throwing_elem> d(5);
+  std::vector<throwing_elem> d_origi(d.begin(), d.end());
+  throwing_elem::throw_on_copy_after = 3;
+
+  try
+  {
+    d.resize_front(10, thr_x);
+    BOOST_ASSERT(false);
+  }
+  catch (...) {}
+
+  assert_equals(d, d_origi);
+
+  // size >= required
+  devector_u e{1, 2, 3, 4, 5, 6};
+  e.resize_front(4, x);
+  assert_equals(e, {3, 4, 5, 6});
+
+  // size < required, has back small buffer, fits front small buffer
+  small_devector_u f;
+  f.resize_front(4, x);
+  assert_equals(f, {123, 123, 123, 123});
+
+  // size < required, has back small buffer, does not fit front small buffer
+  small_devector_u g;
+  g.resize_front(16, x);
+  assert_equals(g, {123, 123, 123, 123, 123, 123, 123, 123, 123, 123, 123, 123, 123, 123, 123, 123});
+
+  // size = required
+  devector_u h{1, 2, 3, 4};
+  h.resize_front(4, x);
+  assert_equals(h, {1, 2, 3, 4});
+}
+
 void test_resize_back()
 {
   // size < required, alloc needed
@@ -781,6 +915,8 @@ int main()
   test_empty();
   test_size();
   test_capacity();
+  test_resize_front();
+  test_resize_front_copy();
   test_resize_back();
   test_resize_back_copy();
   test_reserve_back();
