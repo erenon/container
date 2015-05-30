@@ -984,21 +984,21 @@ void test_emplace_front()
 
   assert_equals(a, expected);
 
-//  devector<throwing_elem> b(4);
-//  auto origi_begin = b.begin();
-//
-//  try
-//  {
-//    throwing_elem::throw_on_ctor_after = 1;
-//    b.emplace_front();
-//    BOOST_ASSERT(false);
-//  }
-//  catch (...) {}
-//
-//  auto new_begin = b.begin();
-//
-//  BOOST_ASSERT(origi_begin == new_begin);
-//  BOOST_ASSERT(b.size() == 4);
+  devector<throwing_elem> b(4);
+  auto origi_begin = b.begin();
+
+  try
+  {
+    throwing_elem::throw_on_ctor_after = 1;
+    b.emplace_front();
+    BOOST_ASSERT(false);
+  }
+  catch (...) {}
+
+  auto new_begin = b.begin();
+
+  BOOST_ASSERT(origi_begin == new_begin);
+  BOOST_ASSERT(b.size() == 4);
 }
 
 // TODO test push_front
@@ -1008,8 +1008,6 @@ void test_push_front_rvalue()
   only_movable::next_index = 0;
   std::vector<only_movable> expected(16);
   std::reverse(expected.begin(), expected.end());
-
-  std::cout << "vec ctor done\n";
 
   only_movable::next_index = 0;
   devector<only_movable> a;
