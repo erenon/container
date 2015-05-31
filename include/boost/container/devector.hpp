@@ -328,13 +328,15 @@ public:
     {
       size_type n = sz - size();
 
-      if (sz > front_capacity())
+      if (sz < front_capacity())
       {
-        reallocate_at(sz + back_free_capacity(), n);
+        construct_n(_buffer + _front_index - n, n);
+        _front_index -= n;
       }
-
-      construct_n(_buffer + _front_index - n, n);
-      _front_index -= n;
+      else
+      {
+        resize_front_slow_path(sz, n);
+      }
     }
     else
     {
@@ -353,13 +355,15 @@ public:
     {
       size_type n = sz - size();
 
-      if (sz > front_capacity())
+      if (sz < front_capacity())
       {
-        reallocate_at(sz + back_free_capacity(), n);
+        construct_n(_buffer + _front_index - n, n, c);
+        _front_index -= n;
       }
-
-      construct_n(_buffer + _front_index - n, n, c);
-      _front_index -= n;
+      else
+      {
+        resize_front_slow_path(sz, n, c);
+      }
     }
     else
     {
@@ -376,14 +380,17 @@ public:
   {
     if (sz > size())
     {
-      if (sz > back_capacity())
-      {
-        reallocate_at(sz + _front_index, _front_index);
-      }
-
       size_type n = sz - size();
-      construct_n(_buffer + _back_index, n);
-      _back_index += n;
+
+      if (sz < back_capacity())
+      {
+        construct_n(_buffer + _back_index, n);
+        _back_index += n;
+      }
+      else
+      {
+        resize_back_slow_path(sz, n);
+      }
     }
     else
     {
@@ -400,14 +407,17 @@ public:
   {
     if (sz > size())
     {
-      if (sz > back_capacity())
-      {
-        reallocate_at(sz + _front_index, _front_index);
-      }
-
       size_type n = sz - size();
-      construct_n(_buffer + _back_index, n, c);
-      _back_index += n;
+
+      if (sz < back_capacity())
+      {
+        construct_n(_buffer + _back_index, n, c);
+        _back_index += n;
+      }
+      else
+      {
+        resize_back_slow_path(sz, n, c);
+      }
     }
     else
     {
@@ -704,6 +714,97 @@ private:
     }
   }
 
+  void buffer_move_or_copy(pointer dst)
+  {
+    construction_guard guard(dst, get_allocator_ref(), 0);
+
+    buffer_move_or_copy(dst, guard);
+
+    guard.release();
+  }
+
+  void buffer_move_or_copy(pointer dst, construction_guard& guard)
+  {
+    // if noexcept move|copy -> no guard
+    if (
+       std::is_nothrow_move_constructible<T>::value
+    || std::is_nothrow_copy_constructible<T>::value
+    )
+    {
+      if (allocator_traits::is_trivially_copyable)
+      {
+        std::memcpy(
+          dst,
+          _buffer + _front_index,
+          size() * sizeof(T)
+        );
+      }
+      else
+      {
+        move_or_copy(
+          dst,
+          _buffer + _front_index,
+          _buffer + _back_index
+        );
+      }
+    }
+    else // guard needed
+    {
+      guarded_move_or_copy(
+        dst,
+        _buffer + _front_index,
+        _buffer + _back_index,
+        guard
+      );
+    }
+  }
+
+  template <typename... Args>
+  void resize_front_slow_path(size_type sz, size_type n, Args&&... args)
+  {
+    size_type new_capacity = calculate_new_capacity(sz + back_free_capacity());
+    pointer new_buffer = allocate(new_capacity);
+    allocation_guard new_buffer_guard(new_buffer, get_allocator_ref(), new_capacity);
+
+    size_type new_old_elem_index = new_capacity - size();
+    size_type new_elem_index = new_old_elem_index - n;
+
+    construction_guard guard(new_buffer + new_elem_index, get_allocator_ref(), 0u);
+    guarded_construct_n(new_buffer + new_elem_index, n, guard, std::forward<Args>(args)...);
+
+    buffer_move_or_copy(new_buffer + new_old_elem_index, guard);
+
+    guard.release();
+    new_buffer_guard.release();
+
+    _buffer = new_buffer;
+    _storage._capacity = new_capacity;
+
+    _back_index = new_old_elem_index + _back_index - _front_index;
+    _front_index = new_elem_index;
+  }
+
+  template <typename... Args>
+  void resize_back_slow_path(size_type sz, size_type n, Args&&... args)
+  {
+    size_type new_capacity = calculate_new_capacity(sz + front_free_capacity());
+    pointer new_buffer = allocate(new_capacity);
+    allocation_guard new_buffer_guard(new_buffer, get_allocator_ref(), new_capacity);
+
+    construction_guard guard(new_buffer + _back_index, get_allocator_ref(), 0u);
+    guarded_construct_n(new_buffer + _back_index, n, guard, std::forward<Args>(args)...);
+
+    buffer_move_or_copy(new_buffer + _front_index);
+
+    guard.release();
+    new_buffer_guard.release();
+
+    _buffer = new_buffer;
+    _storage._capacity = new_capacity;
+
+    _back_index = _back_index + n;
+  }
+
   template <typename... Args>
   void emplace_front_slow_path(Args&&... args)
   {
@@ -723,52 +824,16 @@ private:
       std::forward<Args>(args)...
     );
 
-    // if noexcept move|copy -> no guard
-    if (
-       std::is_nothrow_move_constructible<T>::value
-    || std::is_nothrow_copy_constructible<T>::value
-    )
-    {
-      if (allocator_traits::is_trivially_copyable)
-      {
-        std::memcpy(
-          new_buffer + new_old_elem_index,
-          _buffer + _front_index,
-          size() * sizeof(T)
-        );
-      }
-      else
-      {
-        move_or_copy(
-          new_buffer + new_old_elem_index,
-          _buffer + _front_index,
-          _buffer + _back_index
-        );
-      }
-    }
-    else // guard needed (new elem as well)
-    {
-      construction_guard ctr_guard(
-        new_buffer + new_old_elem_index - 1,
-        get_allocator_ref(),
-        1u // protect the new elem
-      );
+    construction_guard guard(
+      new_buffer + new_old_elem_index - 1,
+      get_allocator_ref(),
+      1u // protect the new elem
+    );
 
-      // move elements
-      guarded_move_or_copy(
-        new_buffer + new_old_elem_index,
-        _buffer + _front_index,
-        _buffer + _back_index,
-        ctr_guard
-      );
-
-      ctr_guard.release();
-    }
-
-    destroy_elements(_buffer + _front_index, _buffer + _back_index);
-    deallocate_buffer();
+    buffer_move_or_copy(new_buffer + new_old_elem_index, guard);
 
     new_buffer_guard.release();
+    guard.release();
 
     _buffer = new_buffer;
     _storage._capacity = new_capacity;
@@ -777,54 +842,16 @@ private:
     _front_index = new_old_elem_index - 1;
   }
 
-  // TODO when reallocating, we have to construct/copy/move the new elements
-  // first, to maintain a strong exception guarantee, when creation throws
-  // (no iterator invalidation). Currently, the old elements are moved/copied first.
-
   void reallocate_at(size_type new_capacity, size_type buffer_offset)
   {
     BOOST_ASSERT(new_capacity > storage_t::small_buffer_size);
+
     pointer new_buffer = allocate(new_capacity);
+    allocation_guard new_buffer_guard(new_buffer, get_allocator_ref(), new_capacity);
 
-    // TODO use is_trivially_copyable instead of is_pod
-    if (std::is_pod<T>::value)
-    {
-      memcpy(
-        new_buffer + buffer_offset,
-        _buffer + _front_index,
-        size() * sizeof(T)
-      );
-    }
-    else if (
-       std::is_nothrow_move_constructible<T>::value
-    || std::is_nothrow_copy_constructible<T>::value
-    )
-    {
-      move_or_copy(
-        new_buffer + buffer_offset,
-        _buffer + _front_index,
-        _buffer + _back_index
-      );
-    }
-    else
-    {
-      allocation_guard new_buffer_guard(new_buffer, get_allocator_ref(), new_capacity);
+    buffer_move_or_copy(new_buffer + buffer_offset);
 
-      guarded_move_or_copy(
-        new_buffer + buffer_offset,
-        _buffer + _front_index,
-        _buffer + _back_index
-      );
-
-      new_buffer_guard.release();
-    }
-
-    #ifdef BOOST_CONTAINER_DEVECTOR_ALLOC_STATS
-      elem_copy_count += size();
-    #endif
-
-    destroy_elements(_buffer + _front_index, _buffer + _back_index);
-    deallocate_buffer();
+    new_buffer_guard.release();
 
     _buffer = new_buffer;
     _storage._capacity = new_capacity;
@@ -870,6 +897,14 @@ private:
   {
     construction_guard ctr_guard(buffer, get_allocator_ref(), 0u);
 
+    guarded_construct_n(buffer, n, ctr_guard, std::forward<Args>(args)...);
+
+    ctr_guard.release();
+  }
+
+  template <typename... Args>
+  void guarded_construct_n(pointer buffer, size_type n, construction_guard& ctr_guard, Args&&... args)
+  {
     for (size_type i = 0; i < n; ++i)
     {
       std::allocator_traits<Allocator>::construct(
@@ -880,8 +915,6 @@ private:
 
       ctr_guard.increment_size(1u);
     }
-
-    ctr_guard.release();
   }
 
   void ensure_free_back()

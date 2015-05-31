@@ -525,31 +525,24 @@ void test_resize_front()
     assert_equals(b, {0, 0, 0, 1, 2, 3, 4, 5});
   }
 
-  // TODO resize_front violates guarantee, fix bug
-  // size < required, copy or move throws
-//  if (! std::is_nothrow_copy_constructible<T>::value)
-//  {
-//    Devector c = getRange<Devector, T>(5);
-//    std::vector<T> c_origi = getRange<std::vector<T>, T>(5);
-//    test_elem_throw::on_copy_after(3);
-//    test_elem_throw::on_move_after(3);
-//
-//    try
-//    {
-//      c.resize_front(256);
-//      BOOST_ASSERT(false);
-//    }
-//    catch (...) {}
-//
-//    test_elem_throw::do_not_throw();
-//    assert_equals(c, c_origi);
-//  }
+  // size < required, move would throw
+  if (! std::is_nothrow_move_constructible<T>::value && std::is_copy_constructible<T>::value)
+  {
+    Devector c = getRange<Devector, T>(5);
+    test_elem_throw::on_move_after(3);
+
+    c.resize_front(8); // shouldn't use the throwing move
+
+    test_elem_throw::do_not_throw();
+    assert_equals(c, {0, 0, 0, 1, 2, 3, 4, 5});
+  }
 
   // size < required, constructor throws
   if (! std::is_nothrow_constructible<T>::value)
   {
     Devector d = getRange<Devector, T>(5);
     std::vector<T> d_origi = getRange<std::vector<T>, T>(5);
+    auto origi_begin = d.begin();
     test_elem_throw::on_ctor_after(3);
 
     try
@@ -560,6 +553,7 @@ void test_resize_front()
     catch (...) {}
 
     assert_equals(d, d_origi);
+    BOOST_ASSERT(origi_begin == d.begin());
   }
 
   // size >= required
@@ -603,7 +597,7 @@ void test_resize_front_copy()
     assert_equals(b, {9, 9, 9, 1, 2, 3, 4, 5});
   }
 
-  // size < required, copy or move throws
+  // size < required, copy throws
   if (! std::is_nothrow_copy_constructible<T>::value)
   {
     Devector c = getRange<Devector, T>(5);
@@ -620,21 +614,23 @@ void test_resize_front_copy()
     assert_equals(c, c_origi);
   }
 
-  // size < required, constructor throws
+  // size < required, copy throws, but later
   if (! std::is_nothrow_copy_constructible<T>::value)
   {
-    Devector d = getRange<Devector, T>(5);
-    std::vector<T> d_origi = getRange<std::vector<T>, T>(5);
-    test_elem_throw::on_copy_after(3);
+    Devector c = getRange<Devector, T>(5);
+    std::vector<T> c_origi = getRange<std::vector<T>, T>(5);
+    auto origi_begin = c.begin();
+    test_elem_throw::on_copy_after(7);
 
     try
     {
-      d.resize_front(256, T(404));
+      c.resize_front(256, T(404));
       BOOST_ASSERT(false);
     }
     catch (...) {}
 
-    assert_equals(d, d_origi);
+    assert_equals(c, c_origi);
+    BOOST_ASSERT(origi_begin == c.begin());
   }
 
   // size >= required
@@ -678,31 +674,24 @@ void test_resize_back()
     assert_equals(b, {1, 2, 3, 4, 5, 0, 0, 0});
   }
 
-  // TODO resize_back violates guarantee, fix bug
-  // size < required, copy or move throws
-//  if (! std::is_nothrow_copy_constructible<T>::value)
-//  {
-//    Devector c = getRange<Devector, T>(5);
-//    std::vector<T> c_origi = getRange<std::vector<T>, T>(5);
-//    test_elem_throw::on_copy_after(3);
-//    test_elem_throw::on_move_after(3);
-//
-//    try
-//    {
-//      c.resize_back(256);
-//      BOOST_ASSERT(false);
-//    }
-//    catch (...) {}
-//
-//    test_elem_throw::do_not_throw();
-//    assert_equals(c, c_origi);
-//  }
+  // size < required, move would throw
+  if (! std::is_nothrow_move_constructible<T>::value && std::is_copy_constructible<T>::value)
+  {
+    Devector c = getRange<Devector, T>(5);
+    test_elem_throw::on_move_after(3);
+
+    c.resize_back(8); // shouldn't use the throwing move
+
+    test_elem_throw::do_not_throw();
+    assert_equals(c, {1, 2, 3, 4, 5, 0, 0, 0});
+  }
 
   // size < required, constructor throws
   if (! std::is_nothrow_constructible<T>::value)
   {
     Devector d = getRange<Devector, T>(5);
     std::vector<T> d_origi = getRange<std::vector<T>, T>(5);
+    auto origi_begin = d.begin();
     test_elem_throw::on_ctor_after(3);
 
     try
@@ -713,6 +702,7 @@ void test_resize_back()
     catch (...) {}
 
     assert_equals(d, d_origi);
+    BOOST_ASSERT(origi_begin == d.begin());
   }
 
   // size >= required
@@ -756,7 +746,7 @@ void test_resize_back_copy()
     assert_equals(b, {1, 2, 3, 4, 5, 9, 9, 9});
   }
 
-  // size < required, copy or move throws
+  // size < required, copy throws
   if (! std::is_nothrow_copy_constructible<T>::value)
   {
     Devector c = getRange<Devector, T>(5);
@@ -773,21 +763,42 @@ void test_resize_back_copy()
     assert_equals(c, c_origi);
   }
 
-  // size < required, constructor throws
+  // size < required, copy throws, but later
   if (! std::is_nothrow_copy_constructible<T>::value)
   {
-    Devector d = getRange<Devector, T>(5);
-    std::vector<T> d_origi = getRange<std::vector<T>, T>(5);
-    test_elem_throw::on_copy_after(3);
+    Devector c = getRange<Devector, T>(5);
+    std::vector<T> c_origi = getRange<std::vector<T>, T>(5);
+    auto origi_begin = c.begin();
+    test_elem_throw::on_copy_after(7);
 
     try
     {
-      d.resize_back(256, T(404));
+      c.resize_back(256, T(404));
       BOOST_ASSERT(false);
     }
     catch (...) {}
 
-    assert_equals(d, d_origi);
+    assert_equals(c, c_origi);
+    BOOST_ASSERT(origi_begin == c.begin());
+  }
+
+  // size < required, copy throws
+  if (! std::is_nothrow_copy_constructible<T>::value)
+  {
+    Devector c = getRange<Devector, T>(5);
+    std::vector<T> c_origi = getRange<std::vector<T>, T>(5);
+    auto origi_begin = c.begin();
+    test_elem_throw::on_copy_after(3);
+
+    try
+    {
+      c.resize_back(256, T(404));
+      BOOST_ASSERT(false);
+    }
+    catch (...) {}
+
+    assert_equals(c, c_origi);
+    BOOST_ASSERT(origi_begin == c.begin());
   }
 
   // size >= required
