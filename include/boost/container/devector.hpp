@@ -566,7 +566,24 @@ public:
     BOOST_ASSERT(invariants_ok());
   }
 
-//  void push_back(T&& x);
+  void push_back(T&& x)
+  {
+    if (_back_index >= _storage._capacity)
+    {
+      size_type new_capacity = calculate_new_capacity(_storage._capacity + 1);
+      reallocate_at(new_capacity, _front_index);
+    }
+
+    std::allocator_traits<Allocator>::construct(
+      get_allocator_ref(),
+      _buffer + _back_index,
+      std::forward<T>(x)
+    );
+
+    ++_back_index;
+
+    BOOST_ASSERT(invariants_ok());
+  }
 
   void pop_back()
   {
@@ -849,7 +866,7 @@ private:
   }
 
   template <typename... Args>
-  void construct_n(pointer buffer, size_type n, Args... args)
+  void construct_n(pointer buffer, size_type n, Args&&... args)
   {
     construction_guard ctr_guard(buffer, get_allocator_ref(), 0u);
 
