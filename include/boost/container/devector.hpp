@@ -560,39 +560,45 @@ public:
   }
 
   template <class... Args>
-  void emplace_back(Args&&... args);
+  void emplace_back(Args&&... args)
+  {
+    if (_back_index < _storage._capacity) // fast path
+    {
+      std::allocator_traits<Allocator>::construct(
+        get_allocator_ref(), _buffer + _back_index,
+        std::forward<Args>(args)...
+      );
+      ++_back_index;
+    }
+    else
+    {
+      emplace_back_slow_path(std::forward<Args>(args)...);
+    }
+
+    BOOST_ASSERT(invariants_ok());
+  }
 
   void push_back(const T& x)
   {
-    if (_back_index >= _storage._capacity)
+    if (_back_index < _storage._capacity) // fast path
     {
-      size_type new_capacity = calculate_new_capacity(_storage._capacity + 1);
-      reallocate_at(new_capacity, _front_index);
+      std::allocator_traits<Allocator>::construct(
+        get_allocator_ref(), _buffer + _back_index,
+        x
+      );
+      ++_back_index;
     }
-
-    std::allocator_traits<Allocator>::construct(get_allocator_ref(), _buffer + _back_index, x);
-    ++_back_index;
+    else
+    {
+      emplace_back_slow_path(x);
+    }
 
     BOOST_ASSERT(invariants_ok());
   }
 
   void push_back(T&& x)
   {
-    if (_back_index >= _storage._capacity)
-    {
-      size_type new_capacity = calculate_new_capacity(_storage._capacity + 1);
-      reallocate_at(new_capacity, _front_index);
-    }
-
-    std::allocator_traits<Allocator>::construct(
-      get_allocator_ref(),
-      _buffer + _back_index,
-      std::forward<T>(x)
-    );
-
-    ++_back_index;
-
-    BOOST_ASSERT(invariants_ok());
+    emplace_back(std::move(x));
   }
 
   void pop_back()
@@ -840,6 +846,37 @@ private:
 
     _back_index = new_old_elem_index + _back_index - _front_index;
     _front_index = new_old_elem_index - 1;
+  }
+
+  template <typename... Args>
+  void emplace_back_slow_path(Args&&... args)
+  {
+    BOOST_ASSERT(_back_index == _storage._capacity);
+
+    size_type new_capacity = calculate_new_capacity(_storage._capacity + 1);
+    pointer new_buffer = allocate(new_capacity);
+
+    allocation_guard new_buffer_guard(new_buffer, get_allocator_ref(), new_capacity);
+
+    // emplace new element
+    std::allocator_traits<Allocator>::construct(
+      get_allocator_ref(),
+      new_buffer + _back_index,
+      std::forward<Args>(args)...
+    );
+
+    // protect the new elem
+    construction_guard guard(new_buffer + _back_index, get_allocator_ref(), 1u);
+
+    buffer_move_or_copy(new_buffer + _front_index);
+
+    new_buffer_guard.release();
+    guard.release();
+
+    _buffer = new_buffer;
+    _storage._capacity = new_capacity;
+
+    ++_back_index;
   }
 
   void reallocate_at(size_type new_capacity, size_type buffer_offset)

@@ -1086,9 +1086,115 @@ void test_push_front_rvalue()
 }
 
 // TODO test pop_front
-// TODO test emplace_back
-// TODO test push_back
-// TODO test push_back_rvalue
+
+template <typename Devector, typename T = typename Devector::value_type>
+void test_emplace_back()
+{
+  {
+    Devector a;
+
+    a.emplace_back(1);
+    a.emplace_back(2);
+    a.emplace_back(3);
+
+    std::vector<T> expected = getRange<std::vector<T>, T>(3);
+
+    assert_equals(a, expected);
+  }
+
+  if (! std::is_nothrow_constructible<T>::value)
+  {
+    Devector b = getRange<Devector, T>(4);
+    auto origi_begin = b.begin();
+
+    try
+    {
+      test_elem_throw::on_ctor_after(1);
+      b.emplace_back(404);
+      BOOST_ASSERT(false);
+    }
+    catch (...) {}
+
+    auto new_begin = b.begin();
+
+    BOOST_ASSERT(origi_begin == new_begin);
+    BOOST_ASSERT(b.size() == 4);
+  }
+}
+
+template <typename Devector, typename T = typename Devector::value_type>
+void test_push_back()
+{
+  {
+    std::vector<T> expected = getRange<std::vector<T>, T>(16);
+    Devector a;
+
+    for (std::size_t i = 1; i <= 16; ++i)
+    {
+      T elem(i);
+      a.push_back(elem);
+    }
+
+    assert_equals(a, expected);
+  }
+
+  if (! std::is_nothrow_constructible<T>::value)
+  {
+    Devector b = getRange<Devector, T>(4);
+    auto origi_begin = b.begin();
+
+    try
+    {
+      test_elem_throw::on_ctor_after(1);
+      T elem(404);
+      b.push_back(elem);
+      BOOST_ASSERT(false);
+    }
+    catch (...) {}
+
+    auto new_begin = b.begin();
+
+    BOOST_ASSERT(origi_begin == new_begin);
+    BOOST_ASSERT(b.size() == 4);
+  }
+}
+
+template <typename Devector, typename T = typename Devector::value_type>
+void test_push_back_rvalue()
+{
+  {
+    std::vector<T> expected = getRange<std::vector<T>, T>(16);
+    Devector a;
+
+    for (std::size_t i = 1; i <= 16; ++i)
+    {
+      T elem(i);
+      a.push_back(std::move(elem));
+    }
+
+    assert_equals(a, expected);
+  }
+
+  if (! std::is_nothrow_constructible<T>::value)
+  {
+    Devector b = getRange<Devector, T>(4);
+    auto origi_begin = b.begin();
+
+    try
+    {
+      test_elem_throw::on_ctor_after(1);
+      b.push_back(T(404));
+      BOOST_ASSERT(false);
+    }
+    catch (...) {}
+
+    auto new_begin = b.begin();
+
+    BOOST_ASSERT(origi_begin == new_begin);
+    BOOST_ASSERT(b.size() == 4);
+  }
+}
+
 // TODO test pop_back
 // TODO test emplace
 // TODO test insert
@@ -1104,6 +1210,7 @@ void test_all_copyable(std::true_type /* value_type is copyable */)
   test_resize_front_copy<Devector>();
   test_resize_back_copy<Devector>();
   test_push_front<Devector>();
+  test_push_back<Devector>();
 }
 
 template <typename>
@@ -1144,6 +1251,8 @@ void test_all()
   test_data();
   test_emplace_front<Devector>();
   test_push_front_rvalue<Devector>();
+  test_emplace_back<Devector>();
+  test_push_back_rvalue<Devector>();
 }
 
 int main()
