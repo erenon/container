@@ -532,19 +532,7 @@ public:
 
   void push_front(const T& x)
   {
-    if (_front_index > 0) // fast path
-    {
-      std::allocator_traits<Allocator>::construct(
-        get_allocator_ref(), _buffer + _front_index - 1, x
-      );
-      --_front_index;
-    }
-    else
-    {
-      emplace_front_slow_path(x);
-    }
-
-    BOOST_ASSERT(invariants_ok());
+    emplace_front(x);
   }
 
   void push_front(T&& x)
@@ -580,20 +568,7 @@ public:
 
   void push_back(const T& x)
   {
-    if (_back_index < _storage._capacity) // fast path
-    {
-      std::allocator_traits<Allocator>::construct(
-        get_allocator_ref(), _buffer + _back_index,
-        x
-      );
-      ++_back_index;
-    }
-    else
-    {
-      emplace_back_slow_path(x);
-    }
-
-    BOOST_ASSERT(invariants_ok());
+    emplace_back(x);
   }
 
   void push_back(T&& x)
