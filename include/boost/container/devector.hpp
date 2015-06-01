@@ -110,7 +110,6 @@ public:
      _back_index(SmallBufferPolicy::front_size)
   {}
 
-  // TODO this reserves back only
   explicit devector(size_type n, reserve_only_tag, const Allocator& allocator = Allocator())
     :Allocator(allocator),
      _storage(n),
@@ -136,8 +135,6 @@ public:
 
     for (size_type i = 0; i < n; ++i)
     {
-      // TODO before C++11:
-      //Allocator::construct(_buffer + i, T());
       std::allocator_traits<Allocator>::construct(get_allocator_ref(), _buffer + i);
 
       copy_guard.increment_size(1u);
@@ -326,7 +323,7 @@ public:
   {
     if (sz > size())
     {
-      size_type n = sz - size();
+      const size_type n = sz - size();
 
       if (sz < front_capacity())
       {
@@ -353,7 +350,7 @@ public:
   {
     if (sz > size())
     {
-      size_type n = sz - size();
+      const size_type n = sz - size();
 
       if (sz < front_capacity())
       {
@@ -380,7 +377,7 @@ public:
   {
     if (sz > size())
     {
-      size_type n = sz - size();
+      const size_type n = sz - size();
 
       if (sz < back_capacity())
       {
@@ -407,7 +404,7 @@ public:
   {
     if (sz > size())
     {
-      size_type n = sz - size();
+      const size_type n = sz - size();
 
       if (sz < back_capacity())
       {
@@ -542,6 +539,7 @@ public:
 
   void pop_front()
   {
+    BOOST_ASSERT(! empty());
     std::allocator_traits<Allocator>::destroy(get_allocator_ref(), _buffer + _front_index);
     ++_front_index;
     BOOST_ASSERT(invariants_ok());
@@ -578,6 +576,7 @@ public:
 
   void pop_back()
   {
+    BOOST_ASSERT(! empty());
     --_back_index;
     std::allocator_traits<Allocator>::destroy(get_allocator_ref(), _buffer + _back_index);
     BOOST_ASSERT(invariants_ok());
@@ -660,7 +659,7 @@ private:
     // TODO check for max_size
   }
 
-  void move_or_copy(pointer dst, pointer begin, pointer end)
+  void move_or_copy(pointer dst, pointer begin, const const_pointer end)
   {
     for (; begin != end; ++begin, ++dst)
     {
@@ -672,7 +671,7 @@ private:
     }
   }
 
-  void guarded_move_or_copy(pointer dst, pointer begin, pointer end)
+  void guarded_move_or_copy(pointer dst, pointer begin, const const_pointer end)
   {
     construction_guard copy_guard(dst, get_allocator_ref(), 0u);
 
@@ -681,7 +680,7 @@ private:
     copy_guard.release();
   }
 
-  void guarded_move_or_copy(pointer dst, pointer begin, pointer end, construction_guard& guard)
+  void guarded_move_or_copy(pointer dst, pointer begin, const const_pointer end, construction_guard& guard)
   {
     for (; begin != end; ++begin, ++dst)
     {
@@ -706,49 +705,34 @@ private:
 
   void buffer_move_or_copy(pointer dst, construction_guard& guard)
   {
+    // if trivial copy and default allocator, memcpy
+    if (allocator_traits::is_trivially_copyable)
+    {
+      std::memcpy(dst, data(), size() * sizeof(T));
+    }
     // if noexcept move|copy -> no guard
-    if (
+    else if (
        std::is_nothrow_move_constructible<T>::value
     || std::is_nothrow_copy_constructible<T>::value
     )
     {
-      if (allocator_traits::is_trivially_copyable)
-      {
-        std::memcpy(
-          dst,
-          _buffer + _front_index,
-          size() * sizeof(T)
-        );
-      }
-      else
-      {
-        move_or_copy(
-          dst,
-          _buffer + _front_index,
-          _buffer + _back_index
-        );
-      }
+      move_or_copy(dst, data(), data() + size());
     }
     else // guard needed
     {
-      guarded_move_or_copy(
-        dst,
-        _buffer + _front_index,
-        _buffer + _back_index,
-        guard
-      );
+      guarded_move_or_copy(dst, data(), data() + size(), guard);
     }
   }
 
   template <typename... Args>
   void resize_front_slow_path(size_type sz, size_type n, Args&&... args)
   {
-    size_type new_capacity = calculate_new_capacity(sz + back_free_capacity());
+    const size_type new_capacity = calculate_new_capacity(sz + back_free_capacity());
     pointer new_buffer = allocate(new_capacity);
     allocation_guard new_buffer_guard(new_buffer, get_allocator_ref(), new_capacity);
 
-    size_type new_old_elem_index = new_capacity - size();
-    size_type new_elem_index = new_old_elem_index - n;
+    const size_type new_old_elem_index = new_capacity - size();
+    const size_type new_elem_index = new_old_elem_index - n;
 
     construction_guard guard(new_buffer + new_elem_index, get_allocator_ref(), 0u);
     guarded_construct_n(new_buffer + new_elem_index, n, guard, std::forward<Args>(args)...);
@@ -768,7 +752,7 @@ private:
   template <typename... Args>
   void resize_back_slow_path(size_type sz, size_type n, Args&&... args)
   {
-    size_type new_capacity = calculate_new_capacity(sz + front_free_capacity());
+    const size_type new_capacity = calculate_new_capacity(sz + front_free_capacity());
     pointer new_buffer = allocate(new_capacity);
     allocation_guard new_buffer_guard(new_buffer, get_allocator_ref(), new_capacity);
 
@@ -789,24 +773,26 @@ private:
   template <typename... Args>
   void emplace_front_slow_path(Args&&... args)
   {
-    BOOST_ASSERT(_front_index == 0);
+    BOOST_ASSERT(front_free_capacity() == 0);
 
-    size_type new_capacity = calculate_new_capacity(_storage._capacity + 1);
+    const size_type new_capacity = calculate_new_capacity(_storage._capacity + 1);
     pointer new_buffer = allocate(new_capacity);
 
     allocation_guard new_buffer_guard(new_buffer, get_allocator_ref(), new_capacity);
 
-    size_type new_old_elem_index = new_capacity - _storage._capacity;
+    const size_type new_old_elem_index = new_capacity - _storage._capacity;
+    const size_type new_elem_index = new_old_elem_index - 1;
+    pointer new_elem_pos = new_buffer + new_elem_index;
 
     // emplace new element
     std::allocator_traits<Allocator>::construct(
       get_allocator_ref(),
-      new_buffer + new_old_elem_index - 1,
+      new_elem_pos,
       std::forward<Args>(args)...
     );
 
     construction_guard guard(
-      new_buffer + new_old_elem_index - 1,
+      new_elem_pos,
       get_allocator_ref(),
       1u // protect the new elem
     );
@@ -820,7 +806,7 @@ private:
     _storage._capacity = new_capacity;
 
     _back_index = new_old_elem_index + _back_index - _front_index;
-    _front_index = new_old_elem_index - 1;
+    _front_index = new_elem_index;
   }
 
   template <typename... Args>
@@ -828,7 +814,7 @@ private:
   {
     BOOST_ASSERT(_back_index == _storage._capacity);
 
-    size_type new_capacity = calculate_new_capacity(_storage._capacity + 1);
+    const size_type new_capacity = calculate_new_capacity(_storage._capacity + 1);
     pointer new_buffer = allocate(new_capacity);
 
     allocation_guard new_buffer_guard(new_buffer, get_allocator_ref(), new_capacity);
@@ -926,15 +912,6 @@ private:
       );
 
       ctr_guard.increment_size(1u);
-    }
-  }
-
-  void ensure_free_back()
-  {
-    if (_back_index >= _storage._capacity)
-    {
-      size_type new_capacity = calculate_new_capacity(_storage._capacity + 1);
-      reallocate_at(new_capacity, _front_index);
     }
   }
 

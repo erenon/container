@@ -66,7 +66,7 @@ struct test_elem_base
     _index = new int(index);
   }
 
-  test_elem_base(const test_elem_base& rhs)
+  explicit test_elem_base(const test_elem_base& rhs)
   {
     test_elem_throw::in_copy();
     _index = new int(*rhs._index);
@@ -429,7 +429,7 @@ void test_copy_constructor()
       Devector e(source);
       BOOST_ASSERT(false);
     }
-    catch (...) {}
+    catch (const test_exception&) {}
 
   }
 }
@@ -465,6 +465,12 @@ void test_empty()
   Devector a;
   BOOST_ASSERT(a.empty());
 
+  a.push_front(T(1));
+  BOOST_ASSERT(! a.empty());
+
+  a.pop_back();
+  BOOST_ASSERT(a.empty());
+
   Devector b(16, reserve_only_tag{});
   BOOST_ASSERT(b.empty());
 
@@ -476,6 +482,12 @@ template <typename Devector, typename T = typename Devector::value_type>
 void test_size()
 {
   Devector a;
+  BOOST_ASSERT(a.size() == 0);
+
+  a.push_front(T(1));
+  BOOST_ASSERT(a.size() == 1);
+
+  a.pop_back();
   BOOST_ASSERT(a.size() == 0);
 
   Devector b(16, reserve_only_tag{});
@@ -550,7 +562,7 @@ void test_resize_front()
       d.resize_front(256);
       BOOST_ASSERT(false);
     }
-    catch (...) {}
+    catch (const test_exception&) {}
 
     assert_equals(d, d_origi);
     BOOST_ASSERT(origi_begin == d.begin());
@@ -609,7 +621,7 @@ void test_resize_front_copy()
       c.resize_front(256, T(404));
       BOOST_ASSERT(false);
     }
-    catch (...) {}
+    catch (const test_exception&) {}
 
     assert_equals(c, c_origi);
   }
@@ -627,7 +639,7 @@ void test_resize_front_copy()
       c.resize_front(256, T(404));
       BOOST_ASSERT(false);
     }
-    catch (...) {}
+    catch (const test_exception&) {}
 
     assert_equals(c, c_origi);
     BOOST_ASSERT(origi_begin == c.begin());
@@ -699,7 +711,7 @@ void test_resize_back()
       d.resize_back(256);
       BOOST_ASSERT(false);
     }
-    catch (...) {}
+    catch (const test_exception&) {}
 
     assert_equals(d, d_origi);
     BOOST_ASSERT(origi_begin == d.begin());
@@ -758,7 +770,7 @@ void test_resize_back_copy()
       c.resize_back(256, T(404));
       BOOST_ASSERT(false);
     }
-    catch (...) {}
+    catch (const test_exception&) {}
 
     assert_equals(c, c_origi);
   }
@@ -776,7 +788,7 @@ void test_resize_back_copy()
       c.resize_back(256, T(404));
       BOOST_ASSERT(false);
     }
-    catch (...) {}
+    catch (const test_exception&) {}
 
     assert_equals(c, c_origi);
     BOOST_ASSERT(origi_begin == c.begin());
@@ -795,7 +807,7 @@ void test_resize_back_copy()
       c.resize_back(256, T(404));
       BOOST_ASSERT(false);
     }
-    catch (...) {}
+    catch (const test_exception&) {}
 
     assert_equals(c, c_origi);
     BOOST_ASSERT(origi_begin == c.begin());
@@ -927,7 +939,7 @@ void test_front()
   { // non-const front
     Devector a = getRange<Devector, T>(3);
     BOOST_ASSERT(a.front() == T(1));
-    a.front() = 100;
+    a.front() = T(100);
     BOOST_ASSERT(a.front() == T(100));
   }
 
@@ -1001,7 +1013,7 @@ void test_emplace_front()
       b.emplace_front(404);
       BOOST_ASSERT(false);
     }
-    catch (...) {}
+    catch (const test_exception&) {}
 
     auto new_begin = b.begin();
 
@@ -1027,19 +1039,19 @@ void test_push_front()
     assert_equals(a, expected);
   }
 
-  if (! std::is_nothrow_constructible<T>::value)
+  if (! std::is_nothrow_copy_constructible<T>::value)
   {
     Devector b = getRange<Devector, T>(4);
     auto origi_begin = b.begin();
 
     try
     {
-      test_elem_throw::on_ctor_after(1);
       T elem(404);
+      test_elem_throw::on_copy_after(1);
       b.push_front(elem);
       BOOST_ASSERT(false);
     }
-    catch (...) {}
+    catch (const test_exception&) {}
 
     auto new_begin = b.begin();
 
@@ -1065,18 +1077,18 @@ void test_push_front_rvalue()
     assert_equals(a, expected);
   }
 
-  if (! std::is_nothrow_constructible<T>::value)
+  if (! std::is_nothrow_move_constructible<T>::value)
   {
     Devector b = getRange<Devector, T>(4);
     auto origi_begin = b.begin();
 
     try
     {
-      test_elem_throw::on_ctor_after(1);
+      test_elem_throw::on_move_after(1);
       b.push_front(T(404));
       BOOST_ASSERT(false);
     }
-    catch (...) {}
+    catch (const test_exception&) {}
 
     auto new_begin = b.begin();
 
@@ -1113,7 +1125,7 @@ void test_emplace_back()
       b.emplace_back(404);
       BOOST_ASSERT(false);
     }
-    catch (...) {}
+    catch (const test_exception&) {}
 
     auto new_begin = b.begin();
 
@@ -1138,19 +1150,19 @@ void test_push_back()
     assert_equals(a, expected);
   }
 
-  if (! std::is_nothrow_constructible<T>::value)
+  if (! std::is_nothrow_copy_constructible<T>::value)
   {
     Devector b = getRange<Devector, T>(4);
     auto origi_begin = b.begin();
 
     try
     {
-      test_elem_throw::on_ctor_after(1);
       T elem(404);
+      test_elem_throw::on_copy_after(1);
       b.push_back(elem);
       BOOST_ASSERT(false);
     }
-    catch (...) {}
+    catch (const test_exception&) {}
 
     auto new_begin = b.begin();
 
@@ -1175,18 +1187,18 @@ void test_push_back_rvalue()
     assert_equals(a, expected);
   }
 
-  if (! std::is_nothrow_constructible<T>::value)
+  if (! std::is_nothrow_move_constructible<T>::value)
   {
     Devector b = getRange<Devector, T>(4);
     auto origi_begin = b.begin();
 
     try
     {
-      test_elem_throw::on_ctor_after(1);
+      test_elem_throw::on_move_after(1);
       b.push_back(T(404));
       BOOST_ASSERT(false);
     }
-    catch (...) {}
+    catch (const test_exception&) {}
 
     auto new_begin = b.begin();
 
