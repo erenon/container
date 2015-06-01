@@ -722,6 +722,9 @@ private:
     {
       guarded_move_or_copy(dst, data(), data() + size(), guard);
     }
+
+    destroy_elements(data(), data() + size());
+    deallocate_buffer();
   }
 
   template <typename... Args>

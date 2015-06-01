@@ -58,18 +58,21 @@ struct test_elem_base
   {
     test_elem_throw::in_constructor();
     _index = new int(0);
+    ++_live_count;
   }
 
   test_elem_base(int index)
   {
     test_elem_throw::in_constructor();
     _index = new int(index);
+    ++_live_count;
   }
 
   explicit test_elem_base(const test_elem_base& rhs)
   {
     test_elem_throw::in_copy();
     _index = new int(*rhs._index);
+    ++_live_count;
   }
 
   test_elem_base(test_elem_base&& rhs)
@@ -77,6 +80,7 @@ struct test_elem_base
     test_elem_throw::in_move();
     _index = rhs._index;
     rhs._index = nullptr;
+    ++_live_count;
   }
 
   void operator=(const test_elem_base& rhs)
@@ -97,6 +101,7 @@ struct test_elem_base
   virtual ~test_elem_base()
   {
     if (_index) { delete _index; }
+    --_live_count;
   }
 
   friend bool operator==(const test_elem_base& a, const test_elem_base& b)
@@ -111,9 +116,18 @@ struct test_elem_base
     return out;
   }
 
+  static bool no_living_elem()
+  {
+    return _live_count == 0;
+  }
+
 private:
   int* _index;
+
+  static int _live_count;
 };
+
+int test_elem_base::_live_count = 0;
 
 struct regular_elem : test_elem_base
 {
@@ -1339,6 +1353,8 @@ int main()
   test_all<small_devector_nodef>();
   test_all<fsmall_devector_nodef>();
   test_all<bsmall_devector_nodef>();
+
+  BOOST_ASSERT(test_elem_base::no_living_elem());
 
   return 0;
 }
