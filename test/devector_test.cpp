@@ -892,7 +892,72 @@ void test_reserve_back()
   b.reserve_back(16);
 }
 
-// TODO test_shrink_to_fit
+template <typename Devector>
+void test_shrink_to_fit_always()
+{
+  Devector a;
+  a.reserve(100);
+
+  a.push_back(1);
+  a.push_back(2);
+  a.push_back(3);
+
+  a.shrink_to_fit();
+
+  std::vector<unsigned> expected{1, 2, 3};
+  assert_equals(a, expected);
+
+  unsigned sb_size = small_buffer_size<Devector>::value;
+  BOOST_ASSERT(a.capacity() == (std::max)(sb_size, 3u));
+}
+
+template <typename Devector>
+void test_shrink_to_fit_never()
+{
+  Devector a;
+  a.reserve(100);
+
+  a.push_back(1);
+  a.push_back(2);
+  a.push_back(3);
+
+  a.shrink_to_fit();
+
+  std::vector<unsigned> expected{1, 2, 3};
+  assert_equals(a, expected);
+  BOOST_ASSERT(a.capacity() == 100);
+}
+
+void test_shrink_to_fit()
+{
+  struct always_shrink : public devector_default_growth_policy
+  {
+    static bool should_shrink(unsigned, unsigned, unsigned)
+    {
+      return true;
+    }
+  };
+
+  struct never_shrink : public devector_default_growth_policy
+  {
+    static bool should_shrink(unsigned, unsigned, unsigned)
+    {
+      return false;
+    }
+  };
+
+  using devector_u_shr       = devector<unsigned, std::allocator<unsigned>, devector_small_buffer_policy<0, 0>, always_shrink>;
+  using small_devector_u_shr = devector<unsigned, std::allocator<unsigned>, devector_small_buffer_policy<0, 3>, always_shrink>;
+
+  test_shrink_to_fit_always<devector_u_shr>();
+  test_shrink_to_fit_always<small_devector_u_shr>();
+
+  using devector_u           = devector<unsigned, std::allocator<unsigned>, devector_small_buffer_policy<0, 0>, never_shrink>;
+  using small_devector_u     = devector<unsigned, std::allocator<unsigned>, devector_small_buffer_policy<0, 3>, never_shrink>;
+
+  test_shrink_to_fit_never<devector_u>();
+  test_shrink_to_fit_never<small_devector_u>();
+}
 
 template <typename Devector, typename T = typename Devector::value_type>
 void test_index_operator()
@@ -1268,8 +1333,9 @@ void test_all()
 
   test_capacity<Devector>();
 
-  test_reserve_back<Devector>();
   test_reserve_front<Devector>();
+  test_reserve_back<Devector>();
+  test_shrink_to_fit();
   test_index_operator<Devector>();
   test_at<Devector>();
   test_front<Devector>();

@@ -43,6 +43,13 @@ struct devector_default_growth_policy
     //          the buffer locally.
     return (old_capacity) ? old_capacity * 4u : 10;
   }
+
+  template <class SizeType>
+  static bool should_shrink(SizeType size, SizeType capacity, SizeType small_buffer_size)
+  {
+    (void)capacity;
+    return size <= small_buffer_size;
+  }
 };
 
 template <typename Allocator>
@@ -450,7 +457,30 @@ public:
     BOOST_ASSERT(invariants_ok());
   }
 
-  void shrink_to_fit();
+  void shrink_to_fit()
+  {
+    if (
+       GrowthPolicy::should_shrink(size(), capacity(), storage_t::small_buffer_size) == false
+    || is_small()
+    )
+    {
+      return;
+    }
+
+    if (size() <= storage_t::small_buffer_size)
+    {
+      buffer_move_or_copy(_storage.small_buffer_address());
+
+      _buffer = _storage.small_buffer_address();
+      _storage._capacity = storage_t::small_buffer_size;
+      _back_index = size();
+      _front_index = 0;
+    }
+    else
+    {
+      reallocate_at(size(), 0);
+    }
+  }
 
   // element access:
   reference operator[](size_type n)
