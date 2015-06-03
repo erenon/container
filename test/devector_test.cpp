@@ -1176,7 +1176,38 @@ void test_push_front_rvalue()
   }
 }
 
-// TODO test pop_front
+template <typename Devector, typename T = typename Devector::value_type>
+void test_pop_front()
+{
+  {
+    Devector a;
+    a.emplace_front(1);
+    a.pop_front();
+    BOOST_ASSERT(a.empty());
+  }
+
+  {
+    Devector b;
+
+    b.emplace_back(2);
+    b.pop_front();
+    BOOST_ASSERT(b.empty());
+
+    b.emplace_front(3);
+    b.pop_front();
+    BOOST_ASSERT(b.empty());
+  }
+
+  {
+    Devector c = getRange<Devector, T>(20);
+    for (int i = 0; i < 20; ++i)
+    {
+      BOOST_ASSERT(!c.empty());
+      c.pop_front();
+    }
+    BOOST_ASSERT(c.empty());
+  }
+}
 
 template <typename Devector, typename T = typename Devector::value_type>
 void test_emplace_back()
@@ -1286,7 +1317,39 @@ void test_push_back_rvalue()
   }
 }
 
-// TODO test pop_back
+template <typename Devector, typename T = typename Devector::value_type>
+void test_pop_back()
+{
+  {
+    Devector a;
+    a.emplace_back(1);
+    a.pop_back();
+    BOOST_ASSERT(a.empty());
+  }
+
+  {
+    Devector b;
+
+    b.emplace_front(2);
+    b.pop_back();
+    BOOST_ASSERT(b.empty());
+
+    b.emplace_back(3);
+    b.pop_back();
+    BOOST_ASSERT(b.empty());
+  }
+
+  {
+    Devector c = getRange<Devector, T>(20);
+    for (int i = 0; i < 20; ++i)
+    {
+      BOOST_ASSERT(!c.empty());
+      c.pop_back();
+    }
+    BOOST_ASSERT(c.empty());
+  }
+}
+
 // TODO test emplace
 // TODO test insert
 // TODO test erase
@@ -1343,8 +1406,10 @@ void test_all()
   test_data();
   test_emplace_front<Devector>();
   test_push_front_rvalue<Devector>();
+  test_pop_front<Devector>();
   test_emplace_back<Devector>();
   test_push_back_rvalue<Devector>();
+  test_pop_back<Devector>();
 }
 
 int main()
