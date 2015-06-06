@@ -1350,9 +1350,101 @@ void test_pop_back()
   }
 }
 
-// TODO test emplace
+template <typename Devector, typename T = typename Devector::value_type>
+void test_emplace()
+{
+  // TODO test returned iterator
+  {
+    Devector a = getRange<Devector, T>(16);
+    auto it = a.emplace(a.begin(), 123);
+    assert_equals(a, {123, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16});
+    BOOST_ASSERT(*it == T(123));
+  }
+
+  {
+    Devector b = getRange<Devector, T>(16);
+    auto it = b.emplace(b.end(), 123);
+    assert_equals(b, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 123});
+    BOOST_ASSERT(*it == T(123));
+  }
+
+  {
+    Devector c = getRange<Devector, T>(16);
+    c.pop_front();
+    auto it = c.emplace(c.begin(), 123);
+    assert_equals(c, {123, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16});
+    BOOST_ASSERT(*it == T(123));
+  }
+
+  {
+    Devector d = getRange<Devector, T>(16);
+    d.pop_back();
+    auto it = d.emplace(d.end(), 123);
+    assert_equals(d, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 123});
+    BOOST_ASSERT(*it == T(123));
+  }
+
+  {
+    Devector e = getRange<Devector, T>(16);
+    auto it = e.emplace(e.begin() + 5, 123);
+    assert_equals(e, {1, 2, 3, 4, 5, 123, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16});
+    BOOST_ASSERT(*it == T(123));
+  }
+
+  {
+    Devector f = getRange<Devector, T>(16);
+    f.pop_front();
+    f.pop_back();
+    auto valid = f.begin() + 1;
+    auto it = f.emplace(f.begin() + 1, 123);
+    assert_equals(f, {2, 123, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
+    BOOST_ASSERT(*it == T(123));
+    BOOST_ASSERT(*valid == T(3));
+  }
+
+  {
+    Devector g = getRange<Devector, T>(16);
+    g.pop_front();
+    g.pop_back();
+    auto valid = g.end() - 2;
+    auto it = g.emplace(g.end() - 1, 123);
+    assert_equals(g, {2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 123, 15});
+    BOOST_ASSERT(*it == T(123));
+    BOOST_ASSERT(*valid == T(14));
+  }
+
+  {
+    Devector h = getRange<Devector, T>(16);
+    h.pop_front();
+    h.pop_back();
+    auto valid = h.begin() + 7;
+    auto it = h.emplace(h.begin() + 7, 123);
+    assert_equals(h, {2, 3, 4, 5, 6, 7, 8, 123, 9, 10, 11, 12, 13, 14, 15});
+    BOOST_ASSERT(*it == T(123));
+    BOOST_ASSERT(*valid == T(9));
+  }
+
+  {
+    Devector i;
+    i.emplace(i.begin(), 1);
+    i.emplace(i.end(), 10);
+    for (int j = 2; j < 10; ++j)
+    {
+      i.emplace(i.begin() + (j-1), j);
+    }
+    assert_equals(i, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+  }
+
+  // TODO test exceptions
+}
+
 // TODO test insert
+// TODO test insert rvalue
+// TODO test insert n
+// TODO test insert range
+// TODO test insert init list
 // TODO test erase
+// TODO test erase range
 // TODO test swap
 // TODO test clear
 // TODO test comparison operators
@@ -1410,6 +1502,7 @@ void test_all()
   test_emplace_back<Devector>();
   test_push_back_rvalue<Devector>();
   test_pop_back<Devector>();
+  test_emplace<Devector>();
 }
 
 int main()

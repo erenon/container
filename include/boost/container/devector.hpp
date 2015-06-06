@@ -7,6 +7,7 @@
 #include <cstring> // memcpy
 #include <type_traits>
 #include <limits>
+#include <algorithm>
 
 #include <boost/assert.hpp>
 #include <boost/aligned_storage.hpp>
@@ -612,8 +613,32 @@ public:
     BOOST_ASSERT(invariants_ok());
   }
 
-  template <class... Args> iterator
-  emplace(const_iterator position, Args&&... args);
+  template <class... Args>
+  iterator emplace(const_iterator position, Args&&... args)
+  {
+    if (position == end() && back_free_capacity() > 0) // fast path
+    {
+      std::allocator_traits<Allocator>::construct(
+        get_allocator_ref(), _buffer + _back_index, std::forward<Args>(args)...
+      );
+      ++_back_index;
+      return end() - 1;
+    }
+    else if (position == begin() && front_free_capacity() > 0) // secondary fast path
+    {
+      std::allocator_traits<Allocator>::construct(
+        get_allocator_ref(), _buffer + _front_index - 1, std::forward<Args>(args)...
+      );
+      --_front_index;
+      return begin();
+    }
+    else
+    {
+      return emplace_slow_path(position, std::forward<Args>(args)...);
+    }
+
+    BOOST_ASSERT(invariants_ok());
+  }
 
   iterator insert(const_iterator position, const T& x);
   iterator insert(const_iterator position, T&& x);
@@ -735,10 +760,18 @@ private:
 
   void buffer_move_or_copy(pointer dst, construction_guard& guard)
   {
+    range_move_or_copy(begin(), end(), dst, guard);
+
+    destroy_elements(data(), data() + size());
+    deallocate_buffer();
+  }
+
+  void range_move_or_copy(pointer begin, pointer end, pointer dst, construction_guard& guard)
+  {
     // if trivial copy and default allocator, memcpy
     if (allocator_traits::is_trivially_copyable)
     {
-      std::memcpy(dst, data(), size() * sizeof(T));
+      std::memcpy(dst, begin, (end - begin) * sizeof(T));
     }
     // if noexcept move|copy -> no guard
     else if (
@@ -746,15 +779,12 @@ private:
     || std::is_nothrow_copy_constructible<T>::value
     )
     {
-      move_or_copy(dst, data(), data() + size());
+      move_or_copy(dst, begin, end);
     }
     else // guard needed
     {
-      guarded_move_or_copy(dst, data(), data() + size(), guard);
+      guarded_move_or_copy(dst, begin, end, guard);
     }
-
-    destroy_elements(data(), data() + size());
-    deallocate_buffer();
   }
 
   template <typename... Args>
@@ -871,6 +901,153 @@ private:
     _storage._capacity = new_capacity;
 
     ++_back_index;
+  }
+
+  template <typename... Args>
+  iterator emplace_slow_path(const_iterator cposition, Args&&... args)
+  {
+    BOOST_ASSERT(cposition >= begin());
+    BOOST_ASSERT(cposition <= end());
+
+    size_type move_front = cposition - begin();
+    size_type move_back = end() - cposition;
+
+    size_type new_elem_index = cposition - begin(); // relative to _front_index
+    pointer position = begin() + new_elem_index;
+
+    // prefer moving front to access memory forward
+
+    if (! back_free_capacity() || (front_free_capacity() && move_front <= move_back))
+    {
+      // move things closer to the front a bit
+      if (front_free_capacity())
+      {
+        // construct at front - 1 from front (no guard)
+        std::allocator_traits<Allocator>::construct(
+          get_allocator_ref(), begin() - 1, std::move(*begin())
+        );
+
+        // move front half left
+        std::move(begin() + 1, position, begin());
+        --_front_index;
+
+        // move assign new elem before pos
+        --position;
+        *position = T(std::forward<Args>(args)...);
+
+        return position;
+      }
+      else
+      {
+        // reallocate
+        size_type new_capacity = calculate_new_capacity(capacity() + 1);
+        pointer new_buffer = allocate(new_capacity);
+
+        // guard allocation
+        allocation_guard new_buffer_guard(new_buffer, get_allocator_ref(), new_capacity);
+
+        size_type new_front_index = new_capacity - back_free_capacity() - size() - 1;
+        iterator new_begin = new_buffer + new_front_index;
+        iterator new_position = new_begin + new_elem_index;
+
+        // construct new element and guard it
+        std::allocator_traits<Allocator>::construct(
+          get_allocator_ref(), new_position, std::forward<Args>(args)...
+        );
+
+        construction_guard new_elem_guard(new_position, get_allocator_ref(), 1u);
+
+        // move front-pos (possibly guarded)
+        construction_guard first_half_guard(new_begin, get_allocator_ref(), 0);
+        range_move_or_copy(begin(), position, new_begin, first_half_guard);
+
+        // move pos+1-end (possibly guarded) // TODO reuse new_elem_guard
+        construction_guard second_half_guard(new_position + 1, get_allocator_ref(), 0);
+        range_move_or_copy(position, end(), new_position + 1, second_half_guard);
+
+        // cleanup
+        destroy_elements(begin(), end());
+        deallocate_buffer();
+
+        // release alloc and other guards
+        second_half_guard.release();
+        first_half_guard.release();
+        new_elem_guard.release();
+        new_buffer_guard.release();
+
+        // rebind members
+        _storage._capacity = new_capacity;
+        _buffer = new_buffer;
+        _back_index = new_front_index + size() + 1;
+        _front_index = new_front_index;
+
+        return new_position;
+      }
+    }
+    else
+    {
+      // move things closer to the end a bit
+      if (back_free_capacity())
+      {
+        // construct at back + 1 from back (no guard)
+        std::allocator_traits<Allocator>::construct(
+          get_allocator_ref(), end(), std::move(back())
+        );
+
+        // move back half right
+        std::move_backward(position, end() - 1, end());
+        ++_back_index;
+
+        // move assign new elem to pos
+        *position = T(std::forward<Args>(args)...);
+
+        return position;
+      }
+      else
+      {
+        // reallocate
+        size_type new_capacity = calculate_new_capacity(capacity() + 1);
+        pointer new_buffer = allocate(new_capacity);
+
+        // guard allocation
+        allocation_guard new_buffer_guard(new_buffer, get_allocator_ref(), new_capacity);
+
+        iterator new_begin = new_buffer + _front_index;
+        iterator new_position = new_begin + new_elem_index;
+
+        // construct new element (and guard it)
+        std::allocator_traits<Allocator>::construct(
+          get_allocator_ref(), new_position, std::forward<Args>(args)...
+        );
+
+        construction_guard new_elem_guard(new_position, get_allocator_ref(), 1u);
+
+        // move front-pos (possibly guarded)
+        construction_guard first_half_guard(new_begin, get_allocator_ref(), 0);
+        range_move_or_copy(begin(), position, new_begin, first_half_guard);
+
+        // move pos+1-end (possibly guarded)
+        construction_guard second_half_guard(new_position + 1, get_allocator_ref(), 0);
+        range_move_or_copy(position, end(), new_position + 1, second_half_guard);
+
+        // cleanup
+        destroy_elements(begin(), end());
+        deallocate_buffer();
+
+        // release alloc and other guards
+        second_half_guard.release();
+        first_half_guard.release();
+        new_elem_guard.release();
+        new_buffer_guard.release();
+
+        // rebind members
+        _storage._capacity = new_capacity;
+        _buffer = new_buffer;
+        ++_back_index;
+
+        return new_position;
+      }
+    }
   }
 
   void reallocate_at(size_type new_capacity, size_type buffer_offset)
