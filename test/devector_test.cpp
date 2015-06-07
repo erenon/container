@@ -680,6 +680,14 @@ void test_resize_front_copy()
     e.resize_front(6, T(9));
     assert_equals(e, {1, 2, 3, 4, 5, 6});
   }
+
+  // size < required, tmp is already inserted
+  {
+    Devector f = getRange<Devector, T>(8);
+    const T& tmp = *(f.begin() + 1);
+    f.resize_front(16, tmp);
+    assert_equals(f, {2,2,2,2,2,2,2,2,1,2,3,4,5,6,7,8});
+  }
 }
 
 template <typename Devector, typename T = typename Devector::value_type>
@@ -847,6 +855,14 @@ void test_resize_back_copy()
     Devector e = getRange<Devector, T>(6);
     e.resize_back(6, T(9));
     assert_equals(e, {1, 2, 3, 4, 5, 6});
+  }
+
+  // size < required, tmp is already inserted
+  {
+    Devector f = getRange<Devector, T>(8);
+    const T& tmp = *(f.begin() + 1);
+    f.resize_back(16, tmp);
+    assert_equals(f, {1,2,3,4,5,6,7,8,2,2,2,2,2,2,2,2});
   }
 }
 
@@ -1137,6 +1153,14 @@ void test_push_front()
     BOOST_ASSERT(origi_begin == new_begin);
     BOOST_ASSERT(b.size() == 4);
   }
+
+  // test when tmp is already inserted
+  {
+    Devector c = getRange<Devector, T>(4);
+    const T& tmp = *(c.begin() + 1);
+    c.push_front(tmp);
+    assert_equals(c, {2, 1, 2, 3, 4});
+  }
 }
 
 template <typename Devector, typename T = typename Devector::value_type>
@@ -1278,6 +1302,14 @@ void test_push_back()
 
     BOOST_ASSERT(origi_begin == new_begin);
     BOOST_ASSERT(b.size() == 4);
+  }
+
+  // test when tmp is already inserted
+  {
+    Devector c = getRange<Devector, T>(4);
+    const T& tmp = *(c.begin() + 1);
+    c.push_back(tmp);
+    assert_equals(c, {1, 2, 3, 4, 2});
   }
 }
 
@@ -1580,6 +1612,23 @@ void test_insert()
 
     assert_equals(j, {1, 2, 3, 4});
     BOOST_ASSERT(origi_begin == j.begin());
+  }
+
+  // test when tmp is already inserted and there's free capacity
+  {
+    Devector c = getRange<Devector, T>(6);
+    c.pop_back();
+    const T& tmp = *(c.begin() + 2);
+    c.insert(c.begin() + 1, tmp);
+    assert_equals(c, {1, 3, 2, 3, 4, 5});
+  }
+
+  // test when tmp is already inserted and maybe there's no free capacity
+  {
+    Devector c = getRange<Devector, T>(6);
+    const T& tmp = *(c.begin() + 2);
+    c.insert(c.begin() + 1, tmp);
+    assert_equals(c, {1, 3, 2, 3, 4, 5, 6});
   }
 }
 

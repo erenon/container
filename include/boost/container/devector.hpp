@@ -173,6 +173,7 @@ public:
   }
 
   // TODO use Allocator select_on_container_copy_construction in copy ctr
+  // TODO take care of self assignment
 
   devector(const devector& x)
     :devector(x.begin(), x.end())
@@ -845,7 +846,7 @@ private:
 
       // move things closer to the front a bit
 
-      // constructor might throw, do it first
+      // avoid invalidating any reference in args later
       T tmp(std::forward<Args>(args)...);
 
       // construct at front - 1 from front (no guard)
@@ -867,7 +868,7 @@ private:
 
       // move things closer to the end a bit
 
-      // constructor might throw, do it first
+      // avoid invalidating any reference in args later
       T tmp(std::forward<Args>(args)...);
 
       // construct at back + 1 from back (no guard)
