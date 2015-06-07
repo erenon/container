@@ -542,7 +542,7 @@ public:
   template <class... Args>
   void emplace_front(Args&&... args)
   {
-    if (_front_index > 0) // fast path
+    if (front_free_capacity()) // fast path
     {
       std::allocator_traits<Allocator>::construct(
         get_allocator_ref(), _buffer + _front_index - 1,
@@ -552,7 +552,7 @@ public:
     }
     else
     {
-      emplace_front_slow_path(std::forward<Args>(args)...);
+      emplace_reallocating_slow_path(true, 0, std::forward<Args>(args)...);
     }
 
     BOOST_ASSERT(invariants_ok());
@@ -579,7 +579,7 @@ public:
   template <class... Args>
   void emplace_back(Args&&... args)
   {
-    if (_back_index < _storage._capacity) // fast path
+    if (back_free_capacity()) // fast path
     {
       std::allocator_traits<Allocator>::construct(
         get_allocator_ref(), _buffer + _back_index,
@@ -589,7 +589,7 @@ public:
     }
     else
     {
-      emplace_back_slow_path(std::forward<Args>(args)...);
+      emplace_reallocating_slow_path(false, size(), std::forward<Args>(args)...);
     }
 
     BOOST_ASSERT(invariants_ok());
@@ -616,7 +616,10 @@ public:
   template <class... Args>
   iterator emplace(const_iterator position, Args&&... args)
   {
-    if (position == end() && back_free_capacity() > 0) // fast path
+    BOOST_ASSERT(position >= begin());
+    BOOST_ASSERT(position <= end());
+
+    if (position == end() && back_free_capacity()) // fast path
     {
       std::allocator_traits<Allocator>::construct(
         get_allocator_ref(), _buffer + _back_index, std::forward<Args>(args)...
@@ -624,7 +627,7 @@ public:
       ++_back_index;
       return end() - 1;
     }
-    else if (position == begin() && front_free_capacity() > 0) // secondary fast path
+    else if (position == begin() && front_free_capacity()) // secondary fast path
     {
       std::allocator_traits<Allocator>::construct(
         get_allocator_ref(), _buffer + _front_index - 1, std::forward<Args>(args)...
@@ -634,7 +637,8 @@ public:
     }
     else
     {
-      return emplace_slow_path(position, std::forward<Args>(args)...);
+      size_type new_elem_index = position - begin();
+      return emplace_slow_path(new_elem_index, std::forward<Args>(args)...);
     }
 
     BOOST_ASSERT(invariants_ok());
@@ -834,93 +838,22 @@ private:
   }
 
   template <typename... Args>
-  void emplace_front_slow_path(Args&&... args)
+  iterator emplace_slow_path(size_type new_elem_index, Args&&... args)
   {
-    BOOST_ASSERT(front_free_capacity() == 0);
-
-    const size_type new_capacity = calculate_new_capacity(_storage._capacity + 1);
-    pointer new_buffer = allocate(new_capacity);
-
-    allocation_guard new_buffer_guard(new_buffer, get_allocator_ref(), new_capacity);
-
-    const size_type new_old_elem_index = new_capacity - _storage._capacity;
-    const size_type new_elem_index = new_old_elem_index - 1;
-    pointer new_elem_pos = new_buffer + new_elem_index;
-
-    // emplace new element
-    std::allocator_traits<Allocator>::construct(
-      get_allocator_ref(),
-      new_elem_pos,
-      std::forward<Args>(args)...
-    );
-
-    construction_guard guard(
-      new_elem_pos,
-      get_allocator_ref(),
-      1u // protect the new elem
-    );
-
-    buffer_move_or_copy(new_buffer + new_old_elem_index, guard);
-
-    new_buffer_guard.release();
-    guard.release();
-
-    _buffer = new_buffer;
-    _storage._capacity = new_capacity;
-
-    _back_index = new_old_elem_index + _back_index - _front_index;
-    _front_index = new_elem_index;
-  }
-
-  template <typename... Args>
-  void emplace_back_slow_path(Args&&... args)
-  {
-    BOOST_ASSERT(_back_index == _storage._capacity);
-
-    const size_type new_capacity = calculate_new_capacity(_storage._capacity + 1);
-    pointer new_buffer = allocate(new_capacity);
-
-    allocation_guard new_buffer_guard(new_buffer, get_allocator_ref(), new_capacity);
-
-    // emplace new element
-    std::allocator_traits<Allocator>::construct(
-      get_allocator_ref(),
-      new_buffer + _back_index,
-      std::forward<Args>(args)...
-    );
-
-    // protect the new elem
-    construction_guard guard(new_buffer + _back_index, get_allocator_ref(), 1u);
-
-    buffer_move_or_copy(new_buffer + _front_index);
-
-    new_buffer_guard.release();
-    guard.release();
-
-    _buffer = new_buffer;
-    _storage._capacity = new_capacity;
-
-    ++_back_index;
-  }
-
-  template <typename... Args>
-  iterator emplace_slow_path(const_iterator cposition, Args&&... args)
-  {
-    BOOST_ASSERT(cposition >= begin());
-    BOOST_ASSERT(cposition <= end());
-
-    size_type move_front = cposition - begin();
-    size_type move_back = end() - cposition;
-
-    size_type new_elem_index = cposition - begin(); // relative to _front_index
     pointer position = begin() + new_elem_index;
 
     // prefer moving front to access memory forward if there are less elems to move
-    bool prefer_move_front = move_front <= move_back;
+    bool prefer_move_front = 2*new_elem_index <= size();
 
     if (front_free_capacity() && (!back_free_capacity() || prefer_move_front))
     {
+      BOOST_ASSERT(size() >= 1);
+
       // move things closer to the front a bit
+
+      // constructor might throw, do it first
+      T tmp(std::forward<Args>(args)...);
+
       // construct at front - 1 from front (no guard)
       std::allocator_traits<Allocator>::construct(
         get_allocator_ref(), begin() - 1, std::move(*begin())
@@ -932,13 +865,19 @@ private:
 
       // move assign new elem before pos
       --position;
-      *position = T(std::forward<Args>(args)...);
+      *position = std::move(tmp);
 
       return position;
     }
     else if (back_free_capacity())
     {
+      BOOST_ASSERT(size() >= 1);
+
       // move things closer to the end a bit
+
+      // constructor might throw, do it first
+      T tmp(std::forward<Args>(args)...);
+
       // construct at back + 1 from back (no guard)
       std::allocator_traits<Allocator>::construct(
         get_allocator_ref(), end(), std::move(back())
@@ -949,18 +888,18 @@ private:
       ++_back_index;
 
       // move assign new elem to pos
-      *position = T(std::forward<Args>(args)...);
+      *position = std::move(tmp);
 
       return position;
     }
     else
     {
-      return emplace_reallocating_slow_path(new_elem_index, std::forward<Args>(args)...);
+      return emplace_reallocating_slow_path(prefer_move_front, new_elem_index, std::forward<Args>(args)...);
     }
   }
 
   template <typename... Args>
-  pointer emplace_reallocating_slow_path(size_type new_elem_index, Args&&... args)
+  pointer emplace_reallocating_slow_path(bool make_front_free, size_type new_elem_index, Args&&... args)
   {
     // reallocate
     size_type new_capacity = calculate_new_capacity(capacity() + 1);
@@ -969,9 +908,13 @@ private:
     // guard allocation
     allocation_guard new_buffer_guard(new_buffer, get_allocator_ref(), new_capacity);
 
-    iterator new_begin = new_buffer + _front_index;
+    size_type new_front_index = (make_front_free)
+      ? new_capacity - back_free_capacity() - size() - 1
+      : _front_index;
+
+    iterator new_begin = new_buffer + new_front_index;
     iterator new_position = new_begin + new_elem_index;
-    iterator position = begin() + new_elem_index;
+    iterator old_position = begin() + new_elem_index;
 
     // construct new element (and guard it)
     std::allocator_traits<Allocator>::construct(
@@ -982,10 +925,10 @@ private:
 
     // move front-pos (possibly guarded)
     construction_guard first_half_guard(new_begin, get_allocator_ref(), 0);
-    range_move_or_copy(begin(), position, new_begin, first_half_guard);
+    range_move_or_copy(begin(), old_position, new_begin, first_half_guard);
 
     // move pos+1-end (possibly guarded)
-    range_move_or_copy(position, end(), new_position + 1, second_half_guard);
+    range_move_or_copy(old_position, end(), new_position + 1, second_half_guard);
 
     // cleanup
     destroy_elements(begin(), end());
@@ -999,7 +942,8 @@ private:
     // rebind members
     _storage._capacity = new_capacity;
     _buffer = new_buffer;
-    ++_back_index;
+    _back_index = new_front_index + size() + 1;
+    _front_index = new_front_index;
 
     return new_position;
   }

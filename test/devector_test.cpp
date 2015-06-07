@@ -1353,7 +1353,6 @@ void test_pop_back()
 template <typename Devector, typename T = typename Devector::value_type>
 void test_emplace()
 {
-  // TODO test returned iterator
   {
     Devector a = getRange<Devector, T>(16);
     auto it = a.emplace(a.begin(), 123);
@@ -1435,7 +1434,48 @@ void test_emplace()
     assert_equals(i, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
   }
 
-  // TODO test exceptions
+  if (! std::is_nothrow_constructible<T>::value)
+  {
+    Devector j = getRange<Devector, T>(4);
+    auto origi_begin = j.begin();
+
+    try
+    {
+      test_elem_throw::on_ctor_after(1);
+      j.emplace(j.begin() + 2, 404);
+      BOOST_ASSERT(false);
+    }
+    catch (const test_exception&) {}
+
+    assert_equals(j, {1, 2, 3, 4});
+    BOOST_ASSERT(origi_begin == j.begin());
+  }
+
+  // It's not required to pass the following test per C++11 23.3.6.5/1
+  // If an exception is thrown other than by the copy constructor, move constructor,
+  // assignment operator, or move assignment operator of T or by any InputIterator operation
+  // there are no effects. If an exception is thrown by the move constructor of a non-CopyInsertable T,
+  // the effects are unspecified.
+
+//  if (! std::is_nothrow_move_constructible<T>::value && ! std::is_nothrow_copy_constructible<T>::value)
+//  {
+//    Devector k = getRange<Devector, T>(8);
+//    auto origi_begin = k.begin();
+//
+//    try
+//    {
+//      test_elem_throw::on_copy_after(3);
+//      test_elem_throw::on_move_after(3);
+//      k.emplace(k.begin() + 4, 404);
+//      BOOST_ASSERT(false);
+//    }
+//    catch (const test_exception&) {}
+//
+//    test_elem_throw::do_not_throw();
+//
+//    assert_equals(k, {1, 2, 3, 4, 5, 6, 7, 8});
+//    BOOST_ASSERT(origi_begin == k.begin());
+//  }
 }
 
 // TODO test insert
