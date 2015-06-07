@@ -561,6 +561,26 @@ public:
     emplace_front(std::move(x));
   }
 
+  void unsafe_push_front(const T& x)
+  {
+    BOOST_ASSERT(front_free_capacity());
+
+    alloc_construct(_buffer + _front_index - 1, x);
+    --_front_index;
+
+    BOOST_ASSERT(invariants_ok());
+  }
+
+  void unsafe_push_front(T&& x)
+  {
+    BOOST_ASSERT(front_free_capacity());
+
+    alloc_construct(_buffer + _front_index - 1, std::forward<T>(x));
+    --_front_index;
+
+    BOOST_ASSERT(invariants_ok());
+  }
+
   void pop_front()
   {
     BOOST_ASSERT(! empty());
@@ -593,6 +613,26 @@ public:
   void push_back(T&& x)
   {
     emplace_back(std::move(x));
+  }
+
+  void unsafe_push_back(const T& x)
+  {
+    BOOST_ASSERT(back_free_capacity());
+
+    alloc_construct(_buffer + _back_index, x);
+    ++_back_index;
+
+    BOOST_ASSERT(invariants_ok());
+  }
+
+  void unsafe_push_back(T&& x)
+  {
+    BOOST_ASSERT(back_free_capacity());
+
+    alloc_construct(_buffer + _back_index, std::forward<T>(x));
+    ++_back_index;
+
+    BOOST_ASSERT(invariants_ok());
   }
 
   void pop_back()

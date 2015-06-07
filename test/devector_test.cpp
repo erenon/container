@@ -1201,6 +1201,65 @@ void test_push_front_rvalue()
 }
 
 template <typename Devector, typename T = typename Devector::value_type>
+void test_unsafe_push_front()
+{
+  {
+    std::vector<T> expected = getRange<std::vector<T>, T>(16);
+    std::reverse(expected.begin(), expected.end());
+    Devector a;
+    a.reserve_front(16);
+
+    for (std::size_t i = 1; i <= 16; ++i)
+    {
+      T elem(i);
+      a.unsafe_push_front(elem);
+    }
+
+    assert_equals(a, expected);
+  }
+
+  if (! std::is_nothrow_copy_constructible<T>::value)
+  {
+    Devector b = getRange<Devector, T>(4);
+    b.reserve_front(5);
+    auto origi_begin = b.begin();
+
+    try
+    {
+      T elem(404);
+      test_elem_throw::on_copy_after(1);
+      b.unsafe_push_front(elem);
+      BOOST_ASSERT(false);
+    }
+    catch (const test_exception&) {}
+
+    auto new_begin = b.begin();
+
+    BOOST_ASSERT(origi_begin == new_begin);
+    BOOST_ASSERT(b.size() == 4);
+  }
+}
+
+template <typename Devector, typename T = typename Devector::value_type>
+void test_unsafe_push_front_rvalue()
+{
+  {
+    std::vector<T> expected = getRange<std::vector<T>, T>(16);
+    std::reverse(expected.begin(), expected.end());
+    Devector a;
+    a.reserve_front(16);
+
+    for (std::size_t i = 1; i <= 16; ++i)
+    {
+      T elem(i);
+      a.unsafe_push_front(std::move(elem));
+    }
+
+    assert_equals(a, expected);
+  }
+}
+
+template <typename Devector, typename T = typename Devector::value_type>
 void test_pop_front()
 {
   {
@@ -1346,6 +1405,63 @@ void test_push_back_rvalue()
 
     BOOST_ASSERT(origi_begin == new_begin);
     BOOST_ASSERT(b.size() == 4);
+  }
+}
+
+template <typename Devector, typename T = typename Devector::value_type>
+void test_unsafe_push_back()
+{
+  {
+    std::vector<T> expected = getRange<std::vector<T>, T>(16);
+    Devector a;
+    a.reserve(16);
+
+    for (std::size_t i = 1; i <= 16; ++i)
+    {
+      T elem(i);
+      a.unsafe_push_back(elem);
+    }
+
+    assert_equals(a, expected);
+  }
+
+  if (! std::is_nothrow_copy_constructible<T>::value)
+  {
+    Devector b = getRange<Devector, T>(4);
+    b.reserve(5);
+    auto origi_begin = b.begin();
+
+    try
+    {
+      T elem(404);
+      test_elem_throw::on_copy_after(1);
+      b.unsafe_push_back(elem);
+      BOOST_ASSERT(false);
+    }
+    catch (const test_exception&) {}
+
+    auto new_begin = b.begin();
+
+    BOOST_ASSERT(origi_begin == new_begin);
+    BOOST_ASSERT(b.size() == 4);
+  }
+}
+
+template <typename Devector, typename T = typename Devector::value_type>
+void test_unsafe_push_back_rvalue()
+{
+  {
+    std::vector<T> expected = getRange<std::vector<T>, T>(16);
+    Devector a;
+    a.reserve(16);
+
+    for (std::size_t i = 1; i <= 16; ++i)
+    {
+      T elem(i);
+      a.unsafe_push_back(std::move(elem));
+    }
+
+    assert_equals(a, expected);
   }
 }
 
@@ -1750,7 +1866,9 @@ void test_all_copyable(std::true_type /* value_type is copyable */)
   test_resize_front_copy<Devector>();
   test_resize_back_copy<Devector>();
   test_push_front<Devector>();
+  test_unsafe_push_front<Devector>();
   test_push_back<Devector>();
+  test_unsafe_push_back<Devector>();
   test_insert<Devector>();
 }
 
@@ -1793,9 +1911,11 @@ void test_all()
   test_data();
   test_emplace_front<Devector>();
   test_push_front_rvalue<Devector>();
+  test_unsafe_push_front_rvalue<Devector>();
   test_pop_front<Devector>();
   test_emplace_back<Devector>();
   test_push_back_rvalue<Devector>();
+  test_unsafe_push_back_rvalue<Devector>();
   test_pop_back<Devector>();
   test_emplace<Devector>();
   test_insert_rvalue<Devector>();
