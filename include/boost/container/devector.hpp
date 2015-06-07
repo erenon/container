@@ -143,8 +143,7 @@ public:
 
     for (size_type i = 0; i < n; ++i)
     {
-      std::allocator_traits<Allocator>::construct(get_allocator_ref(), _buffer + i);
-
+      alloc_construct(_buffer + i);
       copy_guard.increment_size(1u);
 
       #ifdef BOOST_CONTAINER_DEVECTOR_ALLOC_STATS
@@ -544,10 +543,7 @@ public:
   {
     if (front_free_capacity()) // fast path
     {
-      std::allocator_traits<Allocator>::construct(
-        get_allocator_ref(), _buffer + _front_index - 1,
-        std::forward<Args>(args)...
-      );
+      alloc_construct(_buffer + _front_index - 1, std::forward<Args>(args)...);
       --_front_index;
     }
     else
@@ -581,10 +577,7 @@ public:
   {
     if (back_free_capacity()) // fast path
     {
-      std::allocator_traits<Allocator>::construct(
-        get_allocator_ref(), _buffer + _back_index,
-        std::forward<Args>(args)...
-      );
+      alloc_construct(_buffer + _back_index, std::forward<Args>(args)...);
       ++_back_index;
     }
     else
@@ -621,17 +614,13 @@ public:
 
     if (position == end() && back_free_capacity()) // fast path
     {
-      std::allocator_traits<Allocator>::construct(
-        get_allocator_ref(), _buffer + _back_index, std::forward<Args>(args)...
-      );
+      alloc_construct(_buffer + _back_index, std::forward<Args>(args)...);
       ++_back_index;
       return end() - 1;
     }
     else if (position == begin() && front_free_capacity()) // secondary fast path
     {
-      std::allocator_traits<Allocator>::construct(
-        get_allocator_ref(), _buffer + _front_index - 1, std::forward<Args>(args)...
-      );
+      alloc_construct(_buffer + _front_index - 1, std::forward<Args>(args)...);
       --_front_index;
       return begin();
     }
@@ -701,6 +690,16 @@ private:
     }
   }
 
+  template <typename... Args>
+  void alloc_construct(pointer dst, Args&&... args)
+  {
+    std::allocator_traits<Allocator>::construct(
+      get_allocator_ref(),
+      dst,
+      std::forward<Args>(args)...
+    );
+  }
+
   size_type front_capacity()
   {
     return _back_index;
@@ -722,11 +721,7 @@ private:
   {
     for (; begin != end; ++begin, ++dst)
     {
-      std::allocator_traits<Allocator>::construct(
-        get_allocator_ref(),
-        dst,
-        std::move_if_noexcept(*begin)
-      );
+      alloc_construct(dst, std::move_if_noexcept(*begin));
     }
   }
 
@@ -743,12 +738,7 @@ private:
   {
     for (; begin != end; ++begin, ++dst)
     {
-      std::allocator_traits<Allocator>::construct(
-        get_allocator_ref(),
-        dst,
-        std::move_if_noexcept(*begin)
-      );
-
+      alloc_construct(dst, std::move_if_noexcept(*begin));
       guard.increment_size(1u);
     }
   }
@@ -855,9 +845,7 @@ private:
       T tmp(std::forward<Args>(args)...);
 
       // construct at front - 1 from front (no guard)
-      std::allocator_traits<Allocator>::construct(
-        get_allocator_ref(), begin() - 1, std::move(*begin())
-      );
+      alloc_construct(begin() - 1, std::move(*begin()));
 
       // move front half left
       std::move(begin() + 1, position, begin());
@@ -879,9 +867,7 @@ private:
       T tmp(std::forward<Args>(args)...);
 
       // construct at back + 1 from back (no guard)
-      std::allocator_traits<Allocator>::construct(
-        get_allocator_ref(), end(), std::move(back())
-      );
+      alloc_construct(end(), std::move(back()));
 
       // move back half right
       std::move_backward(position, end() - 1, end());
@@ -917,9 +903,7 @@ private:
     iterator old_position = begin() + new_elem_index;
 
     // construct new element (and guard it)
-    std::allocator_traits<Allocator>::construct(
-      get_allocator_ref(), new_position, std::forward<Args>(args)...
-    );
+    alloc_construct(new_position, std::forward<Args>(args)...);
 
     construction_guard second_half_guard(new_position, get_allocator_ref(), 1u);
 
@@ -986,8 +970,7 @@ private:
 
     for (; begin != end; ++begin, ++dest)
     {
-      std::allocator_traits<Allocator>::construct(get_allocator_ref(), dest, *begin);
-
+      alloc_construct(dest, *begin);
       copy_guard.increment_size(1u);
 
       #ifdef BOOST_CONTAINER_DEVECTOR_ALLOC_STATS
@@ -1013,12 +996,7 @@ private:
   {
     for (size_type i = 0; i < n; ++i)
     {
-      std::allocator_traits<Allocator>::construct(
-        get_allocator_ref(),
-        buffer + i,
-        std::forward<Args>(args)...
-      );
-
+      alloc_construct(buffer + i, std::forward<Args>(args)...);
       ctr_guard.increment_size(1u);
     }
   }
