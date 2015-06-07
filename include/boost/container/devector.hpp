@@ -629,8 +629,16 @@ public:
     BOOST_ASSERT(invariants_ok());
   }
 
-  iterator insert(const_iterator position, const T& x);
-  iterator insert(const_iterator position, T&& x);
+  iterator insert(const_iterator position, const T& x)
+  {
+    return emplace(position, x);
+  }
+
+  iterator insert(const_iterator position, T&& x)
+  {
+    return emplace(position, std::move(x));
+  }
+
   iterator insert(const_iterator position, size_type n, const T& x);
 
   template <class InputIterator>
