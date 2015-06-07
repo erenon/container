@@ -145,10 +145,6 @@ public:
     {
       alloc_construct(_buffer + i);
       copy_guard.increment_size(1u);
-
-      #ifdef BOOST_CONTAINER_DEVECTOR_ALLOC_STATS
-        ++elem_copy_count;
-      #endif
     }
 
     copy_guard.release();
@@ -972,10 +968,6 @@ private:
     {
       alloc_construct(dest, *begin);
       copy_guard.increment_size(1u);
-
-      #ifdef BOOST_CONTAINER_DEVECTOR_ALLOC_STATS
-        ++elem_copy_count;
-      #endif
     }
 
     copy_guard.release();
@@ -1056,12 +1048,10 @@ private:
 
 #ifdef BOOST_CONTAINER_DEVECTOR_ALLOC_STATS
 public:
-  size_type elem_copy_count = 0;
   size_type capacity_alloc_count = 0;
 
   void reset_alloc_stats()
   {
-    elem_copy_count = 0;
     capacity_alloc_count = 0;
   }
 #endif // BOOST_CONTAINER_DEVECTOR_ALLOC_STATS
