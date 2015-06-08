@@ -482,11 +482,15 @@ public:
   // element access:
   reference operator[](size_type n)
   {
+    BOOST_ASSERT(!empty());
+
     return *(begin() + n);
   }
 
   const_reference operator[](size_type n) const
   {
+    BOOST_ASSERT(!empty());
+
     return *(begin() + n);
   }
 
@@ -504,22 +508,30 @@ public:
 
   reference front()
   {
-    return (*this)[0];
+    BOOST_ASSERT(!empty());
+
+    return *(_buffer + _front_index);
   }
 
   const_reference front() const
   {
-    return (*this)[0];
+    BOOST_ASSERT(!empty());
+
+    return *(_buffer + _front_index);
   }
 
   reference back()
   {
-    return (*this)[size() - 1];
+    BOOST_ASSERT(!empty());
+
+    return *(_buffer + _back_index -1);
   }
 
   const_reference back() const
   {
-    return (*this)[size() - 1];
+    BOOST_ASSERT(!empty());
+
+    return *(_buffer + _back_index -1);
   }
 
   // data access
