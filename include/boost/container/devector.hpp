@@ -692,11 +692,26 @@ public:
     return emplace(position, std::move(x));
   }
 
-  iterator insert(const_iterator position, size_type n, const T& x);
+  iterator insert(const_iterator position, size_type n, const T& x)
+  {
+    cvalue_iterator first(x, n);
+    cvalue_iterator last = first + n;
+    return insert_range(position, first, last);
+  }
+
+  // TODO add bidirectional iterator optimization
 
   template <class InputIterator>
-  iterator insert(const_iterator position, InputIterator first, InputIterator last);
-  iterator insert(const_iterator position, std::initializer_list<T> il);
+  iterator insert(const_iterator position, InputIterator first, InputIterator last)
+  {
+    devector range(first, last);
+    return insert_range(position, range.begin(), range.end());
+  }
+
+  iterator insert(const_iterator position, std::initializer_list<T> il)
+  {
+    return insert_range(position, il.begin(), il.end());
+  }
 
   iterator erase(const_iterator position);
   iterator erase(const_iterator first, const_iterator last);
@@ -1007,6 +1022,172 @@ private:
     _front_index = buffer_offset;
 
     BOOST_ASSERT(invariants_ok());
+  }
+
+  template <typename BidirIterator>
+  iterator insert_range(const_iterator position, BidirIterator first, BidirIterator last)
+  {
+    size_type n = std::distance(first, last);
+
+    if (position == end() && back_free_capacity() >= n) // fast path
+    {
+      for (; first != last; ++first)
+      {
+        unsafe_push_back(*first);
+      }
+      return end() - n;
+    }
+    else if (position == begin() && front_free_capacity() >= n) // secondary fast path
+    {
+      for (; first != last; ++first)
+      {
+        unsafe_push_front(*first);
+      }
+      return begin();
+    }
+    else
+    {
+      size_type new_elem_index = position - begin();
+      return insert_range_slow_path(new_elem_index, first, last);
+    }
+  }
+
+  template <typename BidirIterator>
+  iterator insert_range_slow_path(size_type index, BidirIterator first, BidirIterator last)
+  {
+    size_type n = std::distance(first, last);
+
+    // prefer moving front to access memory forward if there are less elems to move
+    const bool prefer_move_front = 2 * index <= size();
+
+    if (front_free_capacity() + back_free_capacity() >= n)
+    {
+      // if we move enough, it can be done without reallocation
+
+      iterator middle = begin() + index;
+
+      if (! prefer_move_front)
+      {
+        n -= insert_range_slow_path_near_back(middle, last, n);
+      }
+
+      if (n)
+      {
+        n -= insert_range_slow_path_near_front(middle, first, n);
+      }
+
+      if (n && prefer_move_front)
+      {
+        insert_range_slow_path_near_back(middle, last, n);
+      }
+
+      BOOST_ASSERT(first == last);
+
+      return begin() + index;
+    }
+    else
+    {
+      return insert_range_reallocating_slow_path(prefer_move_front, index, first, n);
+    }
+  }
+
+  template <typename BidirIterator>
+  size_type insert_range_slow_path_near_front(iterator position, BidirIterator& first, size_type n)
+  {
+    size_type n_front = (std::min)(front_free_capacity(), n);
+    iterator new_begin = begin() - n_front;
+    iterator ctr_pos = new_begin;
+    construction_guard ctr_guard(ctr_pos, get_allocator_ref(), 0u);
+
+    while (ctr_pos != begin())
+    {
+      alloc_construct(ctr_pos++, *(first++));
+      ctr_guard.increment_size(1u);
+    }
+
+    std::rotate(new_begin, ctr_pos, position);
+    _front_index -= n_front;
+
+    ctr_guard.release();
+
+    return n_front;
+  }
+
+  template <typename BidirIterator>
+  size_type insert_range_slow_path_near_back(iterator position, BidirIterator& last, size_type n)
+  {
+    size_type n_back = (std::min)(back_free_capacity(), n);
+    iterator new_end = end() + n_back;
+    iterator ctr_pos = new_end;
+    construction_guard ctr_guard(ctr_pos, get_allocator_ref(), 0u);
+
+    while (ctr_pos != end())
+    {
+      alloc_construct(--ctr_pos, *(--last));
+      ctr_guard.increment_size_backwards(1u);
+    }
+
+    std::rotate(position, ctr_pos, new_end);
+    _back_index += n_back;
+
+    ctr_guard.release();
+
+    return n_back;
+  }
+
+  template <typename Iterator>
+  iterator insert_range_reallocating_slow_path(
+    bool make_front_free, size_type new_elem_index, Iterator elems, size_type n
+  )
+  {
+    // reallocate
+    const size_type new_capacity = calculate_new_capacity(capacity() + n);
+    pointer new_buffer = allocate(new_capacity);
+
+    // guard allocation
+    allocation_guard new_buffer_guard(new_buffer, get_allocator_ref(), new_capacity);
+
+    const size_type new_front_index = (make_front_free)
+      ? new_capacity - back_free_capacity() - size() - n
+      : _front_index;
+
+    const iterator new_begin = new_buffer + new_front_index;
+    const iterator new_position = new_begin + new_elem_index;
+    const iterator old_position = begin() + new_elem_index;
+
+    // construct new element (and guard it)
+    iterator second_half_position = new_position;
+    construction_guard second_half_guard(second_half_position, get_allocator_ref(), 0u);
+
+    for (size_type i = 0; i < n; ++i)
+    {
+      alloc_construct(second_half_position++, *(elems++));
+      second_half_guard.increment_size(1u);
+    }
+
+    // move front-pos (possibly guarded)
+    construction_guard first_half_guard(new_begin, get_allocator_ref(), 0);
+    range_move_or_copy(begin(), old_position, new_begin, first_half_guard);
+
+    // move pos+1-end (possibly guarded)
+    range_move_or_copy(old_position, end(), second_half_position, second_half_guard);
+
+    // cleanup
+    destroy_elements(begin(), end());
+    deallocate_buffer();
+
+    // release alloc and other guards
+    second_half_guard.release();
+    first_half_guard.release();
+    new_buffer_guard.release();
+
+    // rebind members
+    _storage._capacity = new_capacity;
+    _buffer = new_buffer;
+    _back_index = new_front_index + size() + n;
+    _front_index = new_front_index;
+
+    return new_position;
   }
 
   template <typename Iterator>

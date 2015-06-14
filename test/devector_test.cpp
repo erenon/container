@@ -98,7 +98,7 @@ struct test_elem_base
     rhs._index = nullptr;
   }
 
-  virtual ~test_elem_base()
+  ~test_elem_base()
   {
     if (_index) { delete _index; }
     --_live_count;
@@ -1850,9 +1850,441 @@ void test_insert_rvalue()
   }
 }
 
-// TODO test insert n
-// TODO test insert range
-// TODO test insert init list
+template <typename Devector, typename T = typename Devector::value_type>
+void test_insert_n()
+{
+  {
+    Devector a;
+    const T x(123);
+    auto ret = a.insert(a.end(), 5, x);
+    assert_equals(a, {123, 123, 123, 123, 123});
+    BOOST_ASSERT(ret == a.begin());
+  }
+
+  {
+    Devector b = getRange<Devector, T>(8);
+    const T x(9);
+    auto ret = b.insert(b.begin(), 3, x);
+    assert_equals(b, {9, 9, 9, 1, 2, 3, 4, 5, 6, 7, 8});
+    BOOST_ASSERT(ret == b.begin());
+  }
+
+  {
+    Devector c = getRange<Devector, T>(8);
+    const T x(9);
+    auto ret = c.insert(c.end(), 3, x);
+    assert_equals(c, {1, 2, 3, 4, 5, 6, 7, 8, 9, 9, 9});
+    BOOST_ASSERT(ret == c.begin() + 8);
+  }
+
+  {
+    Devector d = getRange<Devector, T>(8);
+
+    d.pop_front();
+    d.pop_front();
+    d.pop_front();
+
+    const T x(9);
+    auto origi_end = d.end();
+    auto ret = d.insert(d.begin(), 3, x);
+
+    assert_equals(d, {9, 9, 9, 4, 5, 6, 7, 8});
+    BOOST_ASSERT(origi_end == d.end());
+    BOOST_ASSERT(ret == d.begin());
+  }
+
+  {
+    Devector e = getRange<Devector, T>(8);
+
+    e.pop_back();
+    e.pop_back();
+    e.pop_back();
+
+    const T x(9);
+    auto origi_begin = e.begin();
+    auto ret = e.insert(e.end(), 3, x);
+
+    assert_equals(e, {1, 2, 3, 4, 5, 9, 9, 9});
+    BOOST_ASSERT(origi_begin == e.begin());
+    BOOST_ASSERT(ret == e.begin() + 5);
+  }
+
+  {
+    Devector f = getRange<Devector, T>(8);
+    f.reset_alloc_stats();
+
+    f.pop_front();
+    f.pop_front();
+    f.pop_back();
+    f.pop_back();
+
+    const T x(9);
+    auto ret = f.insert(f.begin() + 2, 4, x);
+
+    assert_equals(f, {3, 4, 9, 9, 9, 9, 5, 6});
+    BOOST_ASSERT(f.capacity_alloc_count == 0);
+    BOOST_ASSERT(ret == f.begin() + 2);
+  }
+
+  {
+    Devector g = getRange<Devector, T>(8);
+    g.reset_alloc_stats();
+
+    g.pop_front();
+    g.pop_front();
+    g.pop_back();
+    g.pop_back();
+    g.pop_back();
+
+    const T x(9);
+    auto ret = g.insert(g.begin() + 2, 5, x);
+
+    assert_equals(g, {3, 4, 9, 9, 9, 9, 9, 5});
+    BOOST_ASSERT(g.capacity_alloc_count == 0);
+    BOOST_ASSERT(ret == g.begin() + 2);
+  }
+
+  {
+    Devector g = getRange<Devector, T>(8);
+
+    const T x(9);
+    auto ret = g.insert(g.begin() + 2, 5, x);
+
+    assert_equals(g, {1, 2, 9, 9, 9, 9, 9, 3, 4, 5, 6, 7, 8});
+    BOOST_ASSERT(ret == g.begin() + 2);
+  }
+
+  { // n == 0
+    Devector h = getRange<Devector, T>(8);
+    h.reset_alloc_stats();
+
+    const T x(9);
+
+    auto ret = h.insert(h.begin(), 0, x);
+    BOOST_ASSERT(ret == h.begin());
+
+    ret = h.insert(h.begin() + 4, 0, x);
+    BOOST_ASSERT(ret == h.begin() + 4);
+
+    ret = h.insert(h.end(), 0, x);
+    BOOST_ASSERT(ret == h.end());
+
+    assert_equals(h, {1, 2, 3, 4, 5, 6, 7, 8});
+    BOOST_ASSERT(h.capacity_alloc_count == 0);
+  }
+
+  { // test insert already inserted
+    Devector i = getRange<Devector, T>(8);
+    i.reset_alloc_stats();
+
+    i.pop_front();
+    i.pop_front();
+
+    auto ret = i.insert(i.end() - 1, 2, *i.begin());
+
+    assert_equals(i, {3, 4, 5, 6, 7, 3, 3, 8});
+    BOOST_ASSERT(i.capacity_alloc_count == 0);
+    BOOST_ASSERT(ret == i.begin() + 5);
+  }
+
+  if (! std::is_nothrow_copy_constructible<T>::value)
+  {
+    // insert at begin
+    try
+    {
+      Devector j = getRange<Devector, T>(4);
+
+      const T x(404);
+      test_elem_throw::on_copy_after(3);
+
+      j.insert(j.begin(), 4, x);
+      BOOST_ASSERT(false);
+    }
+    catch (test_exception&) {}
+
+    // insert at end
+    try
+    {
+      Devector k = getRange<Devector, T>(4);
+
+      const T x(404);
+      test_elem_throw::on_copy_after(3);
+
+      k.insert(k.end(), 4, x);
+      BOOST_ASSERT(false);
+    }
+    catch (test_exception&) {}
+  }
+}
+
+template <typename Devector, typename T = typename Devector::value_type>
+void test_insert_range()
+{
+  std::vector<T> x{T(9), T(9), T(9), T(9), T(9)};
+  auto xb = x.begin();
+
+  {
+    Devector a;
+    auto ret = a.insert(a.end(), xb, xb+5);
+    assert_equals(a, {9, 9, 9, 9, 9});
+    BOOST_ASSERT(ret == a.begin());
+  }
+
+  {
+    Devector b = getRange<Devector, T>(8);
+    auto ret = b.insert(b.begin(), xb, xb+3);
+    assert_equals(b, {9, 9, 9, 1, 2, 3, 4, 5, 6, 7, 8});
+    BOOST_ASSERT(ret == b.begin());
+  }
+
+  {
+    Devector c = getRange<Devector, T>(8);
+    auto ret = c.insert(c.end(), xb, xb+3);
+    assert_equals(c, {1, 2, 3, 4, 5, 6, 7, 8, 9, 9, 9});
+    BOOST_ASSERT(ret == c.begin() + 8);
+  }
+
+  {
+    Devector d = getRange<Devector, T>(8);
+
+    d.pop_front();
+    d.pop_front();
+    d.pop_front();
+
+    auto origi_end = d.end();
+    auto ret = d.insert(d.begin(), xb, xb+3);
+
+    assert_equals(d, {9, 9, 9, 4, 5, 6, 7, 8});
+    BOOST_ASSERT(origi_end == d.end());
+    BOOST_ASSERT(ret == d.begin());
+  }
+
+  {
+    Devector e = getRange<Devector, T>(8);
+
+    e.pop_back();
+    e.pop_back();
+    e.pop_back();
+
+    auto origi_begin = e.begin();
+    auto ret = e.insert(e.end(), xb, xb+3);
+
+    assert_equals(e, {1, 2, 3, 4, 5, 9, 9, 9});
+    BOOST_ASSERT(origi_begin == e.begin());
+    BOOST_ASSERT(ret == e.begin() + 5);
+  }
+
+  {
+    Devector f = getRange<Devector, T>(8);
+    f.reset_alloc_stats();
+
+    f.pop_front();
+    f.pop_front();
+    f.pop_back();
+    f.pop_back();
+
+    auto ret = f.insert(f.begin() + 2, xb, xb+4);
+
+    assert_equals(f, {3, 4, 9, 9, 9, 9, 5, 6});
+    BOOST_ASSERT(f.capacity_alloc_count == 0);
+    BOOST_ASSERT(ret == f.begin() + 2);
+  }
+
+  {
+    Devector g = getRange<Devector, T>(8);
+    g.reset_alloc_stats();
+
+    g.pop_front();
+    g.pop_front();
+    g.pop_back();
+    g.pop_back();
+    g.pop_back();
+
+    auto ret = g.insert(g.begin() + 2, xb, xb+5);
+
+    assert_equals(g, {3, 4, 9, 9, 9, 9, 9, 5});
+    BOOST_ASSERT(g.capacity_alloc_count == 0);
+    BOOST_ASSERT(ret == g.begin() + 2);
+  }
+
+  {
+    Devector g = getRange<Devector, T>(8);
+
+    auto ret = g.insert(g.begin() + 2, xb, xb+5);
+
+    assert_equals(g, {1, 2, 9, 9, 9, 9, 9, 3, 4, 5, 6, 7, 8});
+    BOOST_ASSERT(ret == g.begin() + 2);
+  }
+
+  { // n == 0
+    Devector h = getRange<Devector, T>(8);
+    h.reset_alloc_stats();
+
+    auto ret = h.insert(h.begin(), xb, xb);
+    BOOST_ASSERT(ret == h.begin());
+
+    ret = h.insert(h.begin() + 4, xb, xb);
+    BOOST_ASSERT(ret == h.begin() + 4);
+
+    ret = h.insert(h.end(), xb, xb);
+    BOOST_ASSERT(ret == h.end());
+
+    assert_equals(h, {1, 2, 3, 4, 5, 6, 7, 8});
+    BOOST_ASSERT(h.capacity_alloc_count == 0);
+  }
+
+  if (! std::is_nothrow_copy_constructible<T>::value)
+  {
+    // insert at begin
+    try
+    {
+      Devector j = getRange<Devector, T>(4);
+
+      test_elem_throw::on_copy_after(3);
+
+      j.insert(j.begin(), xb, xb+4);
+      BOOST_ASSERT(false);
+    }
+    catch (test_exception&) {}
+
+    // insert at end
+    try
+    {
+      Devector k = getRange<Devector, T>(4);
+
+      test_elem_throw::on_copy_after(3);
+
+      k.insert(k.end(), xb, xb+4);
+      BOOST_ASSERT(false);
+    }
+    catch (test_exception&) {}
+  }
+}
+
+template <typename Devector, typename T = typename Devector::value_type>
+void test_insert_init_list()
+{
+  {
+    Devector a;
+    auto ret = a.insert(a.end(), {T(123), T(123), T(123), T(123), T(123)});
+    assert_equals(a, {123, 123, 123, 123, 123});
+    BOOST_ASSERT(ret == a.begin());
+  }
+
+  {
+    Devector b = getRange<Devector, T>(8);
+    auto ret = b.insert(b.begin(), {T(9), T(9), T(9)});
+    assert_equals(b, {9, 9, 9, 1, 2, 3, 4, 5, 6, 7, 8});
+    BOOST_ASSERT(ret == b.begin());
+  }
+
+  {
+    Devector c = getRange<Devector, T>(8);
+    auto ret = c.insert(c.end(), {T(9), T(9), T(9)});
+    assert_equals(c, {1, 2, 3, 4, 5, 6, 7, 8, 9, 9, 9});
+    BOOST_ASSERT(ret == c.begin() + 8);
+  }
+
+  {
+    Devector d = getRange<Devector, T>(8);
+
+    d.pop_front();
+    d.pop_front();
+    d.pop_front();
+
+    auto origi_end = d.end();
+    auto ret = d.insert(d.begin(), {T(9), T(9), T(9)});
+
+    assert_equals(d, {9, 9, 9, 4, 5, 6, 7, 8});
+    BOOST_ASSERT(origi_end == d.end());
+    BOOST_ASSERT(ret == d.begin());
+  }
+
+  {
+    Devector e = getRange<Devector, T>(8);
+
+    e.pop_back();
+    e.pop_back();
+    e.pop_back();
+
+    auto origi_begin = e.begin();
+    auto ret = e.insert(e.end(), {T(9), T(9), T(9)});
+
+    assert_equals(e, {1, 2, 3, 4, 5, 9, 9, 9});
+    BOOST_ASSERT(origi_begin == e.begin());
+    BOOST_ASSERT(ret == e.begin() + 5);
+  }
+
+  {
+    Devector f = getRange<Devector, T>(8);
+    f.reset_alloc_stats();
+
+    f.pop_front();
+    f.pop_front();
+    f.pop_back();
+    f.pop_back();
+
+    auto ret = f.insert(f.begin() + 2, {T(9), T(9), T(9), T(9)});
+
+    assert_equals(f, {3, 4, 9, 9, 9, 9, 5, 6});
+    BOOST_ASSERT(f.capacity_alloc_count == 0);
+    BOOST_ASSERT(ret == f.begin() + 2);
+  }
+
+  {
+    Devector g = getRange<Devector, T>(8);
+    g.reset_alloc_stats();
+
+    g.pop_front();
+    g.pop_front();
+    g.pop_back();
+    g.pop_back();
+    g.pop_back();
+
+    auto ret = g.insert(g.begin() + 2, {T(9), T(9), T(9), T(9), T(9)});
+
+    assert_equals(g, {3, 4, 9, 9, 9, 9, 9, 5});
+    BOOST_ASSERT(g.capacity_alloc_count == 0);
+    BOOST_ASSERT(ret == g.begin() + 2);
+  }
+
+  {
+    Devector g = getRange<Devector, T>(8);
+
+    auto ret = g.insert(g.begin() + 2, {T(9), T(9), T(9), T(9), T(9)});
+
+    assert_equals(g, {1, 2, 9, 9, 9, 9, 9, 3, 4, 5, 6, 7, 8});
+    BOOST_ASSERT(ret == g.begin() + 2);
+  }
+
+  if (! std::is_nothrow_copy_constructible<T>::value)
+  {
+    // insert at begin
+    try
+    {
+      Devector j = getRange<Devector, T>(4);
+
+      test_elem_throw::on_copy_after(3);
+
+      j.insert(j.begin(), {T(9), T(9), T(9), T(9), T(9)});
+      BOOST_ASSERT(false);
+    }
+    catch (test_exception&) {}
+
+    // insert at end
+    try
+    {
+      Devector k = getRange<Devector, T>(4);
+
+      test_elem_throw::on_copy_after(3);
+
+      k.insert(k.end(), {T(9), T(9), T(9), T(9), T(9)});
+      BOOST_ASSERT(false);
+    }
+    catch (test_exception&) {}
+  }
+}
+
 // TODO test erase
 // TODO test erase range
 // TODO test swap
@@ -1870,6 +2302,9 @@ void test_all_copyable(std::true_type /* value_type is copyable */)
   test_push_back<Devector>();
   test_unsafe_push_back<Devector>();
   test_insert<Devector>();
+  test_insert_n<Devector>();
+  test_insert_range<Devector>();
+  test_insert_init_list<Devector>();
 }
 
 template <typename>
