@@ -2285,8 +2285,89 @@ void test_insert_init_list()
   }
 }
 
-// TODO test erase
-// TODO test erase range
+template <typename Devector, typename T = typename Devector::value_type>
+void test_erase()
+{
+  {
+    Devector a = getRange<Devector, T>(4);
+    auto ret = a.erase(a.begin());
+    assert_equals(a, {2, 3, 4});
+    BOOST_ASSERT(ret == a.begin());
+  }
+
+  {
+    Devector b = getRange<Devector, T>(4);
+    auto ret = b.erase(b.end() - 1);
+    assert_equals(b, {1, 2, 3});
+    BOOST_ASSERT(ret == b.end());
+  }
+
+  {
+    Devector c = getRange<Devector, T>(6);
+    auto ret = c.erase(c.begin() + 2);
+    assert_equals(c, {1, 2, 4, 5, 6});
+    BOOST_ASSERT(ret == c.begin() + 2);
+    BOOST_ASSERT(c.front_free_capacity() > 0);
+  }
+
+  {
+    Devector d = getRange<Devector, T>(6);
+    auto ret = d.erase(d.begin() + 4);
+    assert_equals(d, {1, 2, 3, 4, 6});
+    BOOST_ASSERT(ret == d.begin() + 4);
+    BOOST_ASSERT(d.back_free_capacity() > 0);
+  }
+}
+
+template <typename Devector, typename T = typename Devector::value_type>
+void test_erase_range()
+{
+  {
+    Devector a = getRange<Devector, T>(4);
+    a.erase(a.end(), a.end());
+    a.erase(a.begin(), a.begin());
+  }
+
+  {
+    Devector b = getRange<Devector, T>(8);
+    auto ret = b.erase(b.begin(), b.begin() + 2);
+    assert_equals(b, {3, 4, 5, 6, 7, 8});
+    BOOST_ASSERT(ret == b.begin());
+    BOOST_ASSERT(b.front_free_capacity() > 0);
+  }
+
+  {
+    Devector c = getRange<Devector, T>(8);
+    auto ret = c.erase(c.begin() + 1, c.begin() + 3);
+    assert_equals(c, {1, 4, 5, 6, 7, 8});
+    BOOST_ASSERT(ret == c.begin() + 1);
+    BOOST_ASSERT(c.front_free_capacity() > 0);
+  }
+
+  {
+    Devector d = getRange<Devector, T>(8);
+    auto ret = d.erase(d.end() - 2, d.end());
+    assert_equals(d, {1, 2, 3, 4, 5, 6});
+    BOOST_ASSERT(ret == d.end());
+    BOOST_ASSERT(d.back_free_capacity() > 0);
+  }
+
+  {
+    Devector e = getRange<Devector, T>(8);
+    auto ret = e.erase(e.end() - 3, e.end() - 1);
+    assert_equals(e, {1, 2, 3, 4, 5, 8});
+    BOOST_ASSERT(ret == e.end() - 1);
+    BOOST_ASSERT(e.back_free_capacity() > 0);
+  }
+
+  {
+    Devector f = getRange<Devector, T>(8);
+    auto ret = f.erase(f.begin(), f.end());
+    assert_equals(f, {});
+    BOOST_ASSERT(ret == f.end());
+  }
+}
+
 // TODO test swap
 // TODO test clear
 // TODO test comparison operators
@@ -2354,6 +2435,8 @@ void test_all()
   test_pop_back<Devector>();
   test_emplace<Devector>();
   test_insert_rvalue<Devector>();
+  test_erase<Devector>();
+  test_erase_range<Devector>();
 }
 
 int main()

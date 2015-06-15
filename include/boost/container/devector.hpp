@@ -713,8 +713,53 @@ public:
     return insert_range(position, il.begin(), il.end());
   }
 
-  iterator erase(const_iterator position);
-  iterator erase(const_iterator first, const_iterator last);
+  iterator erase(const_iterator position)
+  {
+    return erase(position, position + 1);
+  }
+
+  iterator erase(const_iterator first, const_iterator last)
+  {
+    iterator nc_first = begin() + (first - begin());
+    iterator nc_last  = begin() + (last  - begin());
+    return erase(nc_first, nc_last);
+  }
+
+  iterator erase(iterator first, iterator last)
+  {
+    size_type front_distance = last - begin();
+    size_type back_distance = end() - first;
+    size_type n = std::distance(first, last);
+
+    if (front_distance <= back_distance)
+    {
+      // rotate to front and destroy
+      std::rotate(begin(), first, last);
+
+      for (iterator i = begin(); i != begin() + n; ++i)
+      {
+        std::allocator_traits<Allocator>::destroy(get_allocator_ref(), i);
+      }
+      _front_index += n;
+
+      BOOST_ASSERT(invariants_ok());
+      return last;
+    }
+    else
+    {
+      // rotate to back and destroy
+      std::rotate(first, last, end());
+
+      for (iterator i = end() - n; i != end(); ++i)
+      {
+        std::allocator_traits<Allocator>::destroy(get_allocator_ref(), i);
+      }
+      _back_index -= n;
+
+      BOOST_ASSERT(invariants_ok());
+      return first;
+    }
+  }
 
   void swap(devector&) noexcept(
     std::allocator_traits<Allocator>::propagate_on_container_swap::value ||
