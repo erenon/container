@@ -517,6 +517,8 @@ struct small_buffer_size;
 template <typename U, typename A, typename SBP, typename GP>
 struct small_buffer_size<devector<U, A, SBP, GP>>
 {
+  static const unsigned front_size = SBP::front_size;
+  static const unsigned back_size = SBP::back_size;
   static const unsigned value = SBP::size;
 };
 
@@ -2369,7 +2371,38 @@ void test_erase_range()
 }
 
 // TODO test swap
-// TODO test clear
+
+template <typename Devector, typename T = typename Devector::value_type>
+void test_clear()
+{
+  {
+    Devector a;
+    a.clear();
+    BOOST_ASSERT(a.empty());
+  }
+
+  {
+    Devector a = getRange<Devector, T>(8);
+    a.clear();
+    BOOST_ASSERT(a.empty());
+    a.reset_alloc_stats();
+
+    for (unsigned i = 0; i < small_buffer_size<Devector>::front_size; ++i)
+    {
+      a.emplace_front(i);
+    }
+
+    for (unsigned i = 0; i < small_buffer_size<Devector>::back_size; ++i)
+    {
+      a.emplace_back(i);
+    }
+
+    BOOST_ASSERT(a.capacity_alloc_count == 0);
+    a.clear();
+    BOOST_ASSERT(a.empty());
+  }
+}
+
 // TODO test comparison operators
 
 template <typename Devector>
@@ -2437,6 +2470,7 @@ void test_all()
   test_insert_rvalue<Devector>();
   test_erase<Devector>();
   test_erase_range<Devector>();
+  test_clear<Devector>();
 }
 
 int main()

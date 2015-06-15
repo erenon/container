@@ -765,7 +765,11 @@ public:
     std::allocator_traits<Allocator>::propagate_on_container_swap::value ||
     std::allocator_traits<Allocator>::is_always_equal::value);
 
-  void clear() noexcept;
+  void clear() noexcept
+  {
+    destroy_elements(begin(), end());
+    _front_index = _back_index = SmallBufferPolicy::front_size;
+  }
 
 private:
 
