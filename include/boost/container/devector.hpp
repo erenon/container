@@ -883,33 +883,6 @@ private:
     // TODO check for max_size
   }
 
-  void move_or_copy(pointer dst, pointer begin, const const_pointer end)
-  {
-    for (; begin != end; ++begin, ++dst)
-    {
-      alloc_construct(dst, std::move_if_noexcept(*begin));
-    }
-  }
-
-  void guarded_move_or_copy(pointer dst, pointer begin, const const_pointer end)
-  {
-    construction_guard copy_guard(dst, get_allocator_ref(), 0u);
-
-    guarded_move_or_copy(dst, begin, end, copy_guard);
-
-    copy_guard.release();
-  }
-
-  template <typename Guard>
-  void guarded_move_or_copy(pointer dst, pointer begin, const const_pointer end, Guard& guard)
-  {
-    for (; begin != end; ++begin, ++dst)
-    {
-      alloc_construct(dst, std::move_if_noexcept(*begin));
-      guard.increment_size(1u);
-    }
-  }
-
   void buffer_move_or_copy(pointer dst)
   {
     construction_guard guard(dst, get_allocator_ref(), 0);
@@ -953,7 +926,11 @@ private:
     }
     else // guard needed
     {
-      guarded_move_or_copy(dst, begin, end, guard);
+      for (; begin != end; ++begin, ++dst)
+      {
+        alloc_construct(dst, std::move_if_noexcept(*begin));
+        guard.increment_size(1u);
+      }
     }
   }
 
