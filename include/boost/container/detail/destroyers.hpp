@@ -21,6 +21,8 @@
 #  pragma once
 #endif
 
+#include <type_traits>
+
 #include <boost/container/detail/config_begin.hpp>
 #include <boost/container/detail/workaround.hpp>
 
@@ -183,9 +185,30 @@ struct scoped_destructor_n
    typedef typename AllocTraits::value_type value_type;
    typedef typename AllocTraits::size_type  size_type;
 
-   scoped_destructor_n(pointer p, Allocator& a, size_type n)
-      : m_p(p), m_a(a), m_n(n)
+   scoped_destructor_n()
+     : m_p(nullptr)
    {}
+
+   scoped_destructor_n(pointer p, Allocator& a, size_type n)
+      : m_p(p), m_a(&a), m_n(n)
+   {}
+
+   scoped_destructor_n(BOOST_RV_REF(scoped_destructor_n) rhs)
+     : m_p(rhs.m_p), m_a(rhs.m_a), m_n(rhs.m_n)
+   {
+     rhs.release();
+   }
+
+   scoped_destructor_n& operator=(BOOST_RV_REF(scoped_destructor_n) rhs)
+   {
+     m_p = rhs.m_p;
+     m_a = rhs.m_a;
+     m_n = rhs.m_n;
+
+     rhs.release();
+
+     return *this;
+   }
 
    void release()
    {  m_p = 0; }
@@ -204,13 +227,13 @@ struct scoped_destructor_n
       if(!m_p) return;
       value_type *raw_ptr = container_detail::to_raw_pointer(m_p);
       while(m_n--){
-         AllocTraits::destroy(m_a, raw_ptr++);
+         AllocTraits::destroy(*m_a, raw_ptr++);
       }
    }
 
    private:
    pointer     m_p;
-   Allocator & m_a;
+   Allocator * m_a;
    size_type   m_n;
 };
 
@@ -223,8 +246,19 @@ struct null_scoped_destructor_n
    typedef typename AllocTraits::pointer pointer;
    typedef typename AllocTraits::size_type size_type;
 
+   null_scoped_destructor_n()
+   {}
+
    null_scoped_destructor_n(pointer, Allocator&, size_type)
    {}
+
+   null_scoped_destructor_n(BOOST_RV_REF(null_scoped_destructor_n))
+   {}
+
+   null_scoped_destructor_n& operator=(BOOST_RV_REF(null_scoped_destructor_n))
+   {
+     return *this;
+   }
 
    void increment_size(size_type)
    {}
@@ -367,6 +401,80 @@ class allocator_multialloc_chain_node_deallocator
    {
       a_.deallocate_individual(c_);
    }
+};
+
+/**
+ * Has two ranges
+ *
+ * On success, destroys the first range (src),
+ * on failure, destroys the second range (dst).
+ *
+ * Can be used when copying/moving a range
+ */
+template <class Allocator>
+class nand_destroyer
+{
+  typedef boost::container::allocator_traits<Allocator> AllocTraits;
+  typedef typename AllocTraits::pointer    pointer;
+  typedef typename AllocTraits::value_type value_type;
+  typedef typename AllocTraits::size_type  size_type;
+
+  typedef typename std::conditional<
+    std::is_trivially_destructible<value_type>::value,
+    null_scoped_destructor_n<Allocator>,
+    scoped_destructor_n<Allocator>
+  >::type ArrayDestructor;
+
+  ArrayDestructor _src;
+  ArrayDestructor _dst;
+  bool _dst_released;
+
+  BOOST_MOVABLE_BUT_NOT_COPYABLE(nand_destroyer)
+
+public:
+  nand_destroyer() = default;
+
+  nand_destroyer(
+    pointer src, Allocator& src_alloc,
+    pointer dst, Allocator& dst_alloc
+  )
+    :_src(src, src_alloc, 0u),
+     _dst(dst, dst_alloc, 0u),
+     _dst_released(false)
+  {}
+
+  nand_destroyer(nand_destroyer&& rhs)
+    :_src(boost::move(rhs._src)),
+     _dst(boost::move(rhs._dst)),
+     _dst_released(rhs._dst_released)
+  {
+    rhs._dst_released = true;
+  }
+
+  nand_destroyer& operator=(nand_destroyer&& rhs) = default;
+
+  void increment_size(size_type inc)
+  {
+    _src.increment_size(inc);
+    _dst.increment_size(inc);
+  }
+
+  void increment_size_backwards(size_type inc)
+  {
+    _src.increment_size_backwards(inc);
+    _dst.increment_size_backwards(inc);
+  }
+
+  void release() // on success
+  {
+    _dst.release();
+    _dst_released = true;
+  }
+
+  ~nand_destroyer()
+  {
+    if (! _dst_released) { _src.release(); }
+  }
 };
 
 }  //namespace container_detail {
