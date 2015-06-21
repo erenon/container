@@ -921,15 +921,13 @@ private:
 
   void buffer_move_or_copy(pointer dst, construction_guard& guard)
   {
-    range_move_or_copy(begin(), end(), dst, guard);
+    opt_move_or_copy(begin(), end(), dst, guard);
 
     destroy_elements(data(), data() + size());
     deallocate_buffer();
   }
 
-  // TODO rename range_move_or_copy to opt_move_or_copy
-
-  void range_move_or_copy(pointer begin, pointer end, pointer dst)
+  void opt_move_or_copy(pointer begin, pointer end, pointer dst)
   {
     typedef typename std::conditional<
          std::is_nothrow_move_constructible<T>::value
@@ -940,13 +938,13 @@ private:
 
     guard_t guard(dst, get_allocator_ref(), 0);
 
-    range_move_or_copy(begin, end, dst, guard);
+    opt_move_or_copy(begin, end, dst, guard);
 
     guard.release();
   }
 
   template <typename Guard>
-  void range_move_or_copy(pointer begin, pointer end, pointer dst, Guard& guard)
+  void opt_move_or_copy(pointer begin, pointer end, pointer dst, Guard& guard)
   {
     // if trivial copy and default allocator, memcpy
     if (allocator_traits::is_trivially_copyable)
@@ -1087,10 +1085,10 @@ private:
 
     // move front-pos (possibly guarded)
     construction_guard first_half_guard(new_begin, get_allocator_ref(), 0);
-    range_move_or_copy(begin(), old_position, new_begin, first_half_guard);
+    opt_move_or_copy(begin(), old_position, new_begin, first_half_guard);
 
     // move pos+1-end (possibly guarded)
-    range_move_or_copy(old_position, end(), new_position + 1, second_half_guard);
+    opt_move_or_copy(old_position, end(), new_position + 1, second_half_guard);
 
     // cleanup
     destroy_elements(begin(), end());
@@ -1273,10 +1271,10 @@ private:
 
     // move front-pos (possibly guarded)
     construction_guard first_half_guard(new_begin, get_allocator_ref(), 0);
-    range_move_or_copy(begin(), old_position, new_begin, first_half_guard);
+    opt_move_or_copy(begin(), old_position, new_begin, first_half_guard);
 
     // move pos+1-end (possibly guarded)
-    range_move_or_copy(old_position, end(), second_half_position, second_half_guard);
+    opt_move_or_copy(old_position, end(), second_half_position, second_half_guard);
 
     // cleanup
     destroy_elements(begin(), end());
@@ -1353,7 +1351,7 @@ private:
       dst, needs_front.get_allocator_ref()
     );
 
-    needs_front.range_move_or_copy(
+    needs_front.opt_move_or_copy(
       src,
       has_front._buffer + (std::min)(has_front._back_index, needs_front._front_index),
       dst,
@@ -1376,7 +1374,7 @@ private:
       dst, needs_back.get_allocator_ref()
     );
 
-    needs_back.range_move_or_copy(src, has_back.end(), dst, guard);
+    needs_back.opt_move_or_copy(src, has_back.end(), dst, guard);
 
     return guard;
   }
@@ -1444,7 +1442,7 @@ private:
     BOOST_ASSERT(big.is_small() == false);
 
     // small -> big
-    big.range_move_or_copy(
+    big.opt_move_or_copy(
       small.begin(), small.end(),
       big._storage.small_buffer_address() + small._front_index
     );
