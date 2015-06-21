@@ -257,6 +257,27 @@ Container getRange(int count)
   return c;
 }
 
+template <typename Devector, typename T>
+Devector getRange(int fbeg, int fend, int bbeg, int bend)
+{
+  Devector c;
+
+  c.reserve_front(fend - fbeg);
+  c.reserve_back(bend - bbeg);
+
+  for (int i = fend; i > fbeg ;)
+  {
+    c.emplace_front(--i);
+  }
+
+  for (int i = bbeg; i < bend; ++i)
+  {
+    c.emplace_back(i);
+  }
+
+  return c;
+}
+
 template <typename Range>
 void printRange(std::ostream& out, const Range& range)
 {
@@ -2370,7 +2391,165 @@ void test_erase_range()
   }
 }
 
-// TODO test swap
+template <typename Devector, typename T = typename Devector::value_type>
+void test_swap()
+{
+  using std::swap; // test if ADL works
+
+  // empty-empty
+  {
+    Devector a;
+    Devector b;
+
+    swap(a, b);
+
+    BOOST_ASSERT(a.empty());
+    BOOST_ASSERT(b.empty());
+  }
+
+  // empty-not empty
+  {
+    Devector a;
+    Devector b = getRange<Devector, T>(4);
+
+    swap(a, b);
+
+    BOOST_ASSERT(b.empty());
+    assert_equals(a, {1, 2, 3, 4});
+
+    swap(a, b);
+
+    BOOST_ASSERT(a.empty());
+    assert_equals(b, {1, 2, 3, 4});
+  }
+
+  // small-small / big-big
+  {
+    Devector a = getRange<Devector, T>(1, 5, 5, 7);
+    Devector b = getRange<Devector, T>(13, 15, 15, 19);
+
+    swap(a, b);
+
+    assert_equals(a, {13, 14, 15, 16, 17, 18});
+    assert_equals(b, {1, 2, 3, 4, 5, 6});
+
+    swap(a, b);
+
+    assert_equals(b, {13, 14, 15, 16, 17, 18});
+    assert_equals(a, {1, 2, 3, 4, 5, 6});
+  }
+
+  // big-small + small-big
+  {
+    Devector a = getRange<Devector, T>(10);
+    Devector b = getRange<Devector, T>(9, 11, 11, 17);
+
+    swap(a, b);
+
+    assert_equals(b, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+    assert_equals(a, {9, 10, 11, 12, 13, 14, 15, 16});
+
+    swap(a, b);
+
+    assert_equals(a, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+    assert_equals(b, {9, 10, 11, 12, 13, 14, 15, 16});
+  }
+
+  // self swap
+  {
+    Devector a = getRange<Devector, T>(10);
+
+    swap(a, a);
+
+    assert_equals(a, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+  }
+
+  // no overlap
+  {
+    Devector a = getRange<Devector, T>(1, 9, 0, 0);
+    Devector b = getRange<Devector, T>(0, 0, 11, 17);
+
+    a.pop_back();
+    a.pop_back();
+
+    b.pop_front();
+    b.pop_front();
+
+    swap(a, b);
+
+    assert_equals(a, {13, 14, 15, 16});
+    assert_equals(b, {1, 2, 3, 4, 5, 6});
+  }
+
+  // exceptions
+
+  bool can_throw =
+     ! std::is_nothrow_move_constructible<T>::value
+  && ! std::is_nothrow_copy_constructible<T>::value;
+
+  // small-small with exception
+
+  if (small_buffer_size<Devector>::back_size && can_throw)
+  {
+    Devector a = getRange<Devector, T>(8);
+    Devector b = getRange<Devector, T>(1,6,7,8);
+
+    test_elem_throw::on_copy_after(4);
+    test_elem_throw::on_move_after(4);
+
+    try
+    {
+      swap(a, b);
+      BOOST_ASSERT(false);
+    } catch (const test_exception&) {}
+
+    test_elem_throw::do_not_throw();
+  }
+
+  // failure in small-small swap has unspecified results but does not leak
+  BOOST_ASSERT(test_elem_base::no_living_elem());
+
+  // small-big with exception
+
+  if (small_buffer_size<Devector>::back_size && can_throw)
+  {
+    Devector small = getRange<Devector, T>(8);
+    Devector big = getRange<Devector, T>(32);
+
+    std::vector<T> big_ex = getRange<std::vector<T>, T>(32);
+
+    test_elem_throw::on_copy_after(4);
+    test_elem_throw::on_move_after(4);
+
+    try
+    {
+      swap(small, big);
+      BOOST_ASSERT(false);
+    } catch (const test_exception&) {}
+
+    test_elem_throw::do_not_throw();
+
+    // content of small might be moved
+    assert_equals(big, big_ex);
+  }
+
+  // big-big does not copy or move
+  {
+    Devector a = getRange<Devector, T>(16);
+    Devector b = getRange<Devector, T>(16);
+    std::vector<T> c = getRange<std::vector<T>, T>(16);
+
+    test_elem_throw::on_copy_after(1);
+    test_elem_throw::on_move_after(1);
+
+    swap(a, b);
+
+    test_elem_throw::do_not_throw();
+
+    assert_equals(a, c);
+    assert_equals(b, c);
+  }
+}
 
 template <typename Devector, typename T = typename Devector::value_type>
 void test_clear()
@@ -2470,6 +2649,7 @@ void test_all()
   test_insert_rvalue<Devector>();
   test_erase<Devector>();
   test_erase_range<Devector>();
+  test_swap<Devector>();
   test_clear<Devector>();
 }
 

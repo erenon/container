@@ -80,7 +80,14 @@ class devector : Allocator
   typedef typename container_detail::vector_value_traits<Allocator>::ArrayDeallocator allocation_guard;
 
   // Destroy already constructed elements
+  // TODO make construction_guard less strict (enable null guard when possible)
   typedef typename container_detail::vector_value_traits<Allocator>::ArrayDestructor construction_guard;
+
+  // When no guard needed
+  typedef container_detail::null_scoped_destructor_n<Allocator> null_construction_guard;
+
+  // Destroy either source or target
+  typedef typename container_detail::nand_destroyer<Allocator> move_guard;
 
   typedef constant_iterator<T, int> cvalue_iterator;
 
@@ -161,6 +168,8 @@ public:
     construct_from_range(cvalue_iterator(value, n), cvalue_iterator());
   }
 
+  // TODO do not iterate twice over input range
+
   template <class InputIterator>
   devector(InputIterator first, InputIterator last, const Allocator& allocator = Allocator())
     :Allocator(allocator),
@@ -188,6 +197,8 @@ public:
     :devector(x.begin(), x.end(), allocator)
   {}
 
+  // TODO implement move constructors
+
   devector(devector&&) noexcept;
   devector(devector&&, const Allocator& allocator);
 
@@ -203,6 +214,8 @@ public:
     destroy_elements(_buffer + _front_index, _buffer + _back_index);
     deallocate_buffer();
   }
+
+  // TODO implement assignment
 
   devector& operator=(const devector& x);
   devector& operator=(devector&& x) noexcept(
@@ -761,9 +774,41 @@ public:
     }
   }
 
-  void swap(devector&) noexcept(
-    std::allocator_traits<Allocator>::propagate_on_container_swap::value ||
-    std::allocator_traits<Allocator>::is_always_equal::value);
+  void swap(devector& b) noexcept
+    (std::is_nothrow_copy_constructible<T>::value || std::is_nothrow_move_constructible<T>::value)
+    // && nothrow_swappable
+  {
+    BOOST_ASSERT(
+       ! std::allocator_traits<Allocator>::propagate_on_container_swap::value
+    || get_allocator_ref() == b.get_allocator_ref()
+    ); // else it's undefined behavior
+
+    if (is_small())
+    {
+      if (b.is_small())
+      {
+        swap_small_small(*this, b);
+      }
+      else
+      {
+        swap_small_big(*this, b);
+      }
+    }
+    else
+    {
+      if (b.is_small())
+      {
+        swap_small_big(b, *this);
+      }
+      else
+      {
+        swap_big_big(*this, b);
+      }
+    }
+
+    BOOST_ASSERT(  invariants_ok());
+    BOOST_ASSERT(b.invariants_ok());
+  }
 
   void clear() noexcept
   {
@@ -855,7 +900,8 @@ private:
     copy_guard.release();
   }
 
-  void guarded_move_or_copy(pointer dst, pointer begin, const const_pointer end, construction_guard& guard)
+  template <typename Guard>
+  void guarded_move_or_copy(pointer dst, pointer begin, const const_pointer end, Guard& guard)
   {
     for (; begin != end; ++begin, ++dst)
     {
@@ -881,20 +927,31 @@ private:
     deallocate_buffer();
   }
 
-  void range_move_or_copy(pointer begin, pointer end, pointer dst, construction_guard& guard)
+  // TODO rename range_move_or_copy to opt_move_or_copy
+
+  void range_move_or_copy(pointer begin, pointer end, pointer dst)
+  {
+    typedef typename std::conditional<
+         std::is_nothrow_move_constructible<T>::value
+      || std::is_nothrow_copy_constructible<T>::value,
+      null_construction_guard,
+      construction_guard
+    >::type guard_t;
+
+    guard_t guard(dst, get_allocator_ref(), 0);
+
+    range_move_or_copy(begin, end, dst, guard);
+
+    guard.release();
+  }
+
+  template <typename Guard>
+  void range_move_or_copy(pointer begin, pointer end, pointer dst, Guard& guard)
   {
     // if trivial copy and default allocator, memcpy
     if (allocator_traits::is_trivially_copyable)
     {
       std::memcpy(dst, begin, (end - begin) * sizeof(T));
-    }
-    // if noexcept move|copy -> no guard
-    else if (
-       std::is_nothrow_move_constructible<T>::value
-    || std::is_nothrow_copy_constructible<T>::value
-    )
-    {
-      move_or_copy(dst, begin, end);
     }
     else // guard needed
     {
@@ -1284,6 +1341,151 @@ private:
     }
   }
 
+  static move_guard copy_front(devector& has_front, devector& needs_front) noexcept(
+    std::is_nothrow_copy_constructible<T>::value || std::is_nothrow_move_constructible<T>::value
+  )
+  {
+    pointer src = has_front.begin();
+    pointer dst = needs_front._buffer + has_front._front_index;
+
+    move_guard guard(
+      src, has_front.get_allocator_ref(),
+      dst, needs_front.get_allocator_ref()
+    );
+
+    needs_front.range_move_or_copy(
+      src,
+      has_front._buffer + (std::min)(has_front._back_index, needs_front._front_index),
+      dst,
+      guard
+    );
+
+    return guard;
+  }
+
+  static move_guard copy_back(devector& has_back, devector& needs_back) noexcept(
+    std::is_nothrow_copy_constructible<T>::value || std::is_nothrow_move_constructible<T>::value
+  )
+  {
+    size_type first_pos = (std::max)(has_back._front_index, needs_back._back_index);
+    pointer src = has_back._buffer + first_pos;
+    pointer dst = needs_back._buffer + first_pos;
+
+    move_guard guard(
+      src, has_back.get_allocator_ref(),
+      dst, needs_back.get_allocator_ref()
+    );
+
+    needs_back.range_move_or_copy(src, has_back.end(), dst, guard);
+
+    return guard;
+  }
+
+  static void swap_small_small(devector& a, devector& b) noexcept(
+    (std::is_nothrow_copy_constructible<T>::value || std::is_nothrow_move_constructible<T>::value)
+    // && nothrow_swappable
+  )
+  {
+    // copy construct elems without pair in the other buffer
+
+    move_guard front_guard;
+
+    if (a._front_index < b._front_index)
+    {
+      front_guard = copy_front(a, b);
+    }
+    else if (a._front_index > b._front_index)
+    {
+      front_guard = copy_front(b, a);
+    }
+
+    move_guard back_guard;
+
+    if (a._back_index > b._back_index)
+    {
+      back_guard = copy_back(a, b);
+    }
+    else if (a._back_index < b._back_index)
+    {
+      back_guard = copy_back(b, a);
+    }
+
+    // swap elems with pair in the other buffer
+
+    std::swap_ranges(
+      a._buffer + (std::min)((std::max)(a._front_index, b._front_index), a._back_index),
+      a._buffer + (std::min)(a._back_index, b._back_index),
+      b._buffer + (std::max)(a._front_index, b._front_index)
+    );
+
+    // no more exceptions
+
+    front_guard.release();
+    back_guard.release();
+
+    // swap indices
+    using std::swap;
+
+    swap(a._front_index, b._front_index);
+    swap(a._back_index, b._back_index);
+
+    if (std::allocator_traits<Allocator>::propagate_on_container_swap::value)
+    {
+      swap(a.get_allocator_ref(), b.get_allocator_ref());
+    }
+  }
+
+  static void swap_small_big(devector& small, devector& big) noexcept(
+    std::is_nothrow_move_constructible<T>::value ||
+    std::is_nothrow_copy_constructible<T>::value
+  )
+  {
+    BOOST_ASSERT(small.is_small() == true);
+    BOOST_ASSERT(big.is_small() == false);
+
+    // small -> big
+    big.range_move_or_copy(
+      small.begin(), small.end(),
+      big._storage.small_buffer_address() + small._front_index
+    );
+
+    small.destroy_elements(small.begin(), small.end());
+
+    // big -> small
+    small._buffer = big._buffer;
+    big._buffer = big._storage.small_buffer_address();
+
+    // big <-> small
+    using std::swap;
+
+    swap(small._storage._capacity, big._storage._capacity);
+    swap(small._front_index, big._front_index);
+    swap(small._back_index, big._back_index);
+
+    if (std::allocator_traits<Allocator>::propagate_on_container_swap::value)
+    {
+      swap(small.get_allocator_ref(), big.get_allocator_ref());
+    }
+  }
+
+  static void swap_big_big(devector& a, devector& b) noexcept
+  {
+    BOOST_ASSERT(a.is_small() == false);
+    BOOST_ASSERT(b.is_small() == false);
+
+    using std::swap;
+
+    swap(a._storage._capacity, b._storage._capacity);
+    swap(a._buffer, b._buffer);
+    swap(a._front_index, b._front_index);
+    swap(a._back_index, b._back_index);
+
+    if (std::allocator_traits<Allocator>::propagate_on_container_swap::value)
+    {
+      swap(a.get_allocator_ref(), b.get_allocator_ref());
+    }
+  }
+
   bool invariants_ok()
   {
     return
@@ -1297,7 +1499,7 @@ private:
 
   bool is_small() const
   {
-    return _storage._capacity <= storage_t::small_buffer_size;
+    return storage_t::small_buffer_size && _storage._capacity <= storage_t::small_buffer_size;
   }
 
   typedef boost::aligned_storage<
