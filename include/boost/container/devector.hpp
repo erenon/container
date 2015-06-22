@@ -197,13 +197,33 @@ public:
     :devector(x.begin(), x.end(), allocator)
   {}
 
-  // TODO implement move constructors
+  devector(devector&& rhs) noexcept
+    :devector(std::move(rhs), rhs.get_allocator_ref())
+  {}
 
-  devector(devector&&) noexcept;
-  devector(devector&&, const Allocator& allocator);
-
-  template <class U, class A, class SBP, class GP>
-  devector(devector<U, A, SBP, GP>&&, const Allocator& allocator = Allocator());
+  devector(devector&& rhs, const Allocator& allocator)
+    :Allocator(allocator),
+     _storage(rhs.capacity()),
+     _buffer(
+       (rhs.is_small()) ? _storage.small_buffer_address() : rhs._buffer
+     ),
+     _front_index(rhs._front_index),
+     _back_index(rhs._back_index)
+  {
+    if (rhs.is_small() == false)
+    {
+      // buffer is already stolen, reset rhs
+      rhs._storage._capacity = SmallBufferPolicy::size;
+      rhs._buffer = rhs._storage.small_buffer_address();
+      rhs._front_index = SmallBufferPolicy::front_size;
+      rhs._back_index = SmallBufferPolicy::front_size;
+    }
+    else
+    {
+      // elems must be moved/copied to small buffer
+      opt_move_or_copy(rhs.begin(), rhs.end(), begin());
+    }
+  }
 
   devector(const std::initializer_list<T>& range, const Allocator& allocator = Allocator())
     :devector(range.begin(), range.end(), allocator)

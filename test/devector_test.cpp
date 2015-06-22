@@ -470,6 +470,41 @@ void test_copy_constructor()
 }
 
 template <typename Devector, typename T = typename Devector::value_type>
+void test_move_constructor()
+{
+  { // empty
+    Devector a;
+    Devector b(std::move(a));
+
+    BOOST_ASSERT(a.empty());
+    BOOST_ASSERT(b.empty());
+  }
+
+  { // maybe small
+    Devector a = getRange<Devector, T>(1, 5, 5, 9);
+    Devector b(std::move(a));
+
+    assert_equals(b, {1, 2, 3, 4, 5, 6, 7, 8});
+
+    // a is unspecified but valid state
+    a.clear();
+    BOOST_ASSERT(a.empty());
+  }
+
+  { // big
+    Devector a = getRange<Devector, T>(32);
+    Devector b(std::move(a));
+
+    std::vector<T> exp = getRange<std::vector<T>, T>(32);
+    assert_equals(b, exp);
+
+    // a is unspecified but valid state
+    a.clear();
+    BOOST_ASSERT(a.empty());
+  }
+}
+
+template <typename Devector, typename T = typename Devector::value_type>
 void test_destructor()
 {
   Devector a;
@@ -2619,6 +2654,7 @@ template <typename Devector, typename T = typename Devector::value_type>
 void test_all()
 {
   test_constructor<Devector>();
+  test_move_constructor<Devector>();
   test_destructor<Devector>();
   test_begin_end<Devector>();
   test_empty<Devector>();
