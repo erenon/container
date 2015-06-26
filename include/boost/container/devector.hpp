@@ -15,6 +15,7 @@
 #include <boost/container/vector.hpp>
 #include <boost/container/throw_exception.hpp>
 #include <boost/container/detail/iterators.hpp>
+#include <boost/container/detail/iterator_to_raw_pointer.hpp>
 
 namespace boost {
 namespace container {
@@ -324,7 +325,10 @@ public:
         get_allocator_ref() = std::move(x.get_allocator_ref());
       }
 
-      opt_overwrite_buffer_move(x.begin(), x.end());
+      opt_overwrite_buffer(
+        std::make_move_iterator(x.begin()),
+        std::make_move_iterator(x.end())
+      );
     }
 
     BOOST_ASSERT(invariants_ok());
@@ -1595,7 +1599,8 @@ private:
     std::swap(a._buffer, b._buffer);
   }
 
-  void opt_overwrite_buffer(const_iterator first, const_iterator last)
+  template <typename RandomIterator>
+  void opt_overwrite_buffer(RandomIterator first, RandomIterator last)
   {
     const size_type n = std::distance(first, last);
 
@@ -1603,34 +1608,13 @@ private:
 
     if (allocator_traits::is_trivially_copyable)
     {
-      std::memcpy(_buffer, first, n * sizeof(T));
+      std::memcpy(_buffer, container_detail::iterator_to_pointer(first), n * sizeof(T));
       _front_index = 0;
       _back_index = n;
     }
     else
     {
       overwrite_buffer(first, last);
-    }
-  }
-
-  void opt_overwrite_buffer_move(iterator first, iterator last)
-  {
-    const size_type n = std::distance(first, last);
-
-    BOOST_ASSERT(capacity() >= n);
-
-    if (allocator_traits::is_trivially_copyable)
-    {
-      std::memcpy(_buffer, first, n * sizeof(T));
-      _front_index = 0;
-      _back_index = n;
-    }
-    else
-    {
-      overwrite_buffer(
-        std::make_move_iterator(first),
-        std::make_move_iterator(last)
-      );
     }
   }
 
