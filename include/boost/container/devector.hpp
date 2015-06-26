@@ -91,9 +91,16 @@ class devector : Allocator
 
   typedef constant_iterator<T, int> cvalue_iterator;
 
-  class allocator_traits : public std::allocator_traits<Allocator>,
+  struct allocator_traits : public std::allocator_traits<Allocator>,
                            public devector_allocator_traits<Allocator>
-  {};
+  {
+    // before C++14, std::allocator does not specify propagate_on_container_move_assignment,
+    // std::allocator_traits sets it to false. Not something we would like to use.
+    static constexpr bool propagate_on_move_assignment =
+       std::allocator_traits<Allocator>::propagate_on_container_move_assignment::value
+    || std::is_same<Allocator, std::allocator<T>>::value;
+
+  };
 
 // Standard Interface
 public:
@@ -243,21 +250,105 @@ public:
     deallocate_buffer();
   }
 
-  // TODO implement assignment
+  devector& operator=(const devector& x)
+  {
+    if (this == &x) { return *this; } // skip self
 
-  devector& operator=(const devector& x);
+    if (allocator_traits::propagate_on_container_copy_assignment::value)
+    {
+      if (get_allocator_ref() != x.get_allocator_ref())
+      {
+        clear(); // new allocator cannot free existing storage
+      }
+
+      get_allocator_ref() = x.get_allocator_ref();
+    }
+
+    size_type n = x.size();
+    if (capacity() >= n)
+    {
+      const_iterator first = x.begin();
+      const_iterator last = x.end();
+
+      opt_overwrite_buffer(first, last);
+    }
+    else
+    {
+      allocate_and_copy_range(x.begin(), x.end());
+    }
+
+    BOOST_ASSERT(invariants_ok());
+
+    return *this;
+  }
+
   devector& operator=(devector&& x) noexcept(
-    std::allocator_traits<Allocator>::propagate_on_container_move_assignment::value ||
-    std::allocator_traits<Allocator>::is_always_equal::value
-  );
+   (
+      SmallBufferPolicy::size == 0 // always big
+   || std::is_nothrow_copy_constructible<T>::value
+   || std::is_nothrow_move_constructible<T>::value
+   ) &&
+   allocator_traits::propagate_on_move_assignment
+   // || allocator_traits::is_always_equal::value -- not in C++11
+  )
+  {
+    constexpr bool copy_alloc = allocator_traits::propagate_on_move_assignment;
+    const bool equal_alloc = get_allocator_ref() == x.get_allocator_ref();
 
-  template <class U, class A, class SBP, class GP>
-  devector& operator=(const devector<U, A, SBP, GP>& x);
+    if ((copy_alloc || equal_alloc) && x.is_small() == false)
+    {
+      clear();
 
-  template <class U, class A, class SBP, class GP>
-  devector& operator=(devector<U, A, SBP, GP>&& x); /* noexcept? */
+      if (copy_alloc)
+      {
+        get_allocator_ref() = std::move(x.get_allocator_ref());
+      }
 
-  devector& operator=(std::initializer_list<T>);
+      _storage._capacity = x._storage._capacity;
+      _buffer = x._buffer;
+      _front_index = x._front_index;
+      _back_index = x._back_index;
+
+      // leave x in valid state
+      x._storage._capacity = SmallBufferPolicy::size;
+      x._buffer = _storage.small_buffer_address();
+      x._back_index = x._front_index = SmallBufferPolicy::front_size;
+    }
+    else
+    {
+      // if the allocator shouldn't be copied and they do not compare equal
+      // or the rvalue has a small buffer, we can't steal memory.
+
+      if (copy_alloc)
+      {
+        get_allocator_ref() = std::move(x.get_allocator_ref());
+      }
+
+      opt_overwrite_buffer_move(x.begin(), x.end());
+    }
+
+    BOOST_ASSERT(invariants_ok());
+
+    return *this;
+  }
+
+  devector& operator=(std::initializer_list<T> il)
+  {
+    if (capacity() >= il.size())
+    {
+      opt_overwrite_buffer(il.begin(), il.end());
+    }
+    else
+    {
+      allocate_and_copy_range(il.begin(), il.end());
+    }
+
+    BOOST_ASSERT(invariants_ok());
+
+    return *this;
+  }
+
+  // TODO implement assign
 
   template <class InputIterator>
   void assign(InputIterator first, InputIterator last);
@@ -745,6 +836,7 @@ public:
   template <class InputIterator>
   iterator insert(const_iterator position, InputIterator first, InputIterator last)
   {
+    // TODO check position == begin or end
     devector range(first, last);
     return insert_range(position, range.begin(), range.end());
   }
@@ -851,6 +943,11 @@ private:
   allocator_type& get_allocator_ref() noexcept
   {
     return static_cast<Allocator&>(*this);
+  }
+
+  const allocator_type& get_allocator_ref() const noexcept
+  {
+    return static_cast<const Allocator&>(*this);
   }
 
   pointer allocate(size_type capacity)
@@ -1219,6 +1316,8 @@ private:
 
     ctr_guard.release();
 
+    BOOST_ASSERT(invariants_ok());
+
     return n_front;
   }
 
@@ -1240,6 +1339,8 @@ private:
     _back_index += n_back;
 
     ctr_guard.release();
+
+    BOOST_ASSERT(invariants_ok());
 
     return n_back;
   }
@@ -1311,6 +1412,27 @@ private:
   }
 
   template <typename Iterator>
+  void allocate_and_copy_range(Iterator first, Iterator last)
+  {
+    size_type n = std::distance(first, last);
+
+    pointer new_buffer = allocate(n);
+    allocation_guard new_buffer_guard(new_buffer, get_allocator_ref(), n);
+
+    copy_range(first, last, new_buffer);
+
+    destroy_elements(begin(), end());
+    deallocate_buffer();
+
+    _storage._capacity = n;
+    _buffer = new_buffer;
+    _front_index = 0;
+    _back_index = n;
+
+    new_buffer_guard.release();
+  }
+
+  template <typename Iterator>
   void copy_range(Iterator begin, Iterator end, pointer dest)
   {
     construction_guard copy_guard(dest, get_allocator_ref(), 0u);
@@ -1344,6 +1466,8 @@ private:
     }
   }
 
+  // TODO rename copy_front to copy_or_move_front
+
   static move_guard copy_front(devector& has_front, devector& needs_front) noexcept(
     std::is_nothrow_copy_constructible<T>::value || std::is_nothrow_move_constructible<T>::value
   )
@@ -1365,6 +1489,8 @@ private:
 
     return guard;
   }
+
+  // TODO rename copy_back to copy_or_move_back
 
   static move_guard copy_back(devector& has_back, devector& needs_back) noexcept(
     std::is_nothrow_copy_constructible<T>::value || std::is_nothrow_move_constructible<T>::value
@@ -1487,6 +1613,83 @@ private:
     {
       swap(a.get_allocator_ref(), b.get_allocator_ref());
     }
+  }
+
+  void opt_overwrite_buffer(const_iterator first, const_iterator last)
+  {
+    const size_type n = std::distance(first, last);
+
+    BOOST_ASSERT(capacity() >= n);
+
+    if (allocator_traits::is_trivially_copyable)
+    {
+      std::memcpy(_buffer, first, n * sizeof(T));
+      _front_index = 0;
+      _back_index = n;
+    }
+    else
+    {
+      overwrite_buffer(first, last);
+    }
+  }
+
+  void opt_overwrite_buffer_move(iterator first, iterator last)
+  {
+    const size_type n = std::distance(first, last);
+
+    BOOST_ASSERT(capacity() >= n);
+
+    if (allocator_traits::is_trivially_copyable)
+    {
+      std::memcpy(_buffer, first, n * sizeof(T));
+      _front_index = 0;
+      _back_index = n;
+    }
+    else
+    {
+      overwrite_buffer(
+        std::make_move_iterator(first),
+        std::make_move_iterator(last)
+      );
+    }
+  }
+
+  template <typename RandomIterator>
+  void overwrite_buffer(RandomIterator first, RandomIterator last)
+  {
+    BOOST_ASSERT(capacity() >= std::distance(first, last));
+
+    pointer pos = _buffer;
+    construction_guard front_guard(pos, get_allocator_ref(), 0u);
+
+    while (first != last && pos != begin())
+    {
+      alloc_construct(pos++, *first++);
+      front_guard.increment_size(1u);
+    }
+
+    while (first != last && pos != end())
+    {
+      *pos++ = *first++;
+    }
+
+    construction_guard back_guard(pos, get_allocator_ref(), 0u);
+
+    iterator capacity_end = _buffer + capacity();
+    while (first != last && pos != capacity_end)
+    {
+      alloc_construct(pos++, *first++);
+      back_guard.increment_size(1u);
+    }
+
+    pointer destroy_after = (std::min)((std::max)(begin(), pos), end());
+    destroy_elements(destroy_after, end());
+
+    front_guard.release();
+    back_guard.release();
+
+    _front_index = 0;
+    _back_index = pos - begin();
   }
 
   bool invariants_ok()

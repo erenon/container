@@ -513,6 +513,233 @@ void test_destructor()
 }
 
 template <typename Devector, typename T = typename Devector::value_type>
+void test_assignment()
+{
+  { // assign to empty (maybe small)
+    Devector a;
+    const Devector b = getRange<Devector, T>(6);
+
+    a = b;
+
+    assert_equals(a, {1, 2, 3, 4, 5, 6});
+  }
+
+  { // assign from empty
+    Devector a = getRange<Devector, T>(6);
+    const Devector b;
+
+    a = b;
+
+    assert_equals(a, {});
+  }
+
+  { // assign to non-empty
+    Devector a = getRange<Devector, T>(11, 15, 15, 19);
+    const Devector b = getRange<Devector, T>(6);
+
+    a = b;
+
+    assert_equals(a, {1, 2, 3, 4, 5, 6});
+  }
+
+  { // assign to free front
+    Devector a = getRange<Devector, T>(11, 15, 15, 19);
+    a.reserve_front(8);
+    a.reset_alloc_stats();
+
+    const Devector b = getRange<Devector, T>(6);
+
+    a = b;
+
+    assert_equals(a, {1, 2, 3, 4, 5, 6});
+    BOOST_ASSERT(a.capacity_alloc_count == 0);
+  }
+
+  { // assignment overlaps contents
+    Devector a = getRange<Devector, T>(11, 15, 15, 19);
+    a.reserve_front(12);
+    a.reset_alloc_stats();
+
+    const Devector b = getRange<Devector, T>(6);
+
+    a = b;
+
+    assert_equals(a, {1, 2, 3, 4, 5, 6});
+    BOOST_ASSERT(a.capacity_alloc_count == 0);
+  }
+
+  { // assignment exceeds contents
+    Devector a = getRange<Devector, T>(11, 13, 13, 15);
+    a.reserve_front(8);
+    a.reserve_back(8);
+    a.reset_alloc_stats();
+
+    const Devector b = getRange<Devector, T>(12);
+
+    a = b;
+
+    assert_equals(a, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
+    BOOST_ASSERT(a.capacity_alloc_count == 0);
+  }
+
+  if (! std::is_nothrow_copy_constructible<T>::value)
+  {
+    // strong guarantee if reallocation is needed (no guarantee otherwise)
+    Devector a = getRange<Devector, T>(6);
+    const Devector b = getRange<Devector, T>(12);
+
+    test_elem_throw::on_copy_after(3);
+
+    try
+    {
+      a = b;
+      BOOST_ASSERT(false);
+    } catch(const test_exception&) {}
+
+    assert_equals(a, {1, 2, 3, 4, 5, 6});
+  }
+}
+
+template <typename Devector, typename T = typename Devector::value_type>
+void test_move_assignment()
+{
+  { // assign to empty (maybe small)
+    Devector a;
+    Devector b = getRange<Devector, T>(6);
+
+    a = std::move(b);
+
+    assert_equals(a, {1, 2, 3, 4, 5, 6});
+
+    // b is in unspecified but valid state
+    b.clear();
+    assert_equals(b, {});
+  }
+
+  { // assign from empty
+    Devector a = getRange<Devector, T>(6);
+    Devector b;
+
+    a = std::move(b);
+
+    assert_equals(a, {});
+    assert_equals(b, {});
+  }
+
+  { // assign to non-empty
+    Devector a = getRange<Devector, T>(11, 15, 15, 19);
+    Devector b = getRange<Devector, T>(6);
+
+    a = std::move(b);
+
+    assert_equals(a, {1, 2, 3, 4, 5, 6});
+
+    b.clear();
+    assert_equals(b, {});
+  }
+
+  // move should be used on the slow path
+  if (std::is_nothrow_move_constructible<T>::value)
+  {
+    Devector a = getRange<Devector, T>(11, 15, 15, 19);
+    Devector b = getRange<Devector, T>(6);
+
+    test_elem_throw::on_copy_after(3);
+
+    a = std::move(b);
+
+    test_elem_throw::do_not_throw();
+
+    assert_equals(a, {1, 2, 3, 4, 5, 6});
+
+    b.clear();
+    assert_equals(b, {});
+  }
+}
+
+template <typename Devector, typename T = typename Devector::value_type>
+void test_il_assignment()
+{
+  { // assign to empty (maybe small)
+    Devector a;
+
+    a = {1, 2, 3, 4, 5, 6};
+
+    assert_equals(a, {1, 2, 3, 4, 5, 6});
+  }
+
+  { // assign from empty
+    Devector a = getRange<Devector, T>(6);
+
+    a = {};
+
+    assert_equals(a, {});
+  }
+
+  { // assign to non-empty
+    Devector a = getRange<Devector, T>(11, 15, 15, 19);
+
+    a = {1, 2, 3, 4, 5, 6};
+
+    assert_equals(a, {1, 2, 3, 4, 5, 6});
+  }
+
+  { // assign to free front
+    Devector a = getRange<Devector, T>(11, 15, 15, 19);
+    a.reserve_front(8);
+    a.reset_alloc_stats();
+
+    a = {1, 2, 3, 4, 5, 6};
+
+    assert_equals(a, {1, 2, 3, 4, 5, 6});
+    BOOST_ASSERT(a.capacity_alloc_count == 0);
+  }
+
+  { // assignment overlaps contents
+    Devector a = getRange<Devector, T>(11, 15, 15, 19);
+    a.reserve_front(12);
+    a.reset_alloc_stats();
+
+    a = {1, 2, 3, 4, 5, 6};
+
+    assert_equals(a, {1, 2, 3, 4, 5, 6});
+    BOOST_ASSERT(a.capacity_alloc_count == 0);
+  }
+
+  { // assignment exceeds contents
+    Devector a = getRange<Devector, T>(11, 13, 13, 15);
+    a.reserve_front(8);
+    a.reserve_back(8);
+    a.reset_alloc_stats();
+
+    a = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
+
+    assert_equals(a, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
+    BOOST_ASSERT(a.capacity_alloc_count == 0);
+  }
+
+  if (! std::is_nothrow_copy_constructible<T>::value)
+  {
+    // strong guarantee if reallocation is needed (no guarantee otherwise)
+    Devector a = getRange<Devector, T>(6);
+
+    test_elem_throw::on_copy_after(3);
+
+    try
+    {
+      a = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
+      BOOST_ASSERT(false);
+    } catch(const test_exception&) {}
+
+    assert_equals(a, {1, 2, 3, 4, 5, 6});
+  }
+}
+
+// TODO test_assign_range
+// TODO test_assign_n
+// TODO test_assign_il
+
+template <typename Devector, typename T = typename Devector::value_type>
 void test_begin_end()
 {
   std::vector<T> expected = getRange<std::vector<T>, T>(10);
@@ -2623,6 +2850,8 @@ template <typename Devector>
 void test_all_copyable(std::true_type /* value_type is copyable */)
 {
   test_copy_constructor<Devector>();
+  test_assignment<Devector>();
+  test_il_assignment<Devector>();
   test_resize_front_copy<Devector>();
   test_resize_back_copy<Devector>();
   test_push_front<Devector>();
@@ -2656,6 +2885,7 @@ void test_all()
   test_constructor<Devector>();
   test_move_constructor<Devector>();
   test_destructor<Devector>();
+  test_move_assignment<Devector>();
   test_begin_end<Devector>();
   test_empty<Devector>();
   test_size<Devector>();
