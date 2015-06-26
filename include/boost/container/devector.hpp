@@ -926,6 +926,16 @@ public:
       }
     }
 
+    // swap indices
+    std::swap(_front_index, b._front_index);
+    std::swap(_back_index, b._back_index);
+
+    if (std::allocator_traits<Allocator>::propagate_on_container_swap::value)
+    {
+      using std::swap;
+      swap(get_allocator_ref(), b.get_allocator_ref());
+    }
+
     BOOST_ASSERT(  invariants_ok());
     BOOST_ASSERT(b.invariants_ok());
   }
@@ -1548,20 +1558,8 @@ private:
     );
 
     // no more exceptions
-
     front_guard.release();
     back_guard.release();
-
-    // swap indices
-    using std::swap;
-
-    swap(a._front_index, b._front_index);
-    swap(a._back_index, b._back_index);
-
-    if (std::allocator_traits<Allocator>::propagate_on_container_swap::value)
-    {
-      swap(a.get_allocator_ref(), b.get_allocator_ref());
-    }
   }
 
   static void swap_small_big(devector& small, devector& big) noexcept(
@@ -1585,16 +1583,7 @@ private:
     big._buffer = big._storage.small_buffer_address();
 
     // big <-> small
-    using std::swap;
-
-    swap(small._storage._capacity, big._storage._capacity);
-    swap(small._front_index, big._front_index);
-    swap(small._back_index, big._back_index);
-
-    if (std::allocator_traits<Allocator>::propagate_on_container_swap::value)
-    {
-      swap(small.get_allocator_ref(), big.get_allocator_ref());
-    }
+    std::swap(small._storage._capacity, big._storage._capacity);
   }
 
   static void swap_big_big(devector& a, devector& b) noexcept
@@ -1602,17 +1591,8 @@ private:
     BOOST_ASSERT(a.is_small() == false);
     BOOST_ASSERT(b.is_small() == false);
 
-    using std::swap;
-
-    swap(a._storage._capacity, b._storage._capacity);
-    swap(a._buffer, b._buffer);
-    swap(a._front_index, b._front_index);
-    swap(a._back_index, b._back_index);
-
-    if (std::allocator_traits<Allocator>::propagate_on_container_swap::value)
-    {
-      swap(a.get_allocator_ref(), b.get_allocator_ref());
-    }
+    std::swap(a._storage._capacity, b._storage._capacity);
+    std::swap(a._buffer, b._buffer);
   }
 
   void opt_overwrite_buffer(const_iterator first, const_iterator last)
