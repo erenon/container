@@ -338,26 +338,69 @@ public:
 
   devector& operator=(std::initializer_list<T> il)
   {
-    if (capacity() >= il.size())
-    {
-      opt_overwrite_buffer(il.begin(), il.end());
-    }
-    else
-    {
-      allocate_and_copy_range(il.begin(), il.end());
-    }
-
-    BOOST_ASSERT(invariants_ok());
-
+    assign(il.begin(), il.end());
     return *this;
   }
 
-  // TODO implement assign
+  template <typename InputIterator, typename std::enable_if<
+    container_detail::is_input_iterator<InputIterator>::value
+  ,int>::type = 0>
+  void assign(InputIterator first, InputIterator last)
+  {
+    overwrite_buffer(first, last);
+    while (first != last)
+    {
+      push_back(*first++);
+    }
+  }
 
-  template <class InputIterator>
-  void assign(InputIterator first, InputIterator last);
-  void assign(size_type n, const T& u);
-  void assign(std::initializer_list<T>);
+  template <typename ForwardIterator, typename std::enable_if<
+    container_detail::is_not_input_iterator<ForwardIterator>::value
+  ,int>::type = 0>
+  void assign(ForwardIterator first, ForwardIterator last)
+  {
+    const size_type n = std::distance(first, last);
+
+    if (capacity() >= n)
+    {
+      overwrite_buffer(first, last);
+    }
+    else
+    {
+      allocate_and_copy_range(first, last);
+    }
+
+    BOOST_ASSERT(invariants_ok());
+  }
+
+  void assign(const T* first, const T* last)
+  {
+    const size_type n = std::distance(first, last);
+
+    if (capacity() >= n)
+    {
+      opt_overwrite_buffer(first, last); // might use memcpy
+    }
+    else
+    {
+      allocate_and_copy_range(first, last);
+    }
+
+    BOOST_ASSERT(invariants_ok());
+  }
+
+  void assign(size_type n, const T& u)
+  {
+    cvalue_iterator first(u, n);
+    cvalue_iterator last;
+
+    assign(first, last);
+  }
+
+  void assign(std::initializer_list<T> il)
+  {
+    assign(il.begin(), il.end());
+  }
 
   allocator_type get_allocator() const noexcept
   {
@@ -1618,11 +1661,9 @@ private:
     }
   }
 
-  template <typename RandomIterator>
-  void overwrite_buffer(RandomIterator first, RandomIterator last)
+  template <typename InputIterator>
+  void overwrite_buffer(InputIterator& first, InputIterator last)
   {
-    BOOST_ASSERT(capacity() >= std::distance(first, last));
-
     pointer pos = _buffer;
     construction_guard front_guard(pos, get_allocator_ref(), 0u);
 
