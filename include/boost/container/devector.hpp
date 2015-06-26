@@ -1240,8 +1240,8 @@ private:
     BOOST_ASSERT(invariants_ok());
   }
 
-  template <typename BidirIterator>
-  iterator insert_range(const_iterator position, BidirIterator first, BidirIterator last)
+  template <typename RandomIterator>
+  iterator insert_range(const_iterator position, RandomIterator first, RandomIterator last)
   {
     size_type n = std::distance(first, last);
 
@@ -1268,8 +1268,8 @@ private:
     }
   }
 
-  template <typename BidirIterator>
-  iterator insert_range_slow_path(size_type index, BidirIterator first, BidirIterator last)
+  template <typename RandomIterator>
+  iterator insert_range_slow_path(size_type index, RandomIterator first, RandomIterator last)
   {
     size_type n = std::distance(first, last);
 
@@ -1307,8 +1307,8 @@ private:
     }
   }
 
-  template <typename BidirIterator>
-  size_type insert_range_slow_path_near_front(iterator position, BidirIterator& first, size_type n)
+  template <typename InputIterator>
+  size_type insert_range_slow_path_near_front(iterator position, InputIterator& first, size_type n)
   {
     size_type n_front = (std::min)(front_free_capacity(), n);
     iterator new_begin = begin() - n_front;
