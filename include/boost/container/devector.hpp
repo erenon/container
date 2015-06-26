@@ -197,11 +197,19 @@ public:
     :devector(x.begin(), x.end(), allocator)
   {}
 
-  devector(devector&& rhs) noexcept
+  devector(devector&& rhs) noexcept(
+     SmallBufferPolicy::size == 0 // always big
+  || std::is_nothrow_copy_constructible<T>::value
+  || std::is_nothrow_move_constructible<T>::value
+  )
     :devector(std::move(rhs), rhs.get_allocator_ref())
   {}
 
-  devector(devector&& rhs, const Allocator& allocator)
+  devector(devector&& rhs, const Allocator& allocator) noexcept(
+     SmallBufferPolicy::size == 0 // always big
+  || std::is_nothrow_copy_constructible<T>::value
+  || std::is_nothrow_move_constructible<T>::value
+  )
     :Allocator(allocator),
      _storage(rhs.capacity()),
      _buffer(
