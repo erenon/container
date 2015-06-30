@@ -164,6 +164,8 @@ public:
 
     copy_guard.release();
     buffer_guard.release();
+
+    BOOST_ASSERT(invariants_ok());
   }
 
   devector(size_type n, const T& value, const Allocator& allocator = Allocator())
@@ -174,12 +176,38 @@ public:
      _back_index(n)
   {
     construct_from_range(cvalue_iterator(value, n), cvalue_iterator());
+
+    BOOST_ASSERT(invariants_ok());
   }
 
-  // TODO do not iterate twice over input range
-
-  template <class InputIterator>
+  template <class InputIterator, typename std::enable_if<
+    container_detail::is_input_iterator<InputIterator>::value
+  ,int>::type = 0>
   devector(InputIterator first, InputIterator last, const Allocator& allocator = Allocator())
+    :Allocator(allocator),
+     _buffer(_storage.small_buffer_address())
+  {
+    allocation_guard buffer_guard(_buffer, get_allocator_ref(), _storage._capacity);
+    if (is_small()) { buffer_guard.release(); } // avoid disposing small buffer
+
+    construction_guard copy_guard(begin(), get_allocator_ref(), 0u);
+
+    while (first != last)
+    {
+      push_back(*first++);
+      copy_guard.increment_size(1u);
+    }
+
+    copy_guard.release();
+    buffer_guard.release();
+
+    BOOST_ASSERT(invariants_ok());
+  }
+
+  template <typename ForwardIterator, typename std::enable_if<
+    container_detail::is_not_input_iterator<ForwardIterator>::value
+  ,int>::type = 0>
+  devector(ForwardIterator first, ForwardIterator last, const Allocator& allocator = Allocator())
     :Allocator(allocator),
      _storage(std::distance(first, last)),
      _buffer(allocate(_storage._capacity)),
@@ -187,6 +215,25 @@ public:
      _back_index(std::distance(first, last))
   {
     construct_from_range(first, last);
+
+    BOOST_ASSERT(invariants_ok());
+  }
+
+  devector(const T* first, const T* last, const Allocator& allocator = Allocator())
+    :Allocator(allocator),
+     _storage(std::distance(first, last)),
+     _buffer(allocate(_storage._capacity)),
+     _front_index(),
+     _back_index(std::distance(first, last))
+  {
+    allocation_guard buffer_guard(_buffer, get_allocator_ref(), _storage._capacity);
+    if (is_small()) { buffer_guard.release(); } // avoid disposing small buffer
+
+    opt_copy(first, last, _buffer);
+
+    buffer_guard.release();
+
+    BOOST_ASSERT(invariants_ok());
   }
 
   // TODO use Allocator select_on_container_copy_construction in copy ctr
@@ -1108,9 +1155,42 @@ private:
     }
     else // guard needed
     {
-      for (; begin != end; ++begin, ++dst)
+      while (begin != end)
       {
-        alloc_construct(dst, std::move_if_noexcept(*begin));
+        alloc_construct(dst++, std::move_if_noexcept(*begin++));
+        guard.increment_size(1u);
+      }
+    }
+  }
+
+  void opt_copy(const_pointer begin, const_pointer end, pointer dst)
+  {
+    typedef typename std::conditional<
+      std::is_nothrow_copy_constructible<T>::value,
+      null_construction_guard,
+      construction_guard
+    >::type guard_t;
+
+    guard_t guard(dst, get_allocator_ref(), 0);
+
+    opt_copy(begin, end, dst, guard);
+
+    guard.release();
+  }
+
+  template <typename Guard>
+  void opt_copy(const_pointer begin, const_pointer end, pointer dst, Guard& guard)
+  {
+    // if trivial copy and default allocator, memcpy
+    if (allocator_traits::is_trivially_copyable)
+    {
+      std::memcpy(dst, begin, (end - begin) * sizeof(T));
+    }
+    else // guard needed
+    {
+      while (begin != end)
+      {
+        alloc_construct(dst++, *begin++);
         guard.increment_size(1u);
       }
     }
@@ -1468,8 +1548,8 @@ private:
     buffer_guard.release();
   }
 
-  template <typename Iterator>
-  void allocate_and_copy_range(Iterator first, Iterator last)
+  template <typename ForwardIterator>
+  void allocate_and_copy_range(ForwardIterator first, ForwardIterator last)
   {
     size_type n = std::distance(first, last);
 
@@ -1490,13 +1570,13 @@ private:
   }
 
   template <typename Iterator>
-  void copy_range(Iterator begin, Iterator end, pointer dest)
+  void copy_range(Iterator begin, Iterator end, pointer dst)
   {
-    construction_guard copy_guard(dest, get_allocator_ref(), 0u);
+    construction_guard copy_guard(dst, get_allocator_ref(), 0u);
 
-    for (; begin != end; ++begin, ++dest)
+    while(begin != end)
     {
-      alloc_construct(dest, *begin);
+      alloc_construct(dst++, *begin++);
       copy_guard.increment_size(1u);
     }
 

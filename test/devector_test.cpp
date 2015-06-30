@@ -334,141 +334,215 @@ void assert_equals(const Devector& actual, std::initializer_list<unsigned> inits
   assert_equals(actual, expected);
 }
 
-template <typename Devector, typename T = typename Devector::value_type>
-void test_constructor_if_default_constructible(std::true_type /* T has default constructor */)
+template <typename>
+struct small_buffer_size;
+
+template <typename U, typename A, typename SBP, typename GP>
+struct small_buffer_size<devector<U, A, SBP, GP>>
 {
-  Devector d(16);
-  BOOST_ASSERT(d.size() == 16);
-  BOOST_ASSERT(d.capacity() == 16);
+  static const unsigned front_size = SBP::front_size;
+  static const unsigned back_size = SBP::back_size;
+  static const unsigned value = SBP::size;
+};
+
+// END HELPERS
+
+template <typename Devector, typename T = typename Devector::value_type>
+void test_constructor_default()
+{
+  Devector a;
+
+  BOOST_ASSERT(a.empty());
+  BOOST_ASSERT(a.capacity_alloc_count == 0);
+  BOOST_ASSERT(a.capacity() == small_buffer_size<Devector>::value);
+}
+
+
+template <typename Devector, typename T = typename Devector::value_type>
+void test_constructor_allocator()
+{
+  typename Devector::allocator_type alloc_template;
+
+  Devector a(alloc_template);
+
+  BOOST_ASSERT(a.empty());
+  BOOST_ASSERT(a.capacity_alloc_count == 0);
+  BOOST_ASSERT(a.capacity() == small_buffer_size<Devector>::value);
+}
+
+template <typename Devector, typename T = typename Devector::value_type>
+void test_constructor_reserve_only()
+{
+  {
+    Devector a(16, reserve_only_tag{});
+    BOOST_ASSERT(a.size() == 0);
+    BOOST_ASSERT(a.capacity() >= 16);
+  }
+
+  {
+    Devector b(0, reserve_only_tag{});
+    BOOST_ASSERT(b.capacity_alloc_count == 0);
+  }
+}
+
+template <typename Devector, typename T = typename Devector::value_type>
+void test_constructor_n()
+{
+  {
+    Devector a(8);
+
+    assert_equals(a, {0, 0, 0, 0, 0, 0, 0, 0});
+  }
+
+  {
+    Devector b(0);
+
+    assert_equals(b, {});
+    BOOST_ASSERT(b.capacity_alloc_count == 0);
+  }
 
   if (! std::is_nothrow_constructible<T>::value)
   {
+    test_elem_throw::on_ctor_after(4);
+
     try
     {
-      test_elem_throw::on_ctor_after(4);
-      Devector td(8);
+      Devector a(8);
       BOOST_ASSERT(false);
-    }
-    catch (test_exception&) {}
+    } catch (const test_exception&) {}
+
+    BOOST_ASSERT(test_elem_base::no_living_elem());
   }
 }
 
-template <typename, typename>
-void test_constructor_if_default_constructible(std::false_type /* T has no default constructor */)
-{}
-
 template <typename Devector, typename T = typename Devector::value_type>
-void test_constructor_if_copyable(std::true_type /* T has copy constructor */)
+void test_constructor_n_copy()
 {
   {
-    T t(123);
-    Devector e(16, t);
+    const T x(9);
+    Devector a(8, x);
 
-    BOOST_ASSERT(e.size() == 16);
-    BOOST_ASSERT(e.capacity() == 16);
-
-    std::vector<T> expected(16, t);
-    assert_equals(e, expected);
+    assert_equals(a, {9, 9, 9, 9, 9, 9, 9, 9});
   }
 
   {
-    std::vector<T> expected{T(1), T(2), T(3)};
+    const T x(9);
+    Devector b(0, x);
 
-    // TODO use input iterator instead
-    Devector f(expected.begin(), expected.end());
-    assert_equals(f, expected);
-  }
-
-  {
-    std::vector<T> expected{T(1), T(2), T(3)};
-    Devector g{T(1), T(2), T(3)};
-    assert_equals(g, expected);
+    assert_equals(b, {});
+    BOOST_ASSERT(b.capacity_alloc_count == 0);
   }
 
   if (! std::is_nothrow_copy_constructible<T>::value)
   {
+    test_elem_throw::on_copy_after(4);
 
     try
     {
-      test_elem_throw::on_copy_after(4);
-      Devector te(8, T(123));
+      const T x(404);
+      Devector a(8, x);
       BOOST_ASSERT(false);
-    }
-    catch (test_exception&) {}
+    } catch (const test_exception&) {}
 
-    try
-    {
-      test_elem_throw::on_copy_after(2);
-      Devector tg{T(1), T(2), T(3)};
-      BOOST_ASSERT(false);
-    }
-    catch (test_exception&) {}
-
-    try
-    {
-      std::vector<T> source{T(1), T(2), T(3), T(4)};
-      test_elem_throw::on_copy_after(2);
-      Devector tf(source.begin(), source.end());
-      BOOST_ASSERT(false);
-    }
-    catch (test_exception&) {}
-
+    BOOST_ASSERT(test_elem_base::no_living_elem());
   }
 }
 
-template <typename, typename>
-void test_constructor_if_copyable(std::false_type /* T has no copy constructor */)
-{}
-
 template <typename Devector, typename T = typename Devector::value_type>
-void test_constructor()
+void test_constructor_input_range()
 {
-  Devector a;
-  BOOST_ASSERT(a.size() == 0);
-  BOOST_ASSERT(a.capacity_alloc_count == 0);
+  // TODO use input range
+  const std::vector<T> x = getRange<std::vector<T>, T>(16);
 
-  Devector b(typename Devector::allocator_type{});
-  BOOST_ASSERT(b.size() == 0);
-  BOOST_ASSERT(b.capacity_alloc_count == 0);
-
-  Devector c(16, reserve_only_tag{});
-  BOOST_ASSERT(c.size() == 0);
-  BOOST_ASSERT(c.capacity() >= 16);
-
-  test_constructor_if_default_constructible<Devector, T>(std::is_default_constructible<T>{});
-  test_constructor_if_copyable<Devector, T>(std::is_copy_constructible<T>{});
-}
-
-template <typename Devector, typename T = typename Devector::value_type>
-void test_copy_constructor()
-{
   {
-    Devector a{T(1), T(2), T(3), T(4), T(5)};
-    Devector b(a);
+    Devector a(x.begin(), x.end());
+    assert_equals(a, x);
+  }
 
-    BOOST_ASSERT(a == b);
+  {
+    Devector b(x.begin(), x.begin());
 
-    Devector c(a, std::allocator<T>{});
-    BOOST_ASSERT(a == c);
-
-    devector<T, std::allocator<T>, devector_small_buffer_policy<8,8>> d(a);
-    BOOST_ASSERT(a == d);
+    assert_equals(b, {});
+    BOOST_ASSERT(b.capacity_alloc_count == 0);
   }
 
   if (! std::is_nothrow_copy_constructible<T>::value)
   {
+    test_elem_throw::on_copy_after(4);
 
     try
     {
-      Devector source{T(1), T(2), T(3), T(4), T(5)};
-      test_elem_throw::on_copy_after(4);
-      Devector e(source);
+      Devector c(x.begin(), x.end());
       BOOST_ASSERT(false);
-    }
-    catch (const test_exception&) {}
-
+    } catch (const test_exception&) {}
   }
 }
+
+template <typename Devector, typename T = typename Devector::value_type>
+void test_constructor_forward_range()
+{
+  const std::forward_list<T> x{1, 2, 3, 4, 5, 6, 7, 8};
+
+  {
+    Devector a(x.begin(), x.end());
+
+    assert_equals(a, {1, 2, 3, 4, 5, 6, 7, 8});
+    BOOST_ASSERT(a.capacity_alloc_count <= 1);
+  }
+
+  {
+    Devector b(x.begin(), x.begin());
+
+    assert_equals(b, {});
+    BOOST_ASSERT(b.capacity_alloc_count == 0);
+  }
+
+  if (! std::is_nothrow_copy_constructible<T>::value)
+  {
+    test_elem_throw::on_copy_after(4);
+
+    try
+    {
+      Devector c(x.begin(), x.end());
+      BOOST_ASSERT(false);
+    } catch (const test_exception&) {}
+  }
+}
+
+template <typename Devector, typename T = typename Devector::value_type>
+void test_constructor_pointer_range()
+{
+  const std::vector<T> x = getRange<std::vector<T>, T>(8);
+  const T* xbeg = x.data();
+  const T* xend = x.data() + x.size();
+
+  {
+    Devector a(xbeg, xend);
+
+    assert_equals(a, {1, 2, 3, 4, 5, 6, 7, 8});
+    BOOST_ASSERT(a.capacity_alloc_count <= 1);
+  }
+
+  {
+    Devector b(xbeg, xbeg);
+
+    assert_equals(b, {});
+    BOOST_ASSERT(b.capacity_alloc_count == 0);
+  }
+
+  if (! std::is_nothrow_copy_constructible<T>::value)
+  {
+    test_elem_throw::on_copy_after(4);
+
+    try
+    {
+      Devector c(xbeg, xend);
+      BOOST_ASSERT(false);
+    } catch (const test_exception&) {}
+  }
+}
+
+// TODO test_copy_constructor
 
 template <typename Devector, typename T = typename Devector::value_type>
 void test_move_constructor()
@@ -1117,17 +1191,6 @@ void test_size()
   Devector c = getRange<Devector, T>(3);
   BOOST_ASSERT(c.size() == 3);
 }
-
-template <typename>
-struct small_buffer_size;
-
-template <typename U, typename A, typename SBP, typename GP>
-struct small_buffer_size<devector<U, A, SBP, GP>>
-{
-  static const unsigned front_size = SBP::front_size;
-  static const unsigned back_size = SBP::back_size;
-  static const unsigned value = SBP::size;
-};
 
 template <typename Devector, typename T = typename Devector::value_type>
 void test_capacity()
@@ -3173,7 +3236,10 @@ void test_clear()
 template <typename Devector>
 void test_all_copyable(std::true_type /* value_type is copyable */)
 {
-  test_copy_constructor<Devector>();
+  test_constructor_n_copy<Devector>();
+  test_constructor_input_range<Devector>();
+  test_constructor_forward_range<Devector>();
+  test_constructor_pointer_range<Devector>();
   test_assignment<Devector>();
   test_il_assignment<Devector>();
   test_assign_forward_range<Devector>();
@@ -3199,6 +3265,7 @@ void test_all_copyable(std::false_type /* value_type is not copyable */)
 template <typename Devector>
 void test_all_default_constructable(std::true_type)
 {
+  test_constructor_n<Devector>();
   test_resize_front<Devector>();
   test_resize_back<Devector>();
 }
@@ -3210,7 +3277,9 @@ void test_all_default_constructable(std::false_type)
 template <typename Devector, typename T = typename Devector::value_type>
 void test_all()
 {
-  test_constructor<Devector>();
+  test_constructor_default<Devector>();
+  test_constructor_allocator<Devector>();
+  test_constructor_reserve_only<Devector>();
   test_move_constructor<Devector>();
   test_destructor<Devector>();
   test_move_assignment<Devector>();
