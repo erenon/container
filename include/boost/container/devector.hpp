@@ -1603,9 +1603,7 @@ private:
     }
   }
 
-  // TODO rename copy_front to copy_or_move_front
-
-  static move_guard copy_front(devector& has_front, devector& needs_front) noexcept(
+  static move_guard copy_or_move_front(devector& has_front, devector& needs_front) noexcept(
     std::is_nothrow_copy_constructible<T>::value || std::is_nothrow_move_constructible<T>::value
   )
   {
@@ -1627,9 +1625,7 @@ private:
     return guard;
   }
 
-  // TODO rename copy_back to copy_or_move_back
-
-  static move_guard copy_back(devector& has_back, devector& needs_back) noexcept(
+  static move_guard copy_or_move_back(devector& has_back, devector& needs_back) noexcept(
     std::is_nothrow_copy_constructible<T>::value || std::is_nothrow_move_constructible<T>::value
   )
   {
@@ -1658,22 +1654,22 @@ private:
 
     if (a._front_index < b._front_index)
     {
-      front_guard = copy_front(a, b);
+      front_guard = copy_or_move_front(a, b);
     }
     else if (a._front_index > b._front_index)
     {
-      front_guard = copy_front(b, a);
+      front_guard = copy_or_move_front(b, a);
     }
 
     move_guard back_guard;
 
     if (a._back_index > b._back_index)
     {
-      back_guard = copy_back(a, b);
+      back_guard = copy_or_move_back(a, b);
     }
     else if (a._back_index < b._back_index)
     {
-      back_guard = copy_back(b, a);
+      back_guard = copy_or_move_back(b, a);
     }
 
     // swap elems with pair in the other buffer
