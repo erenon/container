@@ -100,7 +100,6 @@ class devector : Allocator
     static constexpr bool propagate_on_move_assignment =
        std::allocator_traits<Allocator>::propagate_on_container_move_assignment::value
     || std::is_same<Allocator, std::allocator<T>>::value;
-
   };
 
 // Standard Interface
@@ -236,11 +235,11 @@ public:
     BOOST_ASSERT(invariants_ok());
   }
 
-  // TODO use Allocator select_on_container_copy_construction in copy ctr
-  // TODO take care of self assignment
-
   devector(const devector& x)
-    :devector(x.begin(), x.end())
+    :devector(
+      x.begin(), x.end(),
+      allocator_traits::select_on_container_copy_construction(x.get_allocator_ref())
+    )
   {}
 
   devector(const devector& x, const Allocator& allocator)

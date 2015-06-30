@@ -542,7 +542,38 @@ void test_constructor_pointer_range()
   }
 }
 
-// TODO test_copy_constructor
+template <typename Devector, typename T = typename Devector::value_type>
+void test_copy_constructor()
+{
+  {
+    Devector a;
+    Devector b(a);
+
+    assert_equals(b, {});
+    BOOST_ASSERT(b.capacity_alloc_count == 0);
+  }
+
+  {
+    Devector a = getRange<Devector, T>(8);
+    Devector b(a);
+
+    assert_equals(b, {1, 2, 3, 4, 5, 6, 7, 8});
+    BOOST_ASSERT(b.capacity_alloc_count <= 1);
+  }
+
+  if (! std::is_nothrow_copy_constructible<T>::value)
+  {
+    Devector a = getRange<Devector, T>(8);
+
+    test_elem_throw::on_copy_after(4);
+
+    try
+    {
+      Devector b(a);
+      BOOST_ASSERT(false);
+    } catch (const test_exception&) {}
+  }
+}
 
 template <typename Devector, typename T = typename Devector::value_type>
 void test_move_constructor()
@@ -3240,6 +3271,7 @@ void test_all_copyable(std::true_type /* value_type is copyable */)
   test_constructor_input_range<Devector>();
   test_constructor_forward_range<Devector>();
   test_constructor_pointer_range<Devector>();
+  test_copy_constructor<Devector>();
   test_assignment<Devector>();
   test_il_assignment<Devector>();
   test_assign_forward_range<Devector>();
