@@ -527,7 +527,7 @@ public:
 
   size_type max_size() const noexcept
   {
-    return std::numeric_limits<size_type>::max();
+    return allocator_traits::max_size(get_allocator_ref());
   }
 
   size_type capacity() const noexcept
@@ -1107,8 +1107,17 @@ private:
   size_type calculate_new_capacity(size_type requested_capacity)
   {
     size_type policy_capacity = GrowthPolicy::new_capacity(_storage._capacity);
-    return (std::max)(requested_capacity, policy_capacity);
-    // TODO check for max_size
+    size_type new_capacity = (std::max)(requested_capacity, policy_capacity);
+
+    if (
+       new_capacity > max_size()
+    || new_capacity < capacity() // overflow
+    )
+    {
+      throw_length_error("devector: max_size() exceeded");
+    }
+
+    return new_capacity;
   }
 
   void buffer_move_or_copy(pointer dst)
