@@ -924,15 +924,42 @@ public:
     return insert_range(position, first, last);
   }
 
-  // TODO add bidirectional iterator optimization
-
-  template <class InputIterator>
+  template <typename InputIterator, typename std::enable_if<
+    container_detail::is_input_iterator<InputIterator>::value
+  ,int>::type = 0>
+//  template <typename InputIterator>
   iterator insert(const_iterator position, InputIterator first, InputIterator last)
   {
-    // TODO check position == begin or end
-    devector range(first, last);
-    return insert_range(position, range.begin(), range.end());
+    if (position == end())
+    {
+      size_type insert_index = size();
+
+      while (first != last)
+      {
+        push_back(*first++);
+      }
+
+      return begin() + insert_index;
+    }
+    else
+    {
+      devector range(first, last);
+      return insert_range(position, range.begin(), range.end());
+    }
   }
+
+  template <typename ForwardIterator, typename std::enable_if<
+    container_detail::is_not_input_iterator<ForwardIterator>::value
+  ,int>::type = 0>
+  iterator insert(const_iterator position, ForwardIterator first, ForwardIterator last)
+  {
+    return insert_range(position, first, last);
+  }
+
+//  iterator insert(const_iterator position, const T* first, const T* last)
+//  {
+//    // TODO
+//  }
 
   iterator insert(const_iterator position, std::initializer_list<T> il)
   {
@@ -1375,8 +1402,8 @@ private:
     BOOST_ASSERT(invariants_ok());
   }
 
-  template <typename RandomIterator>
-  iterator insert_range(const_iterator position, RandomIterator first, RandomIterator last)
+  template <typename ForwardIterator>
+  iterator insert_range(const_iterator position, ForwardIterator first, ForwardIterator last)
   {
     size_type n = std::distance(first, last);
 
@@ -1398,15 +1425,15 @@ private:
     }
     else
     {
-      size_type new_elem_index = position - begin();
-      return insert_range_slow_path(new_elem_index, first, last);
+      return insert_range_slow_path(position, first, last);
     }
   }
 
-  template <typename RandomIterator>
-  iterator insert_range_slow_path(size_type index, RandomIterator first, RandomIterator last)
+  template <typename ForwardIterator>
+  iterator insert_range_slow_path(const_iterator position, ForwardIterator first, ForwardIterator last)
   {
     size_type n = std::distance(first, last);
+    size_type index = position - begin();
 
     // prefer moving front to access memory forward if there are less elems to move
     const bool prefer_move_front = 2 * index <= size();
@@ -1419,7 +1446,7 @@ private:
 
       if (! prefer_move_front)
       {
-        n -= insert_range_slow_path_near_back(middle, last, n);
+        n -= insert_range_slow_path_near_back(middle, first, n);
       }
 
       if (n)
@@ -1429,7 +1456,7 @@ private:
 
       if (n && prefer_move_front)
       {
-        insert_range_slow_path_near_back(middle, last, n);
+        insert_range_slow_path_near_back(middle, first, n);
       }
 
       BOOST_ASSERT(first == last);
@@ -1442,8 +1469,8 @@ private:
     }
   }
 
-  template <typename InputIterator>
-  size_type insert_range_slow_path_near_front(iterator position, InputIterator& first, size_type n)
+  template <typename Iterator>
+  size_type insert_range_slow_path_near_front(iterator position, Iterator& first, size_type n)
   {
     size_type n_front = (std::min)(front_free_capacity(), n);
     iterator new_begin = begin() - n_front;
@@ -1466,21 +1493,21 @@ private:
     return n_front;
   }
 
-  template <typename BidirIterator>
-  size_type insert_range_slow_path_near_back(iterator position, BidirIterator& last, size_type n)
+  template <typename Iterator>
+  size_type insert_range_slow_path_near_back(iterator position, Iterator& first, size_type n)
   {
-    size_type n_back = (std::min)(back_free_capacity(), n);
-    iterator new_end = end() + n_back;
-    iterator ctr_pos = new_end;
+    const size_type n_back = (std::min)(back_free_capacity(), n);
+    iterator ctr_pos = end();
+
     construction_guard ctr_guard(ctr_pos, get_allocator_ref(), 0u);
 
-    while (ctr_pos != end())
+    for (size_type i = 0; i < n_back; ++i)
     {
-      alloc_construct(--ctr_pos, *(--last));
-      ctr_guard.increment_size_backwards(1u);
+      alloc_construct(ctr_pos++, *first++);
+      ctr_guard.increment_size(1u);
     }
 
-    std::rotate(position, ctr_pos, new_end);
+    std::rotate(position, end(), ctr_pos);
     _back_index += n_back;
 
     ctr_guard.release();
