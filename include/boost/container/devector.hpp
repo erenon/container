@@ -218,23 +218,6 @@ public:
     BOOST_ASSERT(invariants_ok());
   }
 
-  devector(const T* first, const T* last, const Allocator& allocator = Allocator())
-    :Allocator(allocator),
-     _storage(std::distance(first, last)),
-     _buffer(allocate(_storage._capacity)),
-     _front_index(),
-     _back_index(std::distance(first, last))
-  {
-    allocation_guard buffer_guard(_buffer, get_allocator_ref(), _storage._capacity);
-    if (is_small()) { buffer_guard.release(); } // avoid disposing small buffer
-
-    opt_copy(first, last, _buffer);
-
-    buffer_guard.release();
-
-    BOOST_ASSERT(invariants_ok());
-  }
-
   devector(const devector& x)
     :devector(
       x.begin(), x.end(),
@@ -317,7 +300,7 @@ public:
       const_iterator first = x.begin();
       const_iterator last = x.end();
 
-      opt_overwrite_buffer(first, last);
+      overwrite_buffer(first, last);
     }
     else
     {
@@ -371,7 +354,7 @@ public:
         get_allocator_ref() = std::move(x.get_allocator_ref());
       }
 
-      opt_overwrite_buffer(
+      overwrite_buffer(
         std::make_move_iterator(x.begin()),
         std::make_move_iterator(x.end())
       );
@@ -393,7 +376,7 @@ public:
   ,int>::type = 0>
   void assign(InputIterator first, InputIterator last)
   {
-    overwrite_buffer(first, last);
+    overwrite_buffer_impl(first, last);
     while (first != last)
     {
       push_back(*first++);
@@ -410,22 +393,6 @@ public:
     if (capacity() >= n)
     {
       overwrite_buffer(first, last);
-    }
-    else
-    {
-      allocate_and_copy_range(first, last);
-    }
-
-    BOOST_ASSERT(invariants_ok());
-  }
-
-  void assign(const T* first, const T* last)
-  {
-    const size_type n = std::distance(first, last);
-
-    if (capacity() >= n)
-    {
-      opt_overwrite_buffer(first, last); // might use memcpy
     }
     else
     {
@@ -927,7 +894,6 @@ public:
   template <typename InputIterator, typename std::enable_if<
     container_detail::is_input_iterator<InputIterator>::value
   ,int>::type = 0>
-//  template <typename InputIterator>
   iterator insert(const_iterator position, InputIterator first, InputIterator last)
   {
     if (position == end())
@@ -955,11 +921,6 @@ public:
   {
     return insert_range(position, first, last);
   }
-
-//  iterator insert(const_iterator position, const T* first, const T* last)
-//  {
-//    // TODO
-//  }
 
   iterator insert(const_iterator position, std::initializer_list<T> il)
   {
@@ -1750,27 +1711,32 @@ private:
     std::swap(a._buffer, b._buffer);
   }
 
-  template <typename RandomIterator>
-  void opt_overwrite_buffer(RandomIterator first, RandomIterator last)
+  template <typename ForwardIterator>
+  void overwrite_buffer(ForwardIterator first, ForwardIterator last)
   {
-    const size_type n = std::distance(first, last);
+    BOOST_ASSERT(capacity() >= static_cast<size_type>(std::distance(first, last)));
 
-    BOOST_ASSERT(capacity() >= n);
-
-    if (allocator_traits::is_trivially_copyable)
+    if (
+       allocator_traits::is_trivially_copyable::value
+    && std::is_pointer<ForwardIterator>::value
+    )
     {
+      const size_type n = std::distance(first, last);
+
+      BOOST_ASSERT(capacity() >= n);
+
       std::memcpy(_buffer, container_detail::iterator_to_pointer(first), n * sizeof(T));
       _front_index = 0;
       _back_index = n;
     }
     else
     {
-      overwrite_buffer(first, last);
+      overwrite_buffer_impl(first, last);
     }
   }
 
   template <typename InputIterator>
-  void overwrite_buffer(InputIterator& first, InputIterator last)
+  void overwrite_buffer_impl(InputIterator& first, InputIterator last)
   {
     pointer pos = _buffer;
     construction_guard front_guard(pos, get_allocator_ref(), 0u);
