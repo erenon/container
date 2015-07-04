@@ -1198,7 +1198,8 @@ private:
     }
   }
 
-  void opt_copy(const_pointer begin, const_pointer end, pointer dst)
+  template <typename Iterator>
+  void opt_copy(Iterator begin, Iterator end, pointer dst)
   {
     typedef typename std::conditional<
       std::is_nothrow_copy_constructible<T>::value,
@@ -1211,6 +1212,16 @@ private:
     opt_copy(begin, end, dst, guard);
 
     guard.release();
+  }
+
+  template <typename Iterator, typename Guard>
+  void opt_copy(Iterator begin, Iterator end, pointer dst, Guard& guard)
+  {
+    while (begin != end)
+    {
+      alloc_construct(dst++, *begin++);
+      guard.increment_size(1u);
+    }
   }
 
   template <typename Guard>
@@ -1578,7 +1589,7 @@ private:
     allocation_guard buffer_guard(_buffer, get_allocator_ref(), _storage._capacity);
     if (is_small()) { buffer_guard.release(); } // avoid disposing small buffer
 
-    copy_range(begin, end, _buffer);
+    opt_copy(begin, end, _buffer);
 
     buffer_guard.release();
   }
@@ -1591,7 +1602,7 @@ private:
     pointer new_buffer = allocate(n);
     allocation_guard new_buffer_guard(new_buffer, get_allocator_ref(), n);
 
-    copy_range(first, last, new_buffer);
+    opt_copy(first, last, new_buffer);
 
     destroy_elements(begin(), end());
     deallocate_buffer();
@@ -1602,20 +1613,6 @@ private:
     _back_index = n;
 
     new_buffer_guard.release();
-  }
-
-  template <typename Iterator>
-  void copy_range(Iterator begin, Iterator end, pointer dst)
-  {
-    construction_guard copy_guard(dst, get_allocator_ref(), 0u);
-
-    while(begin != end)
-    {
-      alloc_construct(dst++, *begin++);
-      copy_guard.increment_size(1u);
-    }
-
-    copy_guard.release();
   }
 
   template <typename... Args>
