@@ -57,14 +57,14 @@ struct devector_default_growth_policy
 template <typename Allocator>
 struct devector_allocator_traits
 {
-  static const bool is_trivially_copyable = false;
+  typedef std::false_type is_trivially_copyable;
 };
 
 template <typename T>
 struct devector_allocator_traits<std::allocator<T>>
 {
   // TODO use is_trivially_copyable instead of is_pod
-  static const bool is_trivially_copyable = std::is_pod<T>::value;
+  typedef typename std::is_pod<T>::type is_trivially_copyable;
 };
 
 struct reserve_only_tag {};
@@ -1184,7 +1184,7 @@ private:
   void opt_move_or_copy(pointer begin, pointer end, pointer dst, Guard& guard)
   {
     // if trivial copy and default allocator, memcpy
-    if (allocator_traits::is_trivially_copyable)
+    if (allocator_traits::is_trivially_copyable::value)
     {
       std::memcpy(dst, begin, (end - begin) * sizeof(T));
     }
@@ -1217,7 +1217,7 @@ private:
   void opt_copy(const_pointer begin, const_pointer end, pointer dst, Guard& guard)
   {
     // if trivial copy and default allocator, memcpy
-    if (allocator_traits::is_trivially_copyable)
+    if (allocator_traits::is_trivially_copyable::value)
     {
       std::memcpy(dst, begin, (end - begin) * sizeof(T));
     }
