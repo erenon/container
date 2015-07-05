@@ -427,7 +427,7 @@ class nand_destroyer
 
   ArrayDestructor _src;
   ArrayDestructor _dst;
-  bool _dst_released;
+  bool _dst_released = false;
 
   BOOST_MOVABLE_BUT_NOT_COPYABLE(nand_destroyer)
 
