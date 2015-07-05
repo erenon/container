@@ -1,13 +1,9 @@
 #ifndef BOOST_CONTAINER_CONTAINER_DEVECTOR_HPP
 #define BOOST_CONTAINER_CONTAINER_DEVECTOR_HPP
 
-#include <type_traits>
-#include <memory>
-#include <cstddef> // ptrdiff_t
+#include <algorithm>
 #include <cstring> // memcpy
 #include <type_traits>
-#include <limits>
-#include <algorithm>
 
 #include <boost/assert.hpp>
 #include <boost/aligned_storage.hpp>
