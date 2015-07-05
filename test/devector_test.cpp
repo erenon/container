@@ -8,6 +8,7 @@
 
 #include <boost/algorithm/cxx14/equal.hpp>
 #include <boost/move/core.hpp> // BOOST_MOVABLE_BUT_NOT_COPYABLE
+#include <boost/utility/compare_pointees.hpp>
 
 using namespace boost::container;
 
@@ -108,6 +109,11 @@ struct test_elem_base
   friend bool operator==(const test_elem_base& a, const test_elem_base& b)
   {
     return a._index && b._index && *(a._index) == *(b._index);
+  }
+
+  friend bool operator<(const test_elem_base& a, const test_elem_base& b)
+  {
+    return boost::less_pointees(a._index, b._index);
   }
 
   friend std::ostream& operator<<(std::ostream& out, const test_elem_base& elem)
@@ -3262,7 +3268,157 @@ void test_clear()
   }
 }
 
-// TODO test comparison operators
+template <typename Devector, typename T = typename Devector::value_type>
+void test_op_eq()
+{
+  { // equal
+    Devector a = getRange<Devector, T>(8);
+    Devector b = getRange<Devector, T>(8);
+
+    BOOST_ASSERT(a == b);
+  }
+
+  { // diff size
+    Devector a = getRange<Devector, T>(8);
+    Devector b = getRange<Devector, T>(9);
+
+    BOOST_ASSERT(!(a == b));
+  }
+
+  { // diff content
+    Devector a = getRange<Devector, T>(8);
+    Devector b = getRange<Devector, T>(2,6,6,10);
+
+    BOOST_ASSERT(!(a == b));
+  }
+}
+
+template <typename Devector, typename T = typename Devector::value_type>
+void test_op_lt()
+{
+  { // little than
+    Devector a = getRange<Devector, T>(7);
+    Devector b = getRange<Devector, T>(8);
+
+    BOOST_ASSERT(a < b);
+  }
+
+  { // equal
+    Devector a = getRange<Devector, T>(8);
+    Devector b = getRange<Devector, T>(8);
+
+    BOOST_ASSERT(!(a < b));
+  }
+
+  { // greater than
+    Devector a = getRange<Devector, T>(8);
+    Devector b = getRange<Devector, T>(7);
+
+    BOOST_ASSERT(!(a < b));
+  }
+}
+
+template <typename Devector, typename T = typename Devector::value_type>
+void test_op_ne()
+{
+  { // equal
+    Devector a = getRange<Devector, T>(8);
+    Devector b = getRange<Devector, T>(8);
+
+    BOOST_ASSERT(!(a != b));
+  }
+
+  { // diff size
+    Devector a = getRange<Devector, T>(8);
+    Devector b = getRange<Devector, T>(9);
+
+    BOOST_ASSERT(a != b);
+  }
+
+  { // diff content
+    Devector a = getRange<Devector, T>(8);
+    Devector b = getRange<Devector, T>(2,6,6,10);
+
+    BOOST_ASSERT(a != b);
+  }
+}
+
+
+template <typename Devector, typename T = typename Devector::value_type>
+void test_op_gt()
+{
+  { // little than
+    Devector a = getRange<Devector, T>(7);
+    Devector b = getRange<Devector, T>(8);
+
+    BOOST_ASSERT(!(a > b));
+  }
+
+  { // equal
+    Devector a = getRange<Devector, T>(8);
+    Devector b = getRange<Devector, T>(8);
+
+    BOOST_ASSERT(!(a > b));
+  }
+
+  { // greater than
+    Devector a = getRange<Devector, T>(8);
+    Devector b = getRange<Devector, T>(7);
+
+    BOOST_ASSERT(a > b);
+  }
+}
+
+template <typename Devector, typename T = typename Devector::value_type>
+void test_op_ge()
+{
+  { // little than
+    Devector a = getRange<Devector, T>(7);
+    Devector b = getRange<Devector, T>(8);
+
+    BOOST_ASSERT(!(a >= b));
+  }
+
+  { // equal
+    Devector a = getRange<Devector, T>(8);
+    Devector b = getRange<Devector, T>(8);
+
+    BOOST_ASSERT(a >= b);
+  }
+
+  { // greater than
+    Devector a = getRange<Devector, T>(8);
+    Devector b = getRange<Devector, T>(7);
+
+    BOOST_ASSERT(a >= b);
+  }
+}
+
+
+template <typename Devector, typename T = typename Devector::value_type>
+void test_op_le()
+{
+  { // little than
+    Devector a = getRange<Devector, T>(7);
+    Devector b = getRange<Devector, T>(8);
+
+    BOOST_ASSERT(a <= b);
+  }
+
+  { // equal
+    Devector a = getRange<Devector, T>(8);
+    Devector b = getRange<Devector, T>(8);
+
+    BOOST_ASSERT(a <= b);
+  }
+
+  { // greater than
+    Devector a = getRange<Devector, T>(8);
+    Devector b = getRange<Devector, T>(7);
+
+    BOOST_ASSERT(!(a <= b));
+  }
+}
 
 template <typename Devector>
 void test_all_copyable(std::true_type /* value_type is copyable */)
@@ -3323,7 +3479,6 @@ void test_all()
   test_all_default_constructable<Devector>(std::is_default_constructible<T>{});
 
   test_capacity<Devector>();
-
   test_reserve_front<Devector>();
   test_reserve_back<Devector>();
   test_shrink_to_fit();
@@ -3346,6 +3501,13 @@ void test_all()
   test_erase_range<Devector>();
   test_swap<Devector>();
   test_clear<Devector>();
+
+  test_op_eq<Devector>();
+  test_op_lt<Devector>();
+  test_op_ne<Devector>();
+  test_op_gt<Devector>();
+  test_op_ge<Devector>();
+  test_op_le<Devector>();
 }
 
 int main()
