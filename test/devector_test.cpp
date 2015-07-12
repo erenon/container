@@ -1665,7 +1665,7 @@ void test_shrink_to_fit_never()
 
 void test_shrink_to_fit()
 {
-  struct always_shrink : public devector_default_growth_policy
+  struct always_shrink : public devector_growth_policy
   {
     static bool should_shrink(unsigned, unsigned, unsigned)
     {
@@ -1673,7 +1673,7 @@ void test_shrink_to_fit()
     }
   };
 
-  struct never_shrink : public devector_default_growth_policy
+  struct never_shrink : public devector_growth_policy
   {
     static bool should_shrink(unsigned, unsigned, unsigned)
     {
