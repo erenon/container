@@ -1778,7 +1778,10 @@ public:
     }
     else
     {
-      devector range(first, last);
+      // avoid buffer overflow if original small buffer is too large
+      typedef devector<T, Allocator, devector_small_buffer_policy<0, 32>, GrowthPolicy> temp_devector;
+
+      temp_devector range(first, last);
       return insert_range(position, range.begin(), range.end());
     }
   }
