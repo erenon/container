@@ -144,9 +144,9 @@ class devector : Allocator
 
   struct small_buffer_traits
   {
-    static constexpr size_type front_size = SmallBufferPolicy::front_size;
-    static constexpr size_type back_size  = SmallBufferPolicy::back_size;
-    static constexpr size_type size       = front_size + back_size;
+    static constexpr unsigned front_size = SmallBufferPolicy::front_size;
+    static constexpr unsigned back_size  = SmallBufferPolicy::back_size;
+    static constexpr unsigned size       = front_size + back_size;
     static constexpr bool always_big      = (size == 0);
   };
 

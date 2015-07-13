@@ -358,7 +358,7 @@ struct small_buffer_size<devector<U, A, SBP, GP>>
 {
   static const unsigned front_size = SBP::front_size;
   static const unsigned back_size = SBP::back_size;
-  static const unsigned value = SBP::size;
+  static const unsigned value = front_size + back_size;
 };
 
 // END HELPERS
