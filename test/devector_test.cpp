@@ -2948,6 +2948,203 @@ void test_insert_n()
 }
 
 template <typename Devector, typename T = typename Devector::value_type>
+void test_insert_input_range()
+{
+  const devector<T> x{T(9), T(9), T(9), T(9), T(9)};
+
+  {
+    devector<T> input = x;
+
+    auto input_begin = make_input_iterator(input, input.begin());
+    auto input_end   = make_input_iterator(input, input.begin() + 5);
+
+    Devector a;
+    auto ret = a.insert(a.end(), input_begin, input_end);
+    assert_equals(a, {9, 9, 9, 9, 9});
+    BOOST_ASSERT(ret == a.begin());
+  }
+
+  {
+    devector<T> input = x;
+
+    auto input_begin = make_input_iterator(input, input.begin());
+    auto input_end   = make_input_iterator(input, input.begin() + 3);
+
+    Devector b = getRange<Devector, T>(8);
+    auto ret = b.insert(b.begin(), input_begin, input_end);
+    assert_equals(b, {9, 9, 9, 1, 2, 3, 4, 5, 6, 7, 8});
+    BOOST_ASSERT(ret == b.begin());
+  }
+
+  {
+    devector<T> input = x;
+
+    auto input_begin = make_input_iterator(input, input.begin());
+    auto input_end   = make_input_iterator(input, input.begin() + 3);
+
+    Devector c = getRange<Devector, T>(8);
+    auto ret = c.insert(c.end(), input_begin, input_end);
+    assert_equals(c, {1, 2, 3, 4, 5, 6, 7, 8, 9, 9, 9});
+    BOOST_ASSERT(ret == c.begin() + 8);
+  }
+
+  {
+    devector<T> input = x;
+
+    auto input_begin = make_input_iterator(input, input.begin());
+    auto input_end   = make_input_iterator(input, input.begin() + 3);
+
+    Devector d = getRange<Devector, T>(8);
+
+    d.pop_front();
+    d.pop_front();
+    d.pop_front();
+
+    auto origi_end = d.end();
+    auto ret = d.insert(d.begin(), input_begin, input_end);
+
+    assert_equals(d, {9, 9, 9, 4, 5, 6, 7, 8});
+    BOOST_ASSERT(origi_end == d.end());
+    BOOST_ASSERT(ret == d.begin());
+  }
+
+  {
+    devector<T> input = x;
+
+    auto input_begin = make_input_iterator(input, input.begin());
+    auto input_end   = make_input_iterator(input, input.begin() + 3);
+
+    Devector e = getRange<Devector, T>(8);
+
+    e.pop_back();
+    e.pop_back();
+    e.pop_back();
+
+    auto origi_begin = e.begin();
+    auto ret = e.insert(e.end(), input_begin, input_end);
+
+    assert_equals(e, {1, 2, 3, 4, 5, 9, 9, 9});
+    BOOST_ASSERT(origi_begin == e.begin());
+    BOOST_ASSERT(ret == e.begin() + 5);
+  }
+
+  {
+    devector<T> input = x;
+
+    auto input_begin = make_input_iterator(input, input.begin());
+    auto input_end   = make_input_iterator(input, input.begin() + 4);
+
+    Devector f = getRange<Devector, T>(8);
+    f.reset_alloc_stats();
+
+    f.pop_front();
+    f.pop_front();
+    f.pop_back();
+    f.pop_back();
+
+    auto ret = f.insert(f.begin() + 2, input_begin, input_end);
+
+    assert_equals(f, {3, 4, 9, 9, 9, 9, 5, 6});
+    BOOST_ASSERT(f.capacity_alloc_count == 0);
+    BOOST_ASSERT(ret == f.begin() + 2);
+  }
+
+  {
+    devector<T> input = x;
+
+    auto input_begin = make_input_iterator(input, input.begin());
+    auto input_end   = make_input_iterator(input, input.begin() + 5);
+
+    Devector g = getRange<Devector, T>(8);
+    g.reset_alloc_stats();
+
+    g.pop_front();
+    g.pop_front();
+    g.pop_back();
+    g.pop_back();
+    g.pop_back();
+
+    auto ret = g.insert(g.begin() + 2, input_begin, input_end);
+
+    assert_equals(g, {3, 4, 9, 9, 9, 9, 9, 5});
+    BOOST_ASSERT(g.capacity_alloc_count == 0);
+    BOOST_ASSERT(ret == g.begin() + 2);
+  }
+
+  {
+    devector<T> input = x;
+
+    auto input_begin = make_input_iterator(input, input.begin());
+    auto input_end   = make_input_iterator(input, input.begin() + 5);
+
+    Devector g = getRange<Devector, T>(8);
+
+    auto ret = g.insert(g.begin() + 2, input_begin, input_end);
+
+    assert_equals(g, {1, 2, 9, 9, 9, 9, 9, 3, 4, 5, 6, 7, 8});
+    BOOST_ASSERT(ret == g.begin() + 2);
+  }
+
+  { // n == 0
+    devector<T> input = x;
+
+    auto input_begin = make_input_iterator(input, input.begin());
+
+    Devector h = getRange<Devector, T>(8);
+    h.reset_alloc_stats();
+
+    auto ret = h.insert(h.begin(), input_begin, input_begin);
+    BOOST_ASSERT(ret == h.begin());
+
+    ret = h.insert(h.begin() + 4, input_begin, input_begin);
+    BOOST_ASSERT(ret == h.begin() + 4);
+
+    ret = h.insert(h.end(), input_begin, input_begin);
+    BOOST_ASSERT(ret == h.end());
+
+    assert_equals(h, {1, 2, 3, 4, 5, 6, 7, 8});
+    BOOST_ASSERT(h.capacity_alloc_count == 0);
+  }
+
+  if (! std::is_nothrow_copy_constructible<T>::value)
+  {
+    // insert at begin
+    try
+    {
+      devector<T> input = x;
+
+      auto input_begin = make_input_iterator(input, input.begin());
+      auto input_end   = make_input_iterator(input, input.begin() + 4);
+
+      Devector j = getRange<Devector, T>(4);
+
+      test_elem_throw::on_copy_after(3);
+
+      j.insert(j.begin(), input_begin, input_end);
+      BOOST_ASSERT(false);
+    }
+    catch (test_exception&) {}
+
+    // insert at end
+    try
+    {
+      devector<T> input = x;
+
+      auto input_begin = make_input_iterator(input, input.begin());
+      auto input_end   = make_input_iterator(input, input.begin() + 4);
+
+      Devector k = getRange<Devector, T>(4);
+
+      test_elem_throw::on_copy_after(3);
+
+      k.insert(k.end(), input_begin, input_end);
+      BOOST_ASSERT(false);
+    }
+    catch (test_exception&) {}
+  }
+}
+
+template <typename Devector, typename T = typename Devector::value_type>
 void test_insert_range()
 {
   std::vector<T> x{T(9), T(9), T(9), T(9), T(9)};
@@ -3664,6 +3861,7 @@ void test_all_copyable(std::true_type /* value_type is copyable */)
   test_unsafe_push_back<Devector>();
   test_insert<Devector>();
   test_insert_n<Devector>();
+  test_insert_input_range<Devector>();
   test_insert_range<Devector>();
   test_insert_init_list<Devector>();
 }
