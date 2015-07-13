@@ -950,7 +950,125 @@ void test_il_assignment()
   }
 }
 
-// TODO test_assign_input_range
+template <typename Devector, typename T = typename Devector::value_type>
+void test_assign_input_range()
+{
+  { // assign to empty, keep it small
+    const devector<T> expected = getRange<devector<T>, T>(small_buffer_size<Devector>::value);
+    devector<T> input = expected;
+
+    auto input_begin = make_input_iterator(input, input.begin());
+    auto input_end   = make_input_iterator(input, input.end());
+
+    Devector a;
+
+    a.assign(input_begin, input_end);
+
+    BOOST_ASSERT(a == expected);
+    BOOST_ASSERT(a.capacity_alloc_count == 0);
+  }
+
+  { // assign to empty (maybe small)
+    devector<T> input = getRange<devector<T>, T>(6);
+
+    auto input_begin = make_input_iterator(input, input.begin());
+    auto input_end   = make_input_iterator(input, input.end());
+
+    Devector a;
+
+    a.assign(input_begin, input_end);
+
+    assert_equals(a, {1, 2, 3, 4, 5, 6});
+  }
+
+  { // assign from empty
+    devector<T> input = getRange<devector<T>, T>(6);
+    auto input_begin = make_input_iterator(input, input.begin());
+
+    Devector a = getRange<Devector, T>(6);
+    a.assign(input_begin, input_begin);
+
+    assert_equals(a, {});
+  }
+
+  { // assign to non-empty
+    devector<T> input = getRange<devector<T>, T>(6);
+    auto input_begin = make_input_iterator(input, input.begin());
+    auto input_end   = make_input_iterator(input, input.end());
+
+    Devector a = getRange<Devector, T>(11, 15, 15, 19);
+    a.assign(input_begin, input_end);
+
+    assert_equals(a, {1, 2, 3, 4, 5, 6});
+  }
+
+  { // assign to free front
+    devector<T> input = getRange<devector<T>, T>(6);
+    auto input_begin = make_input_iterator(input, input.begin());
+    auto input_end   = make_input_iterator(input, input.end());
+
+    Devector a = getRange<Devector, T>(11, 15, 15, 19);
+    a.reserve_front(8);
+    a.reset_alloc_stats();
+
+    a.assign(input_begin, input_end);
+
+    assert_equals(a, {1, 2, 3, 4, 5, 6});
+    BOOST_ASSERT(a.capacity_alloc_count == 0);
+  }
+
+  { // assignment overlaps contents
+    devector<T> input = getRange<devector<T>, T>(6);
+    auto input_begin = make_input_iterator(input, input.begin());
+    auto input_end   = make_input_iterator(input, input.end());
+
+    Devector a = getRange<Devector, T>(11, 15, 15, 19);
+    a.reserve_front(12);
+    a.reset_alloc_stats();
+
+    a.assign(input_begin, input_end);
+
+    assert_equals(a, {1, 2, 3, 4, 5, 6});
+    BOOST_ASSERT(a.capacity_alloc_count == 0);
+  }
+
+  { // assignment exceeds contents
+    devector<T> input = getRange<devector<T>, T>(12);
+    auto input_begin = make_input_iterator(input, input.begin());
+    auto input_end   = make_input_iterator(input, input.end());
+
+    Devector a = getRange<Devector, T>(11, 13, 13, 15);
+    a.reserve_front(8);
+    a.reserve_back(8);
+    a.reset_alloc_stats();
+
+    a.assign(input_begin, input_end);
+
+    assert_equals(a, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
+    BOOST_ASSERT(a.capacity_alloc_count == 0);
+  }
+
+  if (! std::is_nothrow_copy_constructible<T>::value)
+  {
+    // strong guarantee if reallocation is needed (no guarantee otherwise)
+
+    devector<T> input = getRange<devector<T>, T>(12);
+    auto input_begin = make_input_iterator(input, input.begin());
+    auto input_end   = make_input_iterator(input, input.end());
+
+    Devector a = getRange<Devector, T>(6);
+
+    test_elem_throw::on_copy_after(3);
+
+    try
+    {
+      a.assign(input_begin, input_end);
+      BOOST_ASSERT(false);
+    } catch(const test_exception&) {}
+
+    assert_equals(a, {1, 2, 3, 4, 5, 6});
+  }
+}
 
 template <typename Devector, typename T = typename Devector::value_type>
 void test_assign_forward_range()
@@ -3533,6 +3651,7 @@ void test_all_copyable(std::true_type /* value_type is copyable */)
   test_copy_constructor<Devector>();
   test_assignment<Devector>();
   test_il_assignment<Devector>();
+  test_assign_input_range<Devector>();
   test_assign_forward_range<Devector>();
   test_assign_pointer_range<Devector>();
   test_assign_il<Devector>();
