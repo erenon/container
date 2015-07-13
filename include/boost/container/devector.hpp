@@ -30,6 +30,8 @@ namespace container {
  * Instructs devector to store `FrontSize + BackSize` elements
  * inline with its internals, allowing `FrontSize` `push_front`
  * and `BackSize` `push_back` without reallocation.
+ *
+ * Models the `SmallBufferPolicy` concept of the devector class.
  */
 template <unsigned FrontSize, unsigned BackSize>
 struct devector_small_buffer_policy
@@ -38,14 +40,25 @@ struct devector_small_buffer_policy
   BOOST_STATIC_CONSTANT(unsigned, back_size = BackSize);
 };
 
+/**
+ * Controls a devectors reallocation policy.
+ *
+ * Models the `GrowthPolicy` concept of the devector class.
+ */
 struct devector_growth_policy
 {
+  /**
+   * **Returns**: 4 times the old capacity or 10 if it's 0.
+   */
   template <class SizeType>
   static SizeType new_capacity(SizeType old_capacity)
   {
     return (old_capacity) ? old_capacity * 4u : 10;
   }
 
+  /**
+   * **Returns**: true, if the contents fit in the small buffer.
+   */
   template <class SizeType>
   static bool should_shrink(SizeType size, SizeType capacity, SizeType small_buffer_size)
   {
@@ -60,6 +73,8 @@ struct unsafe_uninitialized_tag {};
 /**
  * A vector-like sequence container providing cheap front operations (e.g: `push_front`/`pop_front`),
  * small buffer optimization and unsafe methods geared towards additional performance.
+ *
+ * Models the [SequenceContainer] and [ReversibleContainer] concepts.
  *
  * **Requires**:
  *  - `T` shall be [MoveInsertable] into the devector.
@@ -91,10 +106,26 @@ struct unsafe_uninitialized_tag {};
  *  - [MoveAssignable][]: Move assignment operator
  *  - [CopyAssignable][]: Copy assignment operator
  *
- * TODO describe SmallBufferPolicy
+ * Models of the `SmallBufferPolicy` concept must have the following static values:
  *
- * TODO describe GrowthPolicy
+ * Type | Name | Description
+ * -----|------|------------
+ * `size_type` | `front_size` | The total number of elements that can be pushed to the front without reallocation
+ * `size_type` | `back_size`  | The total number of elements that can be pushed to the back without reallocation
  *
+ * @ref devector_small_buffer_policy models the `SmallBufferPolicy` concept.
+ *
+ * Models of the `GrowthPolicy` concept must have the following static methods:
+ *
+ * Signature | Description
+ * ----------|------------
+ * `size_type new_capacity(size_type old_capacity)` | Computes the new capacity to be allocated. The returned value must be greater than `old_capacity`.
+ * `bool should_shrink(size_type size, size_type capacity, size_type small_buffer_size)` | Returns `true`, if superfluous memory should be released.
+ *
+ * @ref devector_growth_policy models the `GrowthPolicy` concept.
+ *
+ * [SequenceContainer]: http://en.cppreference.com/w/cpp/concept/SequenceContainer
+ * [ReversibleContainer]: http://en.cppreference.com/w/cpp/concept/ReversibleContainer
  * [DefaultInsertable]: http://en.cppreference.com/w/cpp/concept/DefaultInsertable
  * [MoveInsertable]: http://en.cppreference.com/w/cpp/concept/MoveInsertable
  * [CopyInsertable]: http://en.cppreference.com/w/cpp/concept/CopyInsertable
