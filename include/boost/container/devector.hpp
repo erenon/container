@@ -55,6 +55,7 @@ struct devector_growth_policy
 };
 
 struct reserve_only_tag {};
+struct unsafe_uninitialized_tag {};
 
 /**
  * A vector-like sequence container providing cheap front operations (e.g: `push_front`/`pop_front`),
@@ -214,12 +215,39 @@ public:
    *
    * **Complexity**: Constant.
    */
-  explicit devector(size_type n, reserve_only_tag, const Allocator& allocator = Allocator())
+  devector(size_type n, reserve_only_tag, const Allocator& allocator = Allocator())
     :Allocator(allocator),
      _storage(n),
      _buffer(allocate(_storage._capacity)),
      _front_index(),
      _back_index()
+  {}
+
+  /**
+   * **Unsafe constructor**, use with care.
+   *
+   * **Effects**: Constructs a devector containing `n` uninitialized elements.
+   *
+   * **Postcondition**: `size() == n`.
+   *
+   * **Exceptions**: Strong exception guarantee.
+   *
+   * **Complexity**: Constant.
+   *
+   * **Remarks**: The devector does not keep track of initialization of the elements,
+   * the initially provided uninitialized elements must be manually initialized,
+   * e.g: through the pointer returned by `data()`. This constructor is unsafe
+   * because the user must take care of the initialization, before the destructor
+   * is called at latest. Failing that, the destructor would invoke undefined
+   * behavior if the destructor of `T` is non-trivial, even if the devectors
+   * destructor is called by the stack unwinding effect of an exception.
+   */
+  devector(size_type n, unsafe_uninitialized_tag, const Allocator& allocator = Allocator())
+    :Allocator(allocator),
+     _storage(n),
+     _buffer(allocate(_storage._capacity)),
+     _front_index(),
+     _back_index(n)
   {}
 
   /**
