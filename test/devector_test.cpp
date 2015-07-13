@@ -10,6 +10,7 @@
 
 #include <cstring> // memcmp
 #include <iostream>
+#include <vector>
 #include <forward_list>
 
 #define BOOST_CONTAINER_DEVECTOR_ALLOC_STATS
@@ -260,6 +261,83 @@ struct no_default_ctor : test_elem_base
   }
 };
 
+template <typename Container>
+class input_iterator : public std::iterator<std::input_iterator_tag, typename Container::value_type>
+{
+  typedef typename Container::iterator iterator;
+  typedef typename Container::value_type value_type;
+
+  struct erase_on_destroy {};
+
+public:
+  input_iterator(Container& c, iterator it)
+    :_container(c),
+     _it(it)
+  {}
+
+  input_iterator(const input_iterator& rhs)
+    :_container(rhs._container),
+     _it(rhs._it),
+     _erase_on_destroy(rhs._erase_on_destroy)
+  {
+    rhs._erase_on_destroy = false;
+  }
+
+  input_iterator(const input_iterator& rhs, erase_on_destroy)
+    :_container(rhs._container),
+     _it(rhs._it),
+     _erase_on_destroy(true)
+  {}
+
+  ~input_iterator()
+  {
+    if (_erase_on_destroy)
+    {
+      _container.erase(_it); // must not invalidate other iterators
+    }
+  }
+
+  const value_type& operator*()
+  {
+    return *_it;
+  }
+
+  input_iterator operator++()
+  {
+    _container.erase(_it);
+    ++_it;
+    return *this;
+  }
+
+  input_iterator operator++(int)
+  {
+    input_iterator old(*this, erase_on_destroy{});
+    ++_it;
+    return old;
+  }
+
+  friend bool operator==(const input_iterator a, const input_iterator b)
+  {
+    return a._it == b._it;
+  }
+
+  friend bool operator!=(const input_iterator a, const input_iterator b)
+  {
+    return !(a == b);
+  }
+
+private:
+  Container& _container;
+  iterator _it;
+  mutable bool _erase_on_destroy = false;
+};
+
+template <typename Container>
+input_iterator<Container> make_input_iterator(Container& c, typename Container::iterator it)
+{
+  return input_iterator<Container>(c, it);
+}
+
 template <typename Container, typename T>
 Container getRange(int count)
 {
@@ -467,31 +545,46 @@ void test_constructor_n_copy()
 template <typename Devector, typename T = typename Devector::value_type>
 void test_constructor_input_range()
 {
-  // TODO use input range
-  const std::vector<T> x = getRange<std::vector<T>, T>(16);
-
   {
-    Devector a(x.begin(), x.end());
-    assert_equals(a, x);
+    const devector<T> expected = getRange<devector<T>, T>(16);
+    devector<T> input = expected;
+
+    auto input_begin = make_input_iterator(input, input.begin());
+    auto input_end   = make_input_iterator(input, input.end());
+
+    Devector a(input_begin, input_end);
+    BOOST_ASSERT(a == expected);
   }
 
-  {
-    Devector b(x.begin(), x.begin());
+  { // empty range
+    devector<T> input;
+    auto input_begin = make_input_iterator(input, input.begin());
+
+    Devector b(input_begin, input_begin);
 
     assert_equals(b, {});
     BOOST_ASSERT(b.capacity_alloc_count == 0);
   }
 
+  BOOST_ASSERT(test_elem_base::no_living_elem());
+
   if (! std::is_nothrow_copy_constructible<T>::value)
   {
+    devector<T> input = getRange<devector<T>, T>(16);
+
+    auto input_begin = make_input_iterator(input, input.begin());
+    auto input_end   = make_input_iterator(input, input.end());
+
     test_elem_throw::on_copy_after(4);
 
     try
     {
-      Devector c(x.begin(), x.end());
+      Devector c(input_begin, input_end);
       BOOST_ASSERT(false);
     } catch (const test_exception&) {}
   }
+
+  BOOST_ASSERT(test_elem_base::no_living_elem());
 }
 
 template <typename Devector, typename T = typename Devector::value_type>

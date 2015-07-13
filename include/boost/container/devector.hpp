@@ -318,22 +318,14 @@ public:
 
   >
   devector(InputIterator first, InputIterator last, const Allocator& allocator = Allocator())
-    :Allocator(allocator),
-     _buffer(_storage.small_buffer_address())
+    :devector(allocator) // Use the destructor to clean up on exception
   {
-    allocation_guard buffer_guard(_buffer, get_allocator_ref(), _storage._capacity);
-    if (is_small()) { buffer_guard.release(); } // avoid disposing small buffer
-
-    construction_guard copy_guard(begin(), get_allocator_ref(), 0u);
+    _front_index = _back_index = 0; // use the full small buffer
 
     while (first != last)
     {
       push_back(*first++);
-      copy_guard.increment_size(1u);
     }
-
-    copy_guard.release();
-    buffer_guard.release();
 
     BOOST_ASSERT(invariants_ok());
   }
