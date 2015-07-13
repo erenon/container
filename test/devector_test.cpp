@@ -1818,6 +1818,98 @@ void test_resize_back_copy()
 }
 
 template <typename Devector, typename T = typename Devector::value_type>
+void test_unsafe_uninitialized_resize_front()
+{
+  { // noop
+    Devector a = getRange<Devector, T>(8);
+    a.reset_alloc_stats();
+
+    a.unsafe_uninitialized_resize_front(a.size());
+
+    assert_equals(a, {1, 2, 3, 4, 5, 6, 7, 8});
+    BOOST_ASSERT(a.capacity_alloc_count == 0);
+  }
+
+  { // grow (maybe has enough capacity)
+    Devector b = getRange<Devector, T>(0, 0, 5, 9);
+
+    b.unsafe_uninitialized_resize_front(8);
+
+    for (int i = 0; i < 4; ++i)
+    {
+      new (b.data() + i) T(i+1);
+    }
+
+    assert_equals(b, {1, 2, 3, 4, 5, 6, 7, 8});
+  }
+
+  { // shrink uninitialized
+    Devector c = getRange<Devector, T>(8);
+
+    c.unsafe_uninitialized_resize_front(16);
+    c.unsafe_uninitialized_resize_front(8);
+
+    assert_equals(c, {1, 2, 3, 4, 5, 6, 7, 8});
+  }
+
+  if (std::is_trivially_destructible<T>::value)
+  {
+    // shrink
+    Devector d = getRange<Devector, T>(8);
+
+    d.unsafe_uninitialized_resize_front(4);
+
+    assert_equals(d, {5, 6, 7, 8});
+  }
+}
+
+template <typename Devector, typename T = typename Devector::value_type>
+void test_unsafe_uninitialized_resize_back()
+{
+  { // noop
+    Devector a = getRange<Devector, T>(8);
+    a.reset_alloc_stats();
+
+    a.unsafe_uninitialized_resize_back(a.size());
+
+    assert_equals(a, {1, 2, 3, 4, 5, 6, 7, 8});
+    BOOST_ASSERT(a.capacity_alloc_count == 0);
+  }
+
+  { // grow (maybe has enough capacity)
+    Devector b = getRange<Devector, T>(1, 5, 0, 0);
+
+    b.unsafe_uninitialized_resize_back(8);
+
+    for (int i = 0; i < 4; ++i)
+    {
+      new (b.data() + 4 + i) T(i+5);
+    }
+
+    assert_equals(b, {1, 2, 3, 4, 5, 6, 7, 8});
+  }
+
+  { // shrink uninitialized
+    Devector c = getRange<Devector, T>(8);
+
+    c.unsafe_uninitialized_resize_back(16);
+    c.unsafe_uninitialized_resize_back(8);
+
+    assert_equals(c, {1, 2, 3, 4, 5, 6, 7, 8});
+  }
+
+  if (std::is_trivially_destructible<T>::value)
+  {
+    // shrink
+    Devector d = getRange<Devector, T>(8);
+
+    d.unsafe_uninitialized_resize_back(4);
+
+    assert_equals(d, {1, 2, 3, 4});
+  }
+}
+
+template <typename Devector, typename T = typename Devector::value_type>
 void test_reserve_front()
 {
   Devector a;
@@ -3921,6 +4013,8 @@ void test_all()
   test_all_default_constructable<Devector>(std::is_default_constructible<T>{});
 
   test_capacity<Devector>();
+  test_unsafe_uninitialized_resize_front<Devector>();
+  test_unsafe_uninitialized_resize_back<Devector>();
   test_reserve_front<Devector>();
   test_reserve_back<Devector>();
   test_shrink_to_fit();

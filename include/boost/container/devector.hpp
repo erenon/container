@@ -1147,6 +1147,70 @@ public:
     BOOST_ASSERT(invariants_ok());
   }
 
+  // unsafe uninitialized resize methods
+
+  /**
+   * **Unsafe method**, use with care.
+   *
+   * **Effects**: Changes the size of the devector without properly
+   * initializing the extra or destroying the superfluous elements.
+   * If `n < size()`, elements are removed from the front without
+   * getting destroyed; if `n > size()`, uninitialized elements are added
+   * before the first element at the front.
+   *
+   * **Postcondition**: `size() == n`.
+   *
+   * **Exceptions**: Strong exception guarantee.
+   *
+   * **Complexity**: Linear in `size()` if `capacity() < n`, constant otherwise.
+   *
+   * **Remarks**: The devector does not keep track of initialization of the elements:
+   * Elements without a trivial destructor must be manually destroyed before shrinking,
+   * elements without a trivial constructor must be initialized after growing.
+   */
+  void unsafe_uninitialized_resize_front(size_type n)
+  {
+    if (n > size())
+    {
+      unsafe_uninitialized_grow_front(n);
+    }
+    else
+    {
+      unsafe_uninitialized_shrink_front(n);
+    }
+  }
+
+  /**
+   * **Unsafe method**, use with care.
+   *
+   * **Effects**: Changes the size of the devector without properly
+   * initializing the extra or destroying the superfluous elements.
+   * If `n < size()`, elements are removed from the back without
+   * getting destroyed; if `n > size()`, uninitialized elements are added
+   * after the last element at the back.
+   *
+   * **Postcondition**: `size() == n`.
+   *
+   * **Exceptions**: Strong exception guarantee.
+   *
+   * **Complexity**: Linear in `size()` if `capacity() < n`, constant otherwise.
+   *
+   * **Remarks**: The devector does not keep track of initialization of the elements:
+   * Elements without a trivial destructor must be manually destroyed before shrinking,
+   * elements without a trivial constructor must be initialized after growing.
+   */
+  void unsafe_uninitialized_resize_back(size_type n)
+  {
+    if (n > size())
+    {
+      unsafe_uninitialized_grow_back(n);
+    }
+    else
+    {
+      unsafe_uninitialized_shrink_back(n);
+    }
+  }
+
   // reserve promise:
   // after reserve_[front,back](n), n - size() push_[front,back] will not allocate
 
@@ -2235,6 +2299,50 @@ private:
     _storage._capacity = new_capacity;
 
     _back_index = _back_index + n;
+  }
+
+  void unsafe_uninitialized_grow_front(size_type n)
+  {
+    BOOST_ASSERT(n >= size());
+
+    size_type need = n - size();
+
+    if (need > front_free_capacity())
+    {
+      reallocate_at(n + back_free_capacity(), need);
+    }
+
+    _front_index -= need;
+  }
+
+  void unsafe_uninitialized_shrink_front(size_type n)
+  {
+    BOOST_ASSERT(n <= size());
+
+    size_type doesnt_need = size() - n;
+    _front_index += doesnt_need;
+  }
+
+  void unsafe_uninitialized_grow_back(size_type n)
+  {
+    BOOST_ASSERT(n >= size());
+
+    size_type need = n - size();
+
+    if (need > back_free_capacity())
+    {
+      reallocate_at(n + front_free_capacity(), front_free_capacity());
+    }
+
+    _back_index += need;
+  }
+
+  void unsafe_uninitialized_shrink_back(size_type n)
+  {
+    BOOST_ASSERT(n <= size());
+
+    size_type doesnt_need = size() - n;
+    _back_index -= doesnt_need;
   }
 
   template <typename... Args>
