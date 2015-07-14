@@ -11,6 +11,7 @@
 #include <cstring> // memcmp
 #include <iostream>
 #include <vector>
+#include <limits>
 #include <forward_list>
 
 #define BOOST_CONTAINER_DEVECTOR_ALLOC_STATS
@@ -1450,6 +1451,13 @@ void test_empty()
 
   Devector c = getRange<Devector, T>(3);
   BOOST_ASSERT(! c.empty());
+}
+
+template <typename Devector, typename T = typename Devector::value_type>
+void test_max_size()
+{
+  Devector a;
+  BOOST_ASSERT(a.max_size() == std::numeric_limits<unsigned int>::max());
 }
 
 template <typename Devector, typename T = typename Devector::value_type>
@@ -4007,6 +4015,7 @@ void test_all()
   test_move_assignment<Devector>();
   test_begin_end<Devector>();
   test_empty<Devector>();
+  test_max_size<Devector>();
   test_size<Devector>();
 
   test_all_copyable<Devector>(std::is_copy_constructible<T>{});
