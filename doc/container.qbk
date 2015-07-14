@@ -529,6 +529,35 @@ stateful allocators, etc.
 
 [endsect]
 
+[section:devector ['devector]]
+
+`devector` is a hybrid of the standard vector and deque, and `small_vector`. It offers
+cheap `push_back/push_front`, while also providing the regular features of `std::vector`.
+In contrast to the standard vector, however, `devector` offers greater control over its internals.
+
+Through policy template argument, it's possible to add small buffer optimization to `devector`:
+The specified number of elements will be stored inline with the internals, without requiring
+additional heap allocation. If the size of the `devector` exceeds the small buffer size, it
+automatically switches to an allocated storage.
+
+Through policy template argument, it's also possible to change how the `devector` grows
+its storage, allowing to minimize the required reallocations.
+
+To accommodate high performance requirements, `devector` offers unsafe methods: such methods
+can avoid unnecessary checks or initialization, but can trigger undefined behavior if their
+contract is broken.
+
+`devector` intends to be a drop in replacement of `std::vector`. However, to keep its size slim
+(16 bytes on 32 bit, 24 bytes on a typical 64 bit architecture), its `size_type` is defined as
+`unsigned int` which reduces `max_size()` to `UINT_MAX`.
+
+`devector` uses `move_if_noexcept` whenever necessary, offering strong exception guarantees.
+`devector` implements the NAD (Not A Defect) resolution of
+[@http://www.open-std.org/jtc1/sc22/wg21/docs/lwg-closed.html#526 LWG Issue 526
+(['Is it undefined if a function in the standard changes in parameters?])].
+
+[endsect]
+
 [endsect]
 
 [section:extended_functionality Extended functionality]
