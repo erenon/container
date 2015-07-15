@@ -179,7 +179,7 @@ class devector : Allocator
     static constexpr unsigned front_size = SmallBufferPolicy::front_size;
     static constexpr unsigned back_size  = SmallBufferPolicy::back_size;
     static constexpr unsigned size       = front_size + back_size;
-    static constexpr bool always_big      = (size == 0);
+    static constexpr bool     always_big = (size == 0);
   };
 
   static constexpr bool t_is_nothrow_constructible =
@@ -1941,8 +1941,8 @@ public:
    * **Returns**: Iterator pointing to the element immediately following the erased element
    * prior to its erasure. If no such element exists, `end()` is returned.
    *
-   * **Exceptions**: Strong exception guarantee if `T` is `NothrowConstructible`
-   * and `NothrowAssignable`, Basic exception guarantee otherwise.
+   * **Exceptions**: Strong exception guarantee if `T` is `NothrowAssignable`,
+   * Basic exception guarantee otherwise.
    *
    * **Complexity**: Linear in half the size of `*this`.
    */
@@ -1963,8 +1963,8 @@ public:
    * **Returns**: Iterator pointing to the element pointed to by `last` prior to any elements
    * being erased. If no such element exists, `end()` is returned.
    *
-   * **Exceptions**: Strong exception guarantee if `T` is `NothrowConstructible`
-   * and `NothrowAssignable`, Basic exception guarantee otherwise.
+   * **Exceptions**: Strong exception guarantee if `T` is `NothrowAssignable`,
+   * Basic exception guarantee otherwise.
    *
    * **Complexity**: Linear in half the size of `*this`.
    */
@@ -1987,8 +1987,8 @@ public:
    * **Returns**: Iterator to the element following the last removed element
    * or `first`, if `first == last`.
    *
-   * **Exceptions**: Strong exception guarantee if `T` is `NothrowConstructible`
-   * and `NothrowAssignable`, Basic exception guarantee otherwise.
+   * **Exceptions**: Strong exception guarantee if `T` is `NothrowAssignable`,
+   * Basic exception guarantee otherwise.
    *
    * **Complexity**: Linear in half the size of `*this`.
    */
@@ -2000,8 +2000,8 @@ public:
 
     if (front_distance <= back_distance)
     {
-      // rotate to front and destroy
-      std::rotate(begin(), first, last);
+      // move n to the right
+      move_if_noexcept_backward(begin(), first, last);
 
       for (iterator i = begin(); i != begin() + n; ++i)
       {
@@ -2014,8 +2014,8 @@ public:
     }
     else
     {
-      // rotate to back and destroy
-      std::rotate(first, last, end());
+      // move n to the left
+      move_if_noexcept(last, end(), first);
 
       for (iterator i = end() - n; i != end(); ++i)
       {
@@ -2720,6 +2720,22 @@ private:
     {
       alloc_construct(buffer + i, std::forward<Args>(args)...);
       ctr_guard.increment_size(1u);
+    }
+  }
+
+  void move_if_noexcept(iterator first, iterator last, iterator dst)
+  {
+    while (first != last)
+    {
+      *dst++ = std::move_if_noexcept(*first++);
+    }
+  }
+
+  void move_if_noexcept_backward(iterator first, iterator last, iterator dst_last)
+  {
+    while (first != last)
+    {
+      *(--dst_last) = std::move_if_noexcept(*(--last));
     }
   }
 
