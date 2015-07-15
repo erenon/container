@@ -42,7 +42,7 @@
   <span class="keyword">typedef</span> <span class="keyword">const</span> <span class="identifier">T</span> <span class="special">&amp;</span>              <a name="boost.container.new_allocator.const_reference"></a><span class="identifier">const_reference</span><span class="special">;</span>                       
   <span class="keyword">typedef</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">size_t</span>            <a name="boost.container.new_allocator.size_type"></a><span class="identifier">size_type</span><span class="special">;</span>                             
   <span class="keyword">typedef</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">ptrdiff_t</span>         <a name="boost.container.new_allocator.difference_type"></a><span class="identifier">difference_type</span><span class="special">;</span>                       
-  <span class="keyword">typedef</span> <span class="identifier">implementation_defined</span> <a name="boost.container.new_allocator.propagate_on_c_idp56371600"></a><span class="identifier">propagate_on_container_move_assignment</span><span class="special">;</span>  <span class="comment">// A integral constant of type bool with value true. </span>
+  <span class="keyword">typedef</span> <span class="identifier">implementation_defined</span> <a name="boost.container.new_allocator.propagate_on_c_idp36209552"></a><span class="identifier">propagate_on_container_move_assignment</span><span class="special">;</span>  <span class="comment">// A integral constant of type bool with value true. </span>
   <span class="keyword">typedef</span> <span class="identifier">implementation_defined</span> <a name="boost.container.new_allocator.is_always_equal"></a><span class="identifier">is_always_equal</span><span class="special">;</span>                         <span class="comment">// A integral constant of type bool with value true. </span>
 
   <span class="comment">// member classes/structs/unions</span>
@@ -53,81 +53,81 @@
   <span class="special">}</span><span class="special">;</span>
 
   <span class="comment">// <a class="link" href="new_allocator.html#boost.container.new_allocatorconstruct-copy-destruct">construct/copy/destruct</a></span>
-  <a class="link" href="new_allocator.html#idp56381248-bb"><span class="identifier">new_allocator</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span>
-  <a class="link" href="new_allocator.html#idp56382240-bb"><span class="identifier">new_allocator</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="new_allocator.html" title="Class template new_allocator">new_allocator</a> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span>
-  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> <a class="link" href="new_allocator.html#idp56385088-bb"><span class="identifier">new_allocator</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="new_allocator.html" title="Class template new_allocator">new_allocator</a><span class="special">&lt;</span> <span class="identifier">T2</span> <span class="special">&gt;</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span>
+  <a class="link" href="new_allocator.html#idp36219200-bb"><span class="identifier">new_allocator</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span>
+  <a class="link" href="new_allocator.html#idp36220192-bb"><span class="identifier">new_allocator</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="new_allocator.html" title="Class template new_allocator">new_allocator</a> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> <a class="link" href="new_allocator.html#idp36223040-bb"><span class="identifier">new_allocator</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="new_allocator.html" title="Class template new_allocator">new_allocator</a><span class="special">&lt;</span> <span class="identifier">T2</span> <span class="special">&gt;</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="new_allocator.html#idp56373952-bb">public member functions</a></span>
-  <span class="identifier">pointer</span> <a class="link" href="new_allocator.html#idp56374512-bb"><span class="identifier">allocate</span></a><span class="special">(</span><span class="identifier">size_type</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="new_allocator.html#idp56376544-bb"><span class="identifier">deallocate</span></a><span class="special">(</span><span class="identifier">pointer</span><span class="special">,</span> <span class="identifier">size_type</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span>
-  <span class="identifier">size_type</span> <a class="link" href="new_allocator.html#idp56379488-bb"><span class="identifier">max_size</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span> <span class="keyword">noexcept</span><span class="special">;</span>
+  <span class="comment">// <a class="link" href="new_allocator.html#idp36211904-bb">public member functions</a></span>
+  <span class="identifier">pointer</span> <a class="link" href="new_allocator.html#idp36212464-bb"><span class="identifier">allocate</span></a><span class="special">(</span><span class="identifier">size_type</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="new_allocator.html#idp36214496-bb"><span class="identifier">deallocate</span></a><span class="special">(</span><span class="identifier">pointer</span><span class="special">,</span> <span class="identifier">size_type</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span>
+  <span class="identifier">size_type</span> <a class="link" href="new_allocator.html#idp36217440-bb"><span class="identifier">max_size</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span> <span class="keyword">noexcept</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="new_allocator.html#idp56388800-bb">friend functions</a></span>
-  <span class="keyword">friend</span> <span class="keyword">void</span> <a class="link" href="new_allocator.html#idp56389360-bb"><span class="identifier">swap</span></a><span class="special">(</span><a class="link" href="new_allocator.html" title="Class template new_allocator">new_allocator</a> <span class="special">&amp;</span><span class="special">,</span> <a class="link" href="new_allocator.html" title="Class template new_allocator">new_allocator</a> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span>
-  <span class="keyword">friend</span> <span class="keyword">bool</span> <a class="link" href="new_allocator.html#idp56393616-bb"><span class="keyword">operator</span><span class="special">==</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="new_allocator.html" title="Class template new_allocator">new_allocator</a> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <a class="link" href="new_allocator.html" title="Class template new_allocator">new_allocator</a> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span>
-  <span class="keyword">friend</span> <span class="keyword">bool</span> <a class="link" href="new_allocator.html#idp56398240-bb"><span class="keyword">operator</span><span class="special">!=</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="new_allocator.html" title="Class template new_allocator">new_allocator</a> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <a class="link" href="new_allocator.html" title="Class template new_allocator">new_allocator</a> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span>
+  <span class="comment">// <a class="link" href="new_allocator.html#idp36226752-bb">friend functions</a></span>
+  <span class="keyword">friend</span> <span class="keyword">void</span> <a class="link" href="new_allocator.html#idp36227312-bb"><span class="identifier">swap</span></a><span class="special">(</span><a class="link" href="new_allocator.html" title="Class template new_allocator">new_allocator</a> <span class="special">&amp;</span><span class="special">,</span> <a class="link" href="new_allocator.html" title="Class template new_allocator">new_allocator</a> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span>
+  <span class="keyword">friend</span> <span class="keyword">bool</span> <a class="link" href="new_allocator.html#idp36231568-bb"><span class="keyword">operator</span><span class="special">==</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="new_allocator.html" title="Class template new_allocator">new_allocator</a> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <a class="link" href="new_allocator.html" title="Class template new_allocator">new_allocator</a> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span>
+  <span class="keyword">friend</span> <span class="keyword">bool</span> <a class="link" href="new_allocator.html#idp36236192-bb"><span class="keyword">operator</span><span class="special">!=</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="new_allocator.html" title="Class template new_allocator">new_allocator</a> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <a class="link" href="new_allocator.html" title="Class template new_allocator">new_allocator</a> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span>
 <span class="special">}</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idp111708096"></a><h2>Description</h2>
+<a name="idp102000288"></a><h2>Description</h2>
 <div class="refsect2">
-<a name="idp111708512"></a><h3>
+<a name="idp102000704"></a><h3>
 <a name="boost.container.new_allocatorconstruct-copy-destruct"></a><code class="computeroutput">new_allocator</code> 
         public
        construct/copy/destruct</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
 <li class="listitem">
-<pre class="literallayout"><a name="idp56381248-bb"></a><span class="identifier">new_allocator</span><span class="special">(</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span></pre>
+<pre class="literallayout"><a name="idp36219200-bb"></a><span class="identifier">new_allocator</span><span class="special">(</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span></pre>
 <p>Default constructor Never throws </p>
 </li>
 <li class="listitem">
-<pre class="literallayout"><a name="idp56382240-bb"></a><span class="identifier">new_allocator</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="new_allocator.html" title="Class template new_allocator">new_allocator</a> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span></pre>
+<pre class="literallayout"><a name="idp36220192-bb"></a><span class="identifier">new_allocator</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="new_allocator.html" title="Class template new_allocator">new_allocator</a> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span></pre>
 <p>Constructor from other <code class="computeroutput"><a class="link" href="new_allocator.html" title="Class template new_allocator">new_allocator</a></code>. Never throws </p>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> <a name="idp56385088-bb"></a><span class="identifier">new_allocator</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="new_allocator.html" title="Class template new_allocator">new_allocator</a><span class="special">&lt;</span> <span class="identifier">T2</span> <span class="special">&gt;</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> <a name="idp36223040-bb"></a><span class="identifier">new_allocator</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="new_allocator.html" title="Class template new_allocator">new_allocator</a><span class="special">&lt;</span> <span class="identifier">T2</span> <span class="special">&gt;</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span></pre>
 <p>Constructor from related <code class="computeroutput"><a class="link" href="new_allocator.html" title="Class template new_allocator">new_allocator</a></code>. Never throws </p>
 </li>
 </ol></div>
 </div>
 <div class="refsect2">
-<a name="idp111735760"></a><h3>
-<a name="idp56373952-bb"></a><code class="computeroutput">new_allocator</code> public member functions</h3>
+<a name="idp102027888"></a><h3>
+<a name="idp36211904-bb"></a><code class="computeroutput">new_allocator</code> public member functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
 <li class="listitem">
-<pre class="literallayout"><span class="identifier">pointer</span> <a name="idp56374512-bb"></a><span class="identifier">allocate</span><span class="special">(</span><span class="identifier">size_type</span> count<span class="special">)</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="identifier">pointer</span> <a name="idp36212464-bb"></a><span class="identifier">allocate</span><span class="special">(</span><span class="identifier">size_type</span> count<span class="special">)</span><span class="special">;</span></pre>
 <p>Allocates memory for an array of count elements. Throws std::bad_alloc if there is no enough memory </p>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">void</span> <a name="idp56376544-bb"></a><span class="identifier">deallocate</span><span class="special">(</span><span class="identifier">pointer</span> ptr<span class="special">,</span> <span class="identifier">size_type</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="keyword">void</span> <a name="idp36214496-bb"></a><span class="identifier">deallocate</span><span class="special">(</span><span class="identifier">pointer</span> ptr<span class="special">,</span> <span class="identifier">size_type</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span></pre>
 <p>Deallocates previously allocated memory. Never throws </p>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="identifier">size_type</span> <a name="idp56379488-bb"></a><span class="identifier">max_size</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span> <span class="keyword">noexcept</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="identifier">size_type</span> <a name="idp36217440-bb"></a><span class="identifier">max_size</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span> <span class="keyword">noexcept</span><span class="special">;</span></pre>
 <p>Returns the maximum number of elements that could be allocated. Never throws </p>
 </li>
 </ol></div>
 </div>
 <div class="refsect2">
-<a name="idp111756656"></a><h3>
-<a name="idp56388800-bb"></a><code class="computeroutput">new_allocator</code> friend functions</h3>
+<a name="idp102048592"></a><h3>
+<a name="idp36226752-bb"></a><code class="computeroutput">new_allocator</code> friend functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">friend</span> <span class="keyword">void</span> <a name="idp56389360-bb"></a><span class="identifier">swap</span><span class="special">(</span><a class="link" href="new_allocator.html" title="Class template new_allocator">new_allocator</a> <span class="special">&amp;</span><span class="special">,</span> <a class="link" href="new_allocator.html" title="Class template new_allocator">new_allocator</a> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="keyword">friend</span> <span class="keyword">void</span> <a name="idp36227312-bb"></a><span class="identifier">swap</span><span class="special">(</span><a class="link" href="new_allocator.html" title="Class template new_allocator">new_allocator</a> <span class="special">&amp;</span><span class="special">,</span> <a class="link" href="new_allocator.html" title="Class template new_allocator">new_allocator</a> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span></pre>
 <p>Swaps two allocators, does nothing because this <code class="computeroutput"><a class="link" href="new_allocator.html" title="Class template new_allocator">new_allocator</a></code> is stateless </p>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">friend</span> <span class="keyword">bool</span> <a name="idp56393616-bb"></a><span class="keyword">operator</span><span class="special">==</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="new_allocator.html" title="Class template new_allocator">new_allocator</a> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <a class="link" href="new_allocator.html" title="Class template new_allocator">new_allocator</a> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="keyword">friend</span> <span class="keyword">bool</span> <a name="idp36231568-bb"></a><span class="keyword">operator</span><span class="special">==</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="new_allocator.html" title="Class template new_allocator">new_allocator</a> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <a class="link" href="new_allocator.html" title="Class template new_allocator">new_allocator</a> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span></pre>
 <p>An <code class="computeroutput"><a class="link" href="new_allocator.html" title="Class template new_allocator">new_allocator</a></code> always compares to true, as memory allocated with one instance can be deallocated by another instance </p>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">friend</span> <span class="keyword">bool</span> <a name="idp56398240-bb"></a><span class="keyword">operator</span><span class="special">!=</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="new_allocator.html" title="Class template new_allocator">new_allocator</a> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <a class="link" href="new_allocator.html" title="Class template new_allocator">new_allocator</a> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="keyword">friend</span> <span class="keyword">bool</span> <a name="idp36236192-bb"></a><span class="keyword">operator</span><span class="special">!=</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="new_allocator.html" title="Class template new_allocator">new_allocator</a> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <a class="link" href="new_allocator.html" title="Class template new_allocator">new_allocator</a> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span></pre>
 <p>An <code class="computeroutput"><a class="link" href="new_allocator.html" title="Class template new_allocator">new_allocator</a></code> always compares to false, as memory allocated with one instance can be deallocated by another instance </p>
 </li>
 </ol></div>
 </div>
 <div class="refsect2">
-<a name="idp111812176"></a><h3>Specializations</h3>
-<div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p><a class="link" href="new_allocator__idp56403040.html" title="Class new_allocator&lt;void&gt;">Class new_allocator&lt;void&gt;</a></p></li></ul></div>
+<a name="idp102103808"></a><h3>Specializations</h3>
+<div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p><a class="link" href="new_allocator__idp36240992.html" title="Class new_allocator&lt;void&gt;">Class new_allocator&lt;void&gt;</a></p></li></ul></div>
 </div>
 </div>
 </div>
