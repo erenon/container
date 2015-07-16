@@ -481,6 +481,34 @@ void test_constructor_reserve_only()
 }
 
 template <typename Devector, typename T = typename Devector::value_type>
+void test_constructor_reserve_only_front_back()
+{
+  {
+    Devector a(8, 8, reserve_only_tag{});
+    BOOST_ASSERT(a.size() == 0);
+    BOOST_ASSERT(a.capacity() >= 16);
+
+    for (int i = 8; i; --i)
+    {
+      a.emplace_front(i);
+    }
+
+    for (int i = 9; i < 17; ++i)
+    {
+      a.emplace_back(i);
+    }
+
+    assert_equals(a, {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16});
+    BOOST_ASSERT(a.capacity_alloc_count <= 1);
+  }
+
+  {
+    Devector b(0, 0, reserve_only_tag{});
+    BOOST_ASSERT(b.capacity_alloc_count == 0);
+  }
+}
+
+template <typename Devector, typename T = typename Devector::value_type>
 void test_constructor_unsafe_uninitialized()
 {
   {
@@ -4009,6 +4037,7 @@ void test_all()
   test_constructor_default<Devector>();
   test_constructor_allocator<Devector>();
   test_constructor_reserve_only<Devector>();
+  test_constructor_reserve_only_front_back<Devector>();
   test_constructor_unsafe_uninitialized<Devector>();
   test_move_constructor<Devector>();
   test_destructor<Devector>();

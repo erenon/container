@@ -247,11 +247,26 @@ public:
    * **Complexity**: Constant.
    */
   devector(size_type n, reserve_only_tag, const Allocator& allocator = Allocator())
+    :devector(0, n, reserve_only_tag{}, allocator)
+  {}
+
+  /**
+   * **Effects**: Constructs an empty devector, using the specified allocator
+   * and reserves `front_cap + back_cap` slots as if `reserve_front(front_cap)` and
+   * `reserve_back(back_cap)` was called.
+   *
+   * **Postcondition**: `empty() && capacity() >= front_cap + back_cap`.
+   *
+   * **Exceptions**: Strong exception guarantee.
+   *
+   * **Complexity**: Constant.
+   */
+  devector(size_type front_cap, size_type back_cap, reserve_only_tag, const Allocator& allocator = Allocator())
     :Allocator(allocator),
-     _storage(n),
+     _storage(front_cap + back_cap),
      _buffer(allocate(_storage._capacity)),
-     _front_index(),
-     _back_index()
+     _front_index(front_cap),
+     _back_index(front_cap)
   {}
 
   /**
