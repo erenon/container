@@ -1012,10 +1012,9 @@ public:
   /**
    * **Effects**: If `sz` is greater than the size of `*this`,
    * additional value-initialized elements are inserted
-   * to the front. If `sz` is smaller than than the size
-   * of `*this`, elements are popped from the front.
-   * If an exception is thrown other than by the move constructor of a non-[CopyInsertable]
-   * type, there are no effects.
+   * to the front. Invalidates iterators if reallocation is needed.
+   * If `sz` is smaller than than the size of `*this`,
+   * elements are popped from the front.
    *
    * **Requires**: T shall be [MoveInsertable] into *this and [DefaultConstructible].
    *
@@ -1025,7 +1024,6 @@ public:
    *
    * **Complexity**: Linear in the size of `*this` and `sz`.
    *
-   * [CopyInsertable]: http://en.cppreference.com/w/cpp/concept/CopyInsertable
    * [MoveInsertable]: http://en.cppreference.com/w/cpp/concept/MoveInsertable
    * [DefaultConstructible]: http://en.cppreference.com/w/cpp/concept/DefaultConstructible
    */
@@ -1060,11 +1058,10 @@ public:
    * [CopyInsertable]: http://en.cppreference.com/w/cpp/concept/CopyInsertable
    *
    * **Effects**: If `sz` is greater than the size of `*this`,
-   * copies of `c` are inserted
-   * to the front. If `sz` is smaller than than the size
-   * of `*this`, elements are popped from the front.
-   * If an exception is thrown other than by the move constructor of a non-[CopyInsertable]
-   * type, there are no effects.
+   * copies of `c` are inserted to the front.
+   * Invalidates iterators if reallocation is needed.
+   * If `sz` is smaller than than the size of `*this`,
+   * elements are popped from the front.
    *
    * **Postcondition**: `sz == size()`.
    *
@@ -1104,10 +1101,9 @@ public:
   /**
    * **Effects**: If `sz` is greater than the size of `*this`,
    * additional value-initialized elements are inserted
-   * to the back. If `sz` is smaller than than the size
-   * of `*this`, elements are popped from the back.
-   * If an exception is thrown other than by the move constructor of a non-[CopyInsertable]
-   * type, there are no effects.
+   * to the back. Invalidates iterators if reallocation is needed.
+   * If `sz` is smaller than than the size of `*this`,
+   * elements are popped from the back.
    *
    * **Requires**: T shall be [MoveInsertable] into *this and [DefaultConstructible].
    *
@@ -1117,7 +1113,6 @@ public:
    *
    * **Complexity**: Linear in the size of `*this` and `sz`.
    *
-   * [CopyInsertable]: http://en.cppreference.com/w/cpp/concept/CopyInsertable
    * [MoveInsertable]: http://en.cppreference.com/w/cpp/concept/MoveInsertable
    * [DefaultConstructible]: http://en.cppreference.com/w/cpp/concept/DefaultConstructible
    */
@@ -1152,11 +1147,9 @@ public:
    * [CopyInsertable]: http://en.cppreference.com/w/cpp/concept/CopyInsertable
    *
    * **Effects**: If `sz` is greater than the size of `*this`,
-   * copies of `c` are inserted
-   * to the back. If `sz` is smaller than than the size
-   * of `*this`, elements are popped from the back.
-   * If an exception is thrown other than by the move constructor of a non-[CopyInsertable]
-   * type, there are no effects.
+   * copies of `c` are inserted to the back.
+   * If `sz` is smaller than than the size of `*this`,
+   * elements are popped from the back.
    *
    * **Postcondition**: `sz == size()`.
    *
@@ -1203,6 +1196,7 @@ public:
    * If `n < size()`, elements are removed from the front without
    * getting destroyed; if `n > size()`, uninitialized elements are added
    * before the first element at the front.
+   * Invalidates iterators if reallocation is needed.
    *
    * **Postcondition**: `size() == n`.
    *
@@ -1234,6 +1228,7 @@ public:
    * If `n < size()`, elements are removed from the back without
    * getting destroyed; if `n > size()`, uninitialized elements are added
    * after the last element at the back.
+   * Invalidates iterators if reallocation is needed.
    *
    * **Postcondition**: `size() == n`.
    *
@@ -1264,11 +1259,12 @@ public:
   void reserve(size_type new_capacity) { reserve_back(new_capacity); }
 
   /**
+   * [MoveInsertable]: http://en.cppreference.com/w/cpp/concept/MoveInsertable
+   *
    * **Effects**: Ensures that `n` elements can be pushed to the front
    * without requiring reallocation, where `n` is `new_capacity - size()`,
-   * if `n` is positive. Else, there are no effects.
-   * If an exception is thrown other than by the move constructor of a non-[CopyInsertable]
-   * type, there are no effects.
+   * if `n` is positive. Otherwise, there are no effects.
+   * Invalidates iterators if reallocation is needed.
    *
    * **Requires**: `T` shall be [MoveInsertable] into `*this`.
    *
@@ -1277,9 +1273,6 @@ public:
    * **Exceptions**: Strong exception guarantee.
    *
    * **Throws**: `std::length_error` if `new_capacity > max_size()`.
-   *
-   * [MoveInsertable]: http://en.cppreference.com/w/cpp/concept/MoveInsertable
-   * [CopyInsertable]: http://en.cppreference.com/w/cpp/concept/CopyInsertable
    */
   void reserve_front(size_type new_capacity)
   {
@@ -1291,11 +1284,12 @@ public:
   }
 
   /**
+   * [MoveInsertable]: http://en.cppreference.com/w/cpp/concept/MoveInsertable
+   *
    * **Effects**: Ensures that `n` elements can be pushed to the back
    * without requiring reallocation, where `n` is `new_capacity - size()`,
    * if `n` is positive. Else, there are no effects.
-   * If an exception is thrown other than by the move constructor of a non-[CopyInsertable]
-   * type, there are no effects.
+   * Invalidates iterators if reallocation is needed.
    *
    * **Requires**: `T` shall be [MoveInsertable] into `*this`.
    *
@@ -1304,9 +1298,6 @@ public:
    * **Exceptions**: Strong exception guarantee.
    *
    * **Throws**: length_error if `new_capacity > max_size()`.
-   *
-   * [MoveInsertable]: http://en.cppreference.com/w/cpp/concept/MoveInsertable
-   * [CopyInsertable]: http://en.cppreference.com/w/cpp/concept/CopyInsertable
    */
   void reserve_back(size_type new_capacity)
   {
@@ -1319,19 +1310,17 @@ public:
 
 
   /**
+   * [MoveInsertable]: http://en.cppreference.com/w/cpp/concept/MoveInsertable
+   *
    * **Effects**: Reduces `capacity()` to `size()` if the `GrowthPolicy`
    * allows it and the devector is not _small_.
-   * If an exception is thrown other than by the move constructor of a non-[CopyInsertable]
-   * type, there are no effects.
+   * Invalidates iterators if shrinks.
    *
    * **Requires**: `T` shall be [MoveInsertable] into `*this`.
    *
    * **Exceptions**: Strong exception guarantee.
    *
    * **Complexity**: Linear in the size of *this.
-   *
-   * [MoveInsertable]: http://en.cppreference.com/w/cpp/concept/MoveInsertable
-   * [CopyInsertable]: http://en.cppreference.com/w/cpp/concept/CopyInsertable
    */
   void shrink_to_fit()
   {
@@ -1505,7 +1494,7 @@ public:
   /**
    * **Effects**: Pushes a new element to the front of the devector.
    * The element is constructed in-place, using the perfect forwarded `args`
-   * as constructor arguments.
+   * as constructor arguments. Invalidates iterators if reallocation is needed.
    *
    * **Requires**: `T` shall be [EmplaceConstructible] from `args` and [MoveInsertable] into `*this`.
    *
@@ -1536,6 +1525,7 @@ public:
    * [CopyInsertable]: http://en.cppreference.com/w/cpp/concept/CopyInsertable
    *
    * **Effects**: Pushes the copy of `x` to the front of the devector.
+   * Invalidates iterators if reallocation is needed.
    *
    * **Requires**: `T` shall be [CopyInsertable] into `*this`.
    *
@@ -1552,6 +1542,7 @@ public:
    * [MoveInsertable]: http://en.cppreference.com/w/cpp/concept/MoveInsertable
    *
    * **Effects**: Move constructs a new element at the front of the devector using `x`.
+   * Invalidates iterators if reallocation is needed.
    *
    * **Requires**: `T` shall be [MoveInsertable] into `*this`.
    *
@@ -1630,7 +1621,7 @@ public:
   /**
    * **Effects**: Pushes a new element to the back of the devector.
    * The element is constructed in-place, using the perfect forwarded `args`
-   * as constructor arguments.
+   * as constructor arguments. Invalidates iterators if reallocation is needed.
    *
    * **Requires**: `T` shall be [EmplaceConstructible] from `args` and [MoveInsertable] into `*this`,
    * and [MoveAssignable].
@@ -1663,6 +1654,7 @@ public:
    * [CopyInsertable]: http://en.cppreference.com/w/cpp/concept/CopyInsertable
    *
    * **Effects**: Pushes the copy of `x` to the back of the devector.
+   * Invalidates iterators if reallocation is needed.
    *
    * **Requires**: `T` shall be [CopyInsertable] into `*this`.
    *
@@ -1679,6 +1671,7 @@ public:
    * [MoveInsertable]: http://en.cppreference.com/w/cpp/concept/MoveInsertable
    *
    * **Effects**: Move constructs a new element at the back of the devector using `x`.
+   * Invalidates iterators if reallocation is needed.
    *
    * **Requires**: `T` shall be [MoveInsertable] into `*this`.
    *
@@ -1757,7 +1750,7 @@ public:
   /**
    * **Effects**: Constructs a new element before the element pointed by `position`.
    * The element is constructed in-place, using the perfect forwarded `args`
-   * as constructor arguments.
+   * as constructor arguments. Invalidates iterators if reallocation is needed.
    *
    * **Requires**: `T` shall be [EmplaceConstructible], and [MoveInsertable] into `*this`,
    * and [MoveAssignable].
@@ -1800,7 +1793,7 @@ public:
 
   /**
    * **Effects**: Copy constructs a new element before the element pointed by `position`,
-   * using `x` as constructor argument.
+   * using `x` as constructor argument. Invalidates iterators if reallocation is needed.
    *
    * **Requires**: `T` shall be [CopyInsertable] into `*this` and and [CopyAssignable].
    *
@@ -1821,7 +1814,7 @@ public:
 
   /**
    * **Effects**: Move constructs a new element before the element pointed by `position`,
-   * using `x` as constructor argument.
+   * using `x` as constructor argument. Invalidates iterators if reallocation is needed.
    *
    * **Requires**: `T` shall be [MoveInsertable] into `*this` and and [CopyAssignable].
    *
@@ -1843,7 +1836,7 @@ public:
 
   /**
    * **Effects**: Copy constructs `n` elements before the element pointed by `position`,
-   * using `x` as constructor argument.
+   * using `x` as constructor argument. Invalidates iterators if reallocation is needed.
    *
    * **Requires**: `T` shall be [CopyInsertable] into `*this` and and [CopyAssignable].
    *
@@ -1867,6 +1860,7 @@ public:
   /**
    * **Effects**: Copy constructs elements before the element pointed by position
    * using each element in the rage pointed by `first` and `last` as constructor arguments.
+   * Invalidates iterators if reallocation is needed.
    *
    * **Requires**: `T` shall be [EmplaceConstructible] into `*this`. If the specified iterator
    * does not meet the forward iterator requirements, `T` shall also be [MoveInsertable] into `*this`
@@ -1948,6 +1942,7 @@ public:
    * [MoveAssignable]: http://en.cppreference.com/w/cpp/concept/MoveAssignable
    *
    * **Effects**: Destroys the element pointed by `position` and removes it from the devector.
+   * Invalidates iterators.
    *
    * **Requires**: `T` shall be [MoveAssignable].
    *
@@ -1970,6 +1965,7 @@ public:
    * [MoveAssignable]: http://en.cppreference.com/w/cpp/concept/MoveAssignable
    *
    * **Effects**: Destroys the range `[first,last)` and removes it from the devector.
+   * Invalidates iterators.
    *
    * **Requires**: `T` shall be [MoveAssignable].
    *
@@ -1994,6 +1990,7 @@ public:
    * [MoveAssignable]: http://en.cppreference.com/w/cpp/concept/MoveAssignable
    *
    * **Effects**: Destroys the range `[first,last)` and removes it from the devector.
+   * Invalidates iterators.
    *
    * **Requires**: `T` shall be [MoveAssignable].
    *
