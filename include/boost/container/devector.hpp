@@ -199,8 +199,8 @@ public:
   typedef Allocator allocator_type;
   typedef value_type& reference;
   typedef const value_type& const_reference;
-  typedef typename std::allocator_traits<Allocator>::pointer pointer;
-  typedef typename std::allocator_traits<Allocator>::const_pointer const_pointer;
+  typedef typename allocator_traits::pointer pointer;
+  typedef typename allocator_traits::const_pointer const_pointer;
   typedef pointer iterator;
   typedef const_pointer const_iterator;
   typedef unsigned int size_type;
@@ -804,7 +804,7 @@ public:
    */
   allocator_type get_allocator() const noexcept
   {
-    return static_cast<const Allocator&>(*this);
+    return static_cast<const allocator_type&>(*this);
   }
 
   // iterators
@@ -1614,7 +1614,7 @@ public:
   void pop_front()
   {
     BOOST_ASSERT(! empty());
-    std::allocator_traits<Allocator>::destroy(get_allocator_ref(), _buffer + _front_index);
+    allocator_traits::destroy(get_allocator_ref(), _buffer + _front_index);
     ++_front_index;
     BOOST_ASSERT(invariants_ok());
   }
@@ -1744,7 +1744,7 @@ public:
   {
     BOOST_ASSERT(! empty());
     --_back_index;
-    std::allocator_traits<Allocator>::destroy(get_allocator_ref(), _buffer + _back_index);
+    allocator_traits::destroy(get_allocator_ref(), _buffer + _back_index);
     BOOST_ASSERT(invariants_ok());
   }
 
@@ -2018,7 +2018,7 @@ public:
 
       for (iterator i = begin(); i != begin() + n; ++i)
       {
-        std::allocator_traits<Allocator>::destroy(get_allocator_ref(), i);
+        allocator_traits::destroy(get_allocator_ref(), i);
       }
       _front_index += n;
 
@@ -2032,7 +2032,7 @@ public:
 
       for (iterator i = end() - n; i != end(); ++i)
       {
-        std::allocator_traits<Allocator>::destroy(get_allocator_ref(), i);
+        allocator_traits::destroy(get_allocator_ref(), i);
       }
       _back_index -= n;
 
@@ -2065,7 +2065,7 @@ public:
   void swap(devector& b) noexcept(t_is_nothrow_constructible) // && nothrow_swappable
   {
     BOOST_ASSERT(
-       ! std::allocator_traits<Allocator>::propagate_on_container_swap::value
+       ! allocator_traits::propagate_on_container_swap::value
     || get_allocator_ref() == b.get_allocator_ref()
     ); // else it's undefined behavior
 
@@ -2096,7 +2096,7 @@ public:
     std::swap(_front_index, b._front_index);
     std::swap(_back_index, b._back_index);
 
-    if (std::allocator_traits<Allocator>::propagate_on_container_swap::value)
+    if (allocator_traits::propagate_on_container_swap::value)
     {
       using std::swap;
       swap(get_allocator_ref(), b.get_allocator_ref());
@@ -2130,12 +2130,12 @@ private:
 
   allocator_type& get_allocator_ref() noexcept
   {
-    return static_cast<Allocator&>(*this);
+    return static_cast<allocator_type&>(*this);
   }
 
   const allocator_type& get_allocator_ref() const noexcept
   {
-    return static_cast<const Allocator&>(*this);
+    return static_cast<const allocator_type&>(*this);
   }
 
   pointer allocate(size_type capacity)
@@ -2149,7 +2149,7 @@ private:
       #ifdef BOOST_CONTAINER_DEVECTOR_ALLOC_STATS
       ++capacity_alloc_count;
       #endif // BOOST_CONTAINER_DEVECTOR_ALLOC_STATS
-      return std::allocator_traits<Allocator>::allocate(get_allocator_ref(), capacity);
+      return allocator_traits::allocate(get_allocator_ref(), capacity);
     }
   }
 
@@ -2157,7 +2157,7 @@ private:
   {
     for (; begin != end; ++begin)
     {
-      std::allocator_traits<Allocator>::destroy(get_allocator_ref(), begin);
+      allocator_traits::destroy(get_allocator_ref(), begin);
     }
   }
 
@@ -2165,14 +2165,14 @@ private:
   {
     if (! is_small() && _buffer)
     {
-      std::allocator_traits<Allocator>::deallocate(get_allocator_ref(), _buffer, _storage._capacity);
+      allocator_traits::deallocate(get_allocator_ref(), _buffer, _storage._capacity);
     }
   }
 
   template <typename... Args>
   void alloc_construct(pointer dst, Args&&... args)
   {
-    std::allocator_traits<Allocator>::construct(
+    allocator_traits::construct(
       get_allocator_ref(),
       dst,
       std::forward<Args>(args)...
