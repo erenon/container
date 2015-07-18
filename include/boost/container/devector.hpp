@@ -74,7 +74,7 @@ struct unsafe_uninitialized_tag {};
  * A vector-like sequence container providing cheap front operations (e.g: `push_front`/`pop_front`),
  * small buffer optimization and unsafe methods geared towards additional performance.
  *
- * Models the [SequenceContainer] and [ReversibleContainer] concepts.
+ * Models the [SequenceContainer], [ReversibleContainer], and [AllocatorAwareContainer] concepts.
  *
  * **Requires**:
  *  - `T` shall be [MoveInsertable] into the devector.
@@ -126,6 +126,7 @@ struct unsafe_uninitialized_tag {};
  *
  * [SequenceContainer]: http://en.cppreference.com/w/cpp/concept/SequenceContainer
  * [ReversibleContainer]: http://en.cppreference.com/w/cpp/concept/ReversibleContainer
+ * [AllocatorAwareContainer]: http://en.cppreference.com/w/cpp/concept/AllocatorAwareContainer
  * [DefaultInsertable]: http://en.cppreference.com/w/cpp/concept/DefaultInsertable
  * [MoveInsertable]: http://en.cppreference.com/w/cpp/concept/MoveInsertable
  * [CopyInsertable]: http://en.cppreference.com/w/cpp/concept/CopyInsertable
