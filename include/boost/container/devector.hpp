@@ -171,8 +171,8 @@ class devector : Allocator
        std::allocator_traits<Allocator>::propagate_on_container_move_assignment::value
     || std::is_same<Allocator, std::allocator<T>>::value;
 
-    // poor emulation of a C++14 feature
-    static constexpr bool is_always_equal = std::is_same<Allocator, std::allocator<T>>::value;
+    // poor emulation of a C++17 feature
+    static constexpr bool is_always_equal = std::is_empty<Allocator>::value;
   };
 
   struct small_buffer_traits
