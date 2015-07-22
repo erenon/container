@@ -22,6 +22,7 @@
 #include <boost/container/throw_exception.hpp>
 #include <boost/container/detail/iterators.hpp>
 #include <boost/container/detail/iterator_to_raw_pointer.hpp>
+#include <boost/container/detail/workaround.hpp>
 
 namespace boost {
 namespace container {
@@ -106,6 +107,11 @@ struct unsafe_uninitialized_tag {};
  *  - [MoveAssignable][]: Move assignment operator
  *  - [CopyAssignable][]: Copy assignment operator
  *
+ * **Remark**: If a method invalidates some iterators, it also invalidates references
+ * and pointers to the elements pointed by the invalidated iterators.
+ *
+ * **Policies**:
+ *
  * Models of the `SmallBufferPolicy` concept must have the following static values:
  *
  * Type | Name | Description
@@ -143,7 +149,10 @@ template <
   typename SmallBufferPolicy = devector_small_buffer_policy<0,0>,
   typename GrowthPolicy = devector_growth_policy
 >
-class devector : Allocator
+class devector
+  #ifndef BOOST_CONTAINER_DOXYGEN_INVOKED
+    : Allocator
+  #endif // ifndef BOOST_CONTAINER_DOXYGEN_INVOKED
 {
 #ifndef BOOST_CONTAINER_DOXYGEN_INVOKED
 
@@ -180,8 +189,9 @@ class devector : Allocator
     static constexpr unsigned front_size = SmallBufferPolicy::front_size;
     static constexpr unsigned back_size  = SmallBufferPolicy::back_size;
     static constexpr unsigned size       = front_size + back_size;
-    static constexpr bool     always_big = (size == 0);
   };
+
+  static constexpr bool no_small_buffer = small_buffer_traits::size == 0;
 
   static constexpr bool t_is_nothrow_constructible =
        std::is_nothrow_copy_constructible<T>::value
@@ -372,11 +382,12 @@ public:
    * **Exceptions**: Strong exception guarantee.
    *
    * **Complexity**: Makes only `N` calls to the copy constructor of `T` (where `N` is the distance between `first`
-   * and `last`) and no reallocations if iterators first and last are of forward, bidirectional, or random access
-   * categories. It makes `O(N)` calls to the copy constructor of `T` and `O(log(N)) reallocations if they
-   * are just input iterators.
+   * and `last`), at most one allocation and no reallocations if iterators first and last are of forward,
+   * bidirectional, or random access categories. It makes `O(N)` calls to the copy constructor of `T`
+   * and `O(log(N)) reallocations if they are just input iterators.
    *
-   * **Remarks**: Each iterator in the range `[first,last)` shall be dereferenced at most once.
+   * **Remarks**: Each iterator in the range `[first,last)` shall be dereferenced exactly once,
+   * unless an exception is thrown.
    *
    * [EmplaceConstructible]: http://en.cppreference.com/w/cpp/concept/EmplaceConstructible
    * [MoveInsertable]: http://en.cppreference.com/w/cpp/concept/MoveInsertable
@@ -482,20 +493,20 @@ public:
    *
    * **Throws**: If `rhs` _small_ and `T`'s move constructor throws.
    *
+   * **Postcondition**: `rhs` is left in an unspecified but valid state.
+   *
    * **Exceptions**: Strong exception guarantee if not `noexcept`.
    *
    * **Complexity**: Linear in the size of the small buffer.
    */
-  devector(devector&& rhs) noexcept(
-    small_buffer_traits::always_big || t_is_nothrow_constructible
-  )
+  devector(devector&& rhs) noexcept(no_small_buffer || t_is_nothrow_constructible)
     :devector(std::move(rhs), rhs.get_allocator_ref())
   {}
 
   /**
    * **Effects**: Moves `rhs`'s resources to `*this`, using the specified allocator.
    *
-   * **Throws**: If `rhs` small and `T`'s move constructor throws.
+   * **Throws**: If `rhs` _small_ and `T`'s move constructor throws.
    *
    * **Postcondition**: `rhs` is left in an unspecified but valid state.
    *
@@ -504,7 +515,7 @@ public:
    * **Complexity**: Linear in the size of the small buffer.
    */
   devector(devector&& rhs, const Allocator& allocator) noexcept(
-    small_buffer_traits::always_big || t_is_nothrow_constructible
+    no_small_buffer || t_is_nothrow_constructible
   )
     :Allocator(allocator),
      _storage(rhs.capacity()),
@@ -530,7 +541,7 @@ public:
   }
 
   /**
-   * Equivalent to `devector(il.begin(), il.end())` or `devector(il.begin(), il.end(), allocator)`.
+   * **Equivalent to**: `devector(il.begin(), il.end())` or `devector(il.begin(), il.end(), allocator)`.
    */
   devector(const std::initializer_list<T>& il, const Allocator& allocator = Allocator())
     :devector(il.begin(), il.end(), allocator)
@@ -540,11 +551,9 @@ public:
    * **Effects**: Destroys the devector. All stored values are destroyed and
    * used memory, if any, deallocated.
    *
-   * **Exceptions**: Strong exception guarantee.
-   *
    * **Complexity**: Linear in the size of `*this`.
    */
-  ~devector()
+  ~devector() noexcept
   {
     destroy_elements(_buffer + _front_index, _buffer + _back_index);
     deallocate_buffer();
@@ -558,16 +567,19 @@ public:
    *
    * **Requires**: `T` shall be [CopyInsertable] into `*this`.
    *
-   * **Postcondition**: this->size() == x.size(), the elements of
+   * **Postcondition**: `this->size() == x.size()`, the elements of
    * `*this` are copies of elements in `x` in the same order.
    *
    * **Returns**: `*this`.
    *
    * **Exceptions**: Strong exception guarantee if `T` is `NothrowConstructible`
-   * and the allocator is allowed to be propagated,
+   * and the allocator is allowed to be propagated
+   * ([propagate_on_container_copy_assignment] is true),
    * Basic exception guarantee otherwise.
    *
    * **Complexity**: Linear in the size of `x` and `*this`.
+   *
+   * [propagate_on_container_copy_assignment]: http://en.cppreference.com/w/cpp/memory/allocator_traits
    */
   devector& operator=(const devector& x)
   {
@@ -622,7 +634,7 @@ public:
    * and the size of `x` if the allocator forbids propagation.
    */
   devector& operator=(devector&& x) noexcept(
-      (small_buffer_traits::always_big || t_is_nothrow_constructible)
+      (no_small_buffer || t_is_nothrow_constructible)
    && (allocator_traits::propagate_on_move_assignment || allocator_traits::is_always_equal)
   )
   {
@@ -713,7 +725,8 @@ public:
    * are of forward, bidirectional, or random access categories. It makes
    * `O(log(N))` reallocations if they are just input iterators.
    *
-   * **Remarks**: Each iterator in the range `[first,last)` shall be dereferenced at most once.
+   * **Remarks**: Each iterator in the range `[first,last)` shall be dereferenced exactly once,
+   * unless an exception is thrown.
    *
    * [EmplaceConstructible]: http://en.cppreference.com/w/cpp/concept/EmplaceConstructible
    * [MoveInsertable]: http://en.cppreference.com/w/cpp/concept/MoveInsertable
@@ -789,16 +802,14 @@ public:
     assign(first, last);
   }
 
-  /**
-   * Equivalent to `assign(il.begin(), il.end())`.
-   */
+  /** **Equivalent to**: `assign(il.begin(), il.end())`. */
   void assign(std::initializer_list<T> il)
   {
     assign(il.begin(), il.end());
   }
 
   /**
-   * **Returns**: The copy of the allocator associated with the container.
+   * **Returns**: A copy of the allocator associated with the container.
    *
    * **Complexity**: Constant.
    */
@@ -853,7 +864,7 @@ public:
 
   /**
    * **Returns**: A reverse iterator pointing to the first element in the reversed devector,
-   * or the reverse past the begin iterator if the devector is empty.
+   * or the reverse past the end iterator if the devector is empty.
    *
    * **Complexity**: Constant.
    */
@@ -943,7 +954,7 @@ public:
   // capacity
 
   /**
-   * **Returns**: True, if the devector is empty, false otherwise.
+   * **Returns**: True, if `size() == 0`, false otherwise.
    *
    * **Complexity**: Constant.
    */
@@ -1004,10 +1015,10 @@ public:
     return _storage._capacity - _back_index;
   }
 
-  /** Equivalent to `resize_back(sz)` */
+  /** **Equivalent to**: `resize_back(sz)` */
   void resize(size_type sz) { resize_back(sz); }
 
-  /** Equivalent to `resize_back(sz, c)` */
+  /** **Equivalent to**: `resize_back(sz, c)` */
   void resize(size_type sz, const T& c) { resize_back(sz, c); }
 
   /**
@@ -1256,7 +1267,7 @@ public:
   // reserve promise:
   // after reserve_[front,back](n), n - size() push_[front,back] will not allocate
 
-  /** Equivalent to `reserve_back(new_capacity)` */
+  /** **Equivalent to**: `reserve_back(new_capacity)` */
   void reserve(size_type new_capacity) { reserve_back(new_capacity); }
 
   /**
@@ -1289,7 +1300,7 @@ public:
    *
    * **Effects**: Ensures that `n` elements can be pushed to the back
    * without requiring reallocation, where `n` is `new_capacity - size()`,
-   * if `n` is positive. Else, there are no effects.
+   * if `n` is positive. Otherwise, there are no effects.
    * Invalidates iterators if reallocation is needed.
    *
    * **Requires**: `T` shall be [MoveInsertable] into `*this`.
@@ -1466,9 +1477,8 @@ public:
 
   /**
    * **Returns**: A pointer to the underlying array serving as element storage.
-   * The range `[data(); data() + size())` is always valid.
-   *
-   * **Postcondition**: `!empty() || data() == &front()`.
+   * The range `[data(); data() + size())` is always valid. For a non-empty devector,
+   * `data() == &front()`.
    *
    * **Complexity**: constant.
    */
@@ -1479,9 +1489,8 @@ public:
 
   /**
    * **Returns**: A constant pointer to the underlying array serving as element storage.
-   * The range `[data(); data() + size())` is always valid.
-   *
-   * **Postcondition**: `!empty() || data() == &front()`.
+   * The range `[data(); data() + size())` is always valid. For a non-empty devector,
+   * `data() == &front()`.
    *
    * **Complexity**: constant.
    */
@@ -1879,7 +1888,8 @@ public:
    * **Exceptions**: Strong exception guarantee if `T` is `NothrowConstructible`
    * and `NothrowAssignable`, Basic exception guarantee otherwise.
    *
-   * **Remarks**: Each iterator in the range `[first,last)` shall be dereferenced at most once.
+   * **Remarks**: Each iterator in the range `[first,last)` shall be dereferenced exactly once,
+   * unless an exception is thrown.
    *
    * [EmplaceConstructible]: http://en.cppreference.com/w/cpp/concept/EmplaceConstructible
    * [MoveInsertable]: http://en.cppreference.com/w/cpp/concept/MoveInsertable
@@ -1931,9 +1941,7 @@ public:
 
 #endif // ifndef BOOST_CONTAINER_DOXYGEN_INVOKED
 
-  /**
-   * Equivalent to `insert(position, il.begin(), il.end())`.
-   */
+  /** **Equivalent to**: `insert(position, il.begin(), il.end())` */
   iterator insert(const_iterator position, std::initializer_list<T> il)
   {
     return insert_range(position, il.begin(), il.end());
@@ -1955,7 +1963,8 @@ public:
    * **Exceptions**: Strong exception guarantee if `T` is `NothrowAssignable`,
    * Basic exception guarantee otherwise.
    *
-   * **Complexity**: Linear in half the size of `*this`.
+   * **Complexity**: Linear in half the size of `*this`
+   * plus the distance between `first` and `last`.
    */
   iterator erase(const_iterator position)
   {
@@ -1978,7 +1987,8 @@ public:
    * **Exceptions**: Strong exception guarantee if `T` is `NothrowAssignable`,
    * Basic exception guarantee otherwise.
    *
-   * **Complexity**: Linear in half the size of `*this`.
+   * **Complexity**: Linear in half the size of `*this`
+   * plus the distance between `first` and `last`.
    */
   iterator erase(const_iterator first, const_iterator last)
   {
@@ -1997,8 +2007,8 @@ public:
    *
    * **Precondition**: `[first,last)` must be in the range of `[begin(), end())`.
    *
-   * **Returns**: Iterator to the element following the last removed element
-   * or `first`, if `first == last`.
+   * **Returns**: Iterator pointing to the element pointed to by `last` prior to any elements
+   * being erased. If no such element exists, `end()` is returned.
    *
    * **Exceptions**: Strong exception guarantee if `T` is `NothrowAssignable`,
    * Basic exception guarantee otherwise.
@@ -2058,11 +2068,11 @@ public:
    *
    * **Remarks**: If both devectors are _small_, elements are exchanged one by one.
    * If exactly one is small, elements in the small buffer are moved to the
-   * small buffer of the other devector and the large buffer is stolen by the
+   * small buffer of the other devector and the large buffer is acquired by the
    * previously _small_ devector. If neither are _small_, buffers are exchanged
    * in one step.
    */
-  void swap(devector& b) noexcept(t_is_nothrow_constructible) // && nothrow_swappable
+  void swap(devector& b) noexcept(no_small_buffer || t_is_nothrow_constructible) // && nothrow_swappable
   {
     BOOST_ASSERT(
        ! allocator_traits::propagate_on_container_swap::value
@@ -2111,9 +2121,9 @@ public:
    * Invalidates all references, pointers and iterators to the
    * elements of the devector.
    *
-   * **Complexity**: Linear in the size of `*this`.
+   * **Postcondition**: `empy()`.
    *
-   * **Exceptions**: Strong exception guarantee.
+   * **Complexity**: Linear in the size of `*this`.
    *
    * **Remarks**: Does not free memory.
    */
