@@ -28,17 +28,16 @@ namespace boost {
 namespace container {
 
 /**
- * Instructs devector to store `FrontSize + BackSize` elements
- * inline with its internals, allowing `FrontSize` `push_front`
- * and `BackSize` `push_back` without reallocation.
+ * Instructs devector to make space for `Size` elements
+ * inline with its internals, allowing to store that much elements
+ * without allocating memory.
  *
  * Models the `SmallBufferPolicy` concept of the devector class.
  */
-template <unsigned FrontSize, unsigned BackSize>
+template <unsigned Size>
 struct devector_small_buffer_policy
 {
-  BOOST_STATIC_CONSTANT(unsigned, front_size = FrontSize);
-  BOOST_STATIC_CONSTANT(unsigned, back_size = BackSize);
+  BOOST_STATIC_CONSTANT(unsigned, size = Size);
 };
 
 /**
@@ -125,8 +124,7 @@ struct unsafe_uninitialized_tag {};
  *
  * Type | Name | Description
  * -----|------|------------
- * `size_type` | `front_size` | The total number of elements that can be pushed to the front without reallocation
- * `size_type` | `back_size`  | The total number of elements that can be pushed to the back without reallocation
+ * `size_type` | `size` | The total number of elements that can be stored without allocation
  *
  * @ref devector_small_buffer_policy models the `SmallBufferPolicy` concept.
  *
@@ -155,7 +153,7 @@ struct unsafe_uninitialized_tag {};
  */
 template <
   typename T,
-  typename SmallBufferPolicy = devector_small_buffer_policy<0,0>,
+  typename SmallBufferPolicy = devector_small_buffer_policy<0>,
   typename GrowthPolicy = devector_growth_policy,
   typename Allocator = std::allocator<T>
 >
@@ -194,14 +192,8 @@ class devector
     static constexpr bool is_always_equal = std::is_empty<Allocator>::value;
   };
 
-  struct small_buffer_traits
-  {
-    static constexpr unsigned front_size = SmallBufferPolicy::front_size;
-    static constexpr unsigned back_size  = SmallBufferPolicy::back_size;
-    static constexpr unsigned size       = front_size + back_size;
-  };
-
-  static constexpr bool no_small_buffer = small_buffer_traits::size == 0;
+  static constexpr unsigned small_buffer_size = SmallBufferPolicy::size;
+  static constexpr bool     no_small_buffer = (small_buffer_size == 0);
 
   static constexpr bool t_is_nothrow_constructible =
        std::is_nothrow_copy_constructible<T>::value
@@ -239,8 +231,8 @@ public:
    */
   devector() noexcept
     :_buffer(_storage.small_buffer_address()),
-     _front_index(small_buffer_traits::front_size),
-     _back_index(small_buffer_traits::front_size)
+     _front_index(0),
+     _back_index(0)
   {}
 
   /**
@@ -253,8 +245,8 @@ public:
   explicit devector(const Allocator& allocator) noexcept
     :Allocator(allocator),
      _buffer(_storage.small_buffer_address()),
-     _front_index(small_buffer_traits::front_size),
-     _back_index(small_buffer_traits::front_size)
+     _front_index(0),
+     _back_index(0)
   {}
 
   /**
@@ -281,6 +273,9 @@ public:
    * **Exceptions**: Strong exception guarantee.
    *
    * **Complexity**: Constant.
+   *
+   * **Remarks**: This constructor can be used to split the small buffer
+   * between expected front and back insertions.
    */
   devector(size_type front_cap, size_type back_cap, reserve_only_tag, const Allocator& allocator = Allocator())
     :Allocator(allocator),
@@ -522,10 +517,10 @@ public:
     if (rhs.is_small() == false)
     {
       // buffer is already stolen, reset rhs
-      rhs._storage._capacity = small_buffer_traits::size;
+      rhs._storage._capacity = small_buffer_size;
       rhs._buffer = rhs._storage.small_buffer_address();
-      rhs._front_index = small_buffer_traits::front_size;
-      rhs._back_index = small_buffer_traits::front_size;
+      rhs._front_index = 0;
+      rhs._back_index = 0;
     }
     else
     {
@@ -650,9 +645,9 @@ public:
       _back_index = x._back_index;
 
       // leave x in valid state
-      x._storage._capacity = small_buffer_traits::size;
+      x._storage._capacity = small_buffer_size;
       x._buffer = _storage.small_buffer_address();
-      x._back_index = x._front_index = small_buffer_traits::front_size;
+      x._back_index = x._front_index = 0;
     }
     else
     {
@@ -1333,19 +1328,19 @@ public:
   void shrink_to_fit()
   {
     if (
-       GrowthPolicy::should_shrink(size(), capacity(), storage_t::small_buffer_size) == false
+       GrowthPolicy::should_shrink(size(), capacity(), small_buffer_size) == false
     || is_small()
     )
     {
       return;
     }
 
-    if (size() <= storage_t::small_buffer_size)
+    if (size() <= small_buffer_size)
     {
       buffer_move_or_copy(_storage.small_buffer_address());
 
       _buffer = _storage.small_buffer_address();
-      _storage._capacity = storage_t::small_buffer_size;
+      _storage._capacity = small_buffer_size;
       _back_index = size();
       _front_index = 0;
     }
@@ -1946,7 +1941,7 @@ public:
     else
     {
       // avoid buffer overflow if original small buffer is too large
-      typedef devector<T, devector_small_buffer_policy<0, 32>, GrowthPolicy, Allocator> temp_devector;
+      typedef devector<T, devector_small_buffer_policy<32>, GrowthPolicy, Allocator> temp_devector;
 
       temp_devector range(first, last);
       return insert_range(position, range.begin(), range.end());
@@ -2154,7 +2149,7 @@ public:
   void clear() noexcept
   {
     destroy_elements(begin(), end());
-    _front_index = _back_index = small_buffer_traits::front_size;
+    _front_index = _back_index = 0;
   }
 
 private:
@@ -2174,7 +2169,7 @@ private:
 
   pointer allocate(size_type capacity)
   {
-    if (capacity <= storage_t::small_buffer_size)
+    if (capacity <= small_buffer_size)
     {
       return _storage.small_buffer_address();
     }
@@ -2530,7 +2525,7 @@ private:
 
   void reallocate_at(size_type new_capacity, size_type buffer_offset)
   {
-    BOOST_ASSERT(new_capacity > storage_t::small_buffer_size);
+    BOOST_ASSERT(new_capacity > small_buffer_size);
 
     pointer new_buffer = allocate(new_capacity);
     allocation_guard new_buffer_guard(new_buffer, get_allocator_ref(), new_capacity);
@@ -2961,26 +2956,24 @@ private:
        (!_storage._capacity || _buffer)
     && _front_index <= _back_index
     && _back_index <= _storage._capacity
-    && storage_t::small_buffer_size <= _storage._capacity;
+    && small_buffer_size <= _storage._capacity;
   }
 
   // Small buffer
 
   bool is_small() const
   {
-    return storage_t::small_buffer_size && _storage._capacity <= storage_t::small_buffer_size;
+    return small_buffer_size && _storage._capacity <= small_buffer_size;
   }
 
   typedef boost::aligned_storage<
-    sizeof(T) * small_buffer_traits::size,
+    sizeof(T) * small_buffer_size,
     std::alignment_of<T>::value
   > small_buffer_t;
 
   // Achieve optimal space by leveraging EBO
   struct storage_t : small_buffer_t
   {
-    BOOST_STATIC_CONSTANT(size_type, small_buffer_size = small_buffer_traits::size);
-
     storage_t() : _capacity(small_buffer_size) {}
     storage_t(size_type capacity)
       : _capacity((std::max)(capacity, size_type{small_buffer_size}))

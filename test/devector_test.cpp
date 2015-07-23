@@ -42,10 +42,7 @@ Container getRange(int count)
 template <typename Devector, typename T>
 Devector getRange(int fbeg, int fend, int bbeg, int bend)
 {
-  Devector c;
-
-  c.reserve_front(fend - fbeg);
-  c.reserve_back(bend - bbeg);
+  Devector c(fend - fbeg, bend - bbeg, reserve_only_tag{});
 
   for (int i = fend; i > fbeg ;)
   {
@@ -121,9 +118,7 @@ struct small_buffer_size;
 template <typename U, typename SBP, typename GP, typename A>
 struct small_buffer_size<devector<U, SBP, GP, A>>
 {
-  static const unsigned front_size = SBP::front_size;
-  static const unsigned back_size = SBP::back_size;
-  static const unsigned value = front_size + back_size;
+  static const unsigned value = SBP::size;
 };
 
 // END HELPERS
@@ -1045,7 +1040,7 @@ void test_assign_n()
 
     try
     {
-      a.assign(12, T(9));
+      a.assign(32, T(9));
       BOOST_ASSERT(false);
     } catch(const test_exception&) {}
 
@@ -1123,7 +1118,7 @@ void test_assign_il()
 
     try
     {
-      a.assign({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
+      a.assign({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18});
       BOOST_ASSERT(false);
     } catch(const test_exception&) {}
 
@@ -1727,14 +1722,14 @@ void test_shrink_to_fit()
     }
   };
 
-  using devector_u_shr       = devector<unsigned, devector_small_buffer_policy<0, 0>, always_shrink>;
-  using small_devector_u_shr = devector<unsigned, devector_small_buffer_policy<0, 3>, always_shrink>;
+  using devector_u_shr       = devector<unsigned, devector_small_buffer_policy<0>, always_shrink>;
+  using small_devector_u_shr = devector<unsigned, devector_small_buffer_policy<3>, always_shrink>;
 
   test_shrink_to_fit_always<devector_u_shr>();
   test_shrink_to_fit_always<small_devector_u_shr>();
 
-  using devector_u           = devector<unsigned, devector_small_buffer_policy<0, 0>, never_shrink>;
-  using small_devector_u     = devector<unsigned, devector_small_buffer_policy<0, 3>, never_shrink>;
+  using devector_u           = devector<unsigned, devector_small_buffer_policy<0>, never_shrink>;
+  using small_devector_u     = devector<unsigned, devector_small_buffer_policy<3>, never_shrink>;
 
   test_shrink_to_fit_never<devector_u>();
   test_shrink_to_fit_never<small_devector_u>();
@@ -3428,7 +3423,7 @@ void test_swap()
 
   // small-small with exception
 
-  if (small_buffer_size<Devector>::back_size && can_throw)
+  if (small_buffer_size<Devector>::value && can_throw)
   {
     Devector a = getRange<Devector, T>(8);
     Devector b = getRange<Devector, T>(1,6,7,8);
@@ -3450,7 +3445,7 @@ void test_swap()
 
   // small-big with exception
 
-  if (small_buffer_size<Devector>::back_size && can_throw)
+  if (small_buffer_size<Devector>::value && can_throw)
   {
     Devector small = getRange<Devector, T>(8);
     Devector big = getRange<Devector, T>(32);
@@ -3474,9 +3469,9 @@ void test_swap()
 
   // big-big does not copy or move
   {
-    Devector a = getRange<Devector, T>(16);
-    Devector b = getRange<Devector, T>(16);
-    std::vector<T> c = getRange<std::vector<T>, T>(16);
+    Devector a = getRange<Devector, T>(32);
+    Devector b = getRange<Devector, T>(32);
+    std::vector<T> c = getRange<std::vector<T>, T>(32);
 
     test_elem_throw::on_copy_after(1);
     test_elem_throw::on_move_after(1);
@@ -3505,12 +3500,7 @@ void test_clear()
     BOOST_ASSERT(a.empty());
     a.reset_alloc_stats();
 
-    for (unsigned i = 0; i < small_buffer_size<Devector>::front_size; ++i)
-    {
-      a.emplace_front(i);
-    }
-
-    for (unsigned i = 0; i < small_buffer_size<Devector>::back_size; ++i)
+    for (unsigned i = 0; i < small_buffer_size<Devector>::value; ++i)
     {
       a.emplace_back(i);
     }
@@ -3784,64 +3774,40 @@ int main()
   // TODO test custom allocator
 
   using devector_u = devector<unsigned>;
-  using small_devector_u = devector<unsigned, devector_small_buffer_policy<8, 8>>;
-  using fsmall_devector_u = devector<unsigned, devector_small_buffer_policy<8, 0>>;
-  using bsmall_devector_u = devector<unsigned, devector_small_buffer_policy<0, 8>>;
+  using small_devector_u = devector<unsigned, devector_small_buffer_policy<16>>;
 
   using devector_reg = devector<regular_elem>;
-  using small_devector_reg = devector<regular_elem, devector_small_buffer_policy<8, 8>>;
-  using fsmall_devector_reg = devector<regular_elem, devector_small_buffer_policy<8, 0>>;
-  using bsmall_devector_reg = devector<regular_elem, devector_small_buffer_policy<0, 8>>;
+  using small_devector_reg = devector<regular_elem, devector_small_buffer_policy<16>>;
 
   using devector_nxmov = devector<noex_move>;
-  using small_devector_nxmov = devector<noex_move, devector_small_buffer_policy<8, 8>>;
-  using fsmall_devector_nxmov = devector<noex_move, devector_small_buffer_policy<8, 0>>;
-  using bsmall_devector_nxmov = devector<noex_move, devector_small_buffer_policy<0, 8>>;
+  using small_devector_nxmov = devector<noex_move, devector_small_buffer_policy<16>>;
 
   using devector_nxcop = devector<noex_copy>;
-  using small_devector_nxcop = devector<noex_copy, devector_small_buffer_policy<8, 8>>;
-  using fsmall_devector_nxcop = devector<noex_copy, devector_small_buffer_policy<8, 0>>;
-  using bsmall_devector_nxcop = devector<noex_copy, devector_small_buffer_policy<0, 8>>;
+  using small_devector_nxcop = devector<noex_copy, devector_small_buffer_policy<16>>;
 
   using devector_mov = devector<only_movable>;
-  using small_devector_mov = devector<only_movable, devector_small_buffer_policy<8, 8>>;
-  using fsmall_devector_mov = devector<only_movable, devector_small_buffer_policy<8, 0>>;
-  using bsmall_devector_mov = devector<only_movable, devector_small_buffer_policy<0, 8>>;
+  using small_devector_mov = devector<only_movable, devector_small_buffer_policy<16>>;
 
   using devector_nodef = devector<no_default_ctor>;
-  using small_devector_nodef = devector<no_default_ctor, devector_small_buffer_policy<8, 8>>;
-  using fsmall_devector_nodef = devector<no_default_ctor, devector_small_buffer_policy<8, 0>>;
-  using bsmall_devector_nodef = devector<no_default_ctor, devector_small_buffer_policy<0, 8>>;
+  using small_devector_nodef = devector<no_default_ctor, devector_small_buffer_policy<16>>;
 
   test_all<devector_u>();
   test_all<small_devector_u>();
-  test_all<fsmall_devector_u>();
-  test_all<bsmall_devector_u>();
 
   test_all<devector_reg>();
   test_all<small_devector_reg>();
-  test_all<fsmall_devector_reg>();
-  test_all<bsmall_devector_reg>();
 
   test_all<devector_nxmov>();
   test_all<small_devector_nxmov>();
-  test_all<fsmall_devector_nxmov>();
-  test_all<bsmall_devector_nxmov>();
 
   test_all<devector_nxcop>();
   test_all<small_devector_nxcop>();
-  test_all<fsmall_devector_nxcop>();
-  test_all<bsmall_devector_nxcop>();
 
   test_all<devector_mov>();
   test_all<small_devector_mov>();
-  test_all<fsmall_devector_mov>();
-  test_all<bsmall_devector_mov>();
 
   test_all<devector_nodef>();
   test_all<small_devector_nodef>();
-  test_all<fsmall_devector_nodef>();
-  test_all<bsmall_devector_nodef>();
 
   BOOST_ASSERT(test_elem_base::no_living_elem());
 
