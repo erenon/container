@@ -133,8 +133,7 @@ struct unsafe_uninitialized_tag {};
  *
  * Signature | Description
  * ----------|------------
- * `size_type new_capacity(size_type old_capacity)` | Computes the new capacity to be allocated. The returned value must be greater than `old_capacity`.
- *                                                    This method is always used when a new buffer gets allocated.
+ * `size_type new_capacity(size_type old_capacity)` | Computes the new capacity to be allocated. The returned value must be greater than `old_capacity`. This method is always used when a new buffer gets allocated.
  * `bool should_shrink(size_type size, size_type capacity, size_type small_buffer_size)` | Returns `true`, if superfluous memory should be released.
  *
  * @ref devector_growth_policy models the `GrowthPolicy` concept.
