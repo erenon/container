@@ -50,15 +50,21 @@ struct devector_growth_policy
 {
   /**
    * **Returns**: 4 times the old capacity or 10 if it's 0.
+   *
+   * @param capacity The current capacity of the devector, equals to `capacity()`.
    */
   template <class SizeType>
-  static SizeType new_capacity(SizeType old_capacity)
+  static SizeType new_capacity(SizeType capacity)
   {
-    return (old_capacity) ? old_capacity * 4u : 10;
+    return (capacity) ? capacity * 4u : 16;
   }
 
   /**
    * **Returns**: true, if the contents fit in the small buffer.
+   *
+   * @param size The element count of the devector, equals to `size()`
+   * @param capacity The current capacity of the devector, equals to `capacity()`.
+   * @param small_buffer_size The size of the small buffer, specified by the `SmallBufferPolicy`.
    */
   template <class SizeType>
   static bool should_shrink(SizeType size, SizeType capacity, SizeType small_buffer_size)
