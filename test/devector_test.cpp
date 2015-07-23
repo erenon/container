@@ -75,8 +75,8 @@ void printRange(std::ostream& out, const Range& range)
   out << ']';
 }
 
-template <class T, class Allocator, class SBP, class GP>
-std::ostream& operator<<(std::ostream& out, const devector<T, Allocator, SBP, GP>& devec)
+template <class T, class SBP, class GP, class A>
+std::ostream& operator<<(std::ostream& out, const devector<T, SBP, GP, A>& devec)
 {
   printRange(out, devec);
   return out;
@@ -118,8 +118,8 @@ void assert_equals(const Devector& actual, std::initializer_list<unsigned> inits
 template <typename>
 struct small_buffer_size;
 
-template <typename U, typename A, typename SBP, typename GP>
-struct small_buffer_size<devector<U, A, SBP, GP>>
+template <typename U, typename SBP, typename GP, typename A>
+struct small_buffer_size<devector<U, SBP, GP, A>>
 {
   static const unsigned front_size = SBP::front_size;
   static const unsigned back_size = SBP::back_size;
@@ -1727,14 +1727,14 @@ void test_shrink_to_fit()
     }
   };
 
-  using devector_u_shr       = devector<unsigned, std::allocator<unsigned>, devector_small_buffer_policy<0, 0>, always_shrink>;
-  using small_devector_u_shr = devector<unsigned, std::allocator<unsigned>, devector_small_buffer_policy<0, 3>, always_shrink>;
+  using devector_u_shr       = devector<unsigned, devector_small_buffer_policy<0, 0>, always_shrink>;
+  using small_devector_u_shr = devector<unsigned, devector_small_buffer_policy<0, 3>, always_shrink>;
 
   test_shrink_to_fit_always<devector_u_shr>();
   test_shrink_to_fit_always<small_devector_u_shr>();
 
-  using devector_u           = devector<unsigned, std::allocator<unsigned>, devector_small_buffer_policy<0, 0>, never_shrink>;
-  using small_devector_u     = devector<unsigned, std::allocator<unsigned>, devector_small_buffer_policy<0, 3>, never_shrink>;
+  using devector_u           = devector<unsigned, devector_small_buffer_policy<0, 0>, never_shrink>;
+  using small_devector_u     = devector<unsigned, devector_small_buffer_policy<0, 3>, never_shrink>;
 
   test_shrink_to_fit_never<devector_u>();
   test_shrink_to_fit_never<small_devector_u>();
@@ -3784,34 +3784,34 @@ int main()
   // TODO test custom allocator
 
   using devector_u = devector<unsigned>;
-  using small_devector_u = devector<unsigned, std::allocator<unsigned>, devector_small_buffer_policy<8, 8>>;
-  using fsmall_devector_u = devector<unsigned, std::allocator<unsigned>, devector_small_buffer_policy<8, 0>>;
-  using bsmall_devector_u = devector<unsigned, std::allocator<unsigned>, devector_small_buffer_policy<0, 8>>;
+  using small_devector_u = devector<unsigned, devector_small_buffer_policy<8, 8>>;
+  using fsmall_devector_u = devector<unsigned, devector_small_buffer_policy<8, 0>>;
+  using bsmall_devector_u = devector<unsigned, devector_small_buffer_policy<0, 8>>;
 
   using devector_reg = devector<regular_elem>;
-  using small_devector_reg = devector<regular_elem, std::allocator<regular_elem>, devector_small_buffer_policy<8, 8>>;
-  using fsmall_devector_reg = devector<regular_elem, std::allocator<regular_elem>, devector_small_buffer_policy<8, 0>>;
-  using bsmall_devector_reg = devector<regular_elem, std::allocator<regular_elem>, devector_small_buffer_policy<0, 8>>;
+  using small_devector_reg = devector<regular_elem, devector_small_buffer_policy<8, 8>>;
+  using fsmall_devector_reg = devector<regular_elem, devector_small_buffer_policy<8, 0>>;
+  using bsmall_devector_reg = devector<regular_elem, devector_small_buffer_policy<0, 8>>;
 
   using devector_nxmov = devector<noex_move>;
-  using small_devector_nxmov = devector<noex_move, std::allocator<noex_move>, devector_small_buffer_policy<8, 8>>;
-  using fsmall_devector_nxmov = devector<noex_move, std::allocator<noex_move>, devector_small_buffer_policy<8, 0>>;
-  using bsmall_devector_nxmov = devector<noex_move, std::allocator<noex_move>, devector_small_buffer_policy<0, 8>>;
+  using small_devector_nxmov = devector<noex_move, devector_small_buffer_policy<8, 8>>;
+  using fsmall_devector_nxmov = devector<noex_move, devector_small_buffer_policy<8, 0>>;
+  using bsmall_devector_nxmov = devector<noex_move, devector_small_buffer_policy<0, 8>>;
 
   using devector_nxcop = devector<noex_copy>;
-  using small_devector_nxcop = devector<noex_copy, std::allocator<noex_copy>, devector_small_buffer_policy<8, 8>>;
-  using fsmall_devector_nxcop = devector<noex_copy, std::allocator<noex_copy>, devector_small_buffer_policy<8, 0>>;
-  using bsmall_devector_nxcop = devector<noex_copy, std::allocator<noex_copy>, devector_small_buffer_policy<0, 8>>;
+  using small_devector_nxcop = devector<noex_copy, devector_small_buffer_policy<8, 8>>;
+  using fsmall_devector_nxcop = devector<noex_copy, devector_small_buffer_policy<8, 0>>;
+  using bsmall_devector_nxcop = devector<noex_copy, devector_small_buffer_policy<0, 8>>;
 
   using devector_mov = devector<only_movable>;
-  using small_devector_mov = devector<only_movable, std::allocator<only_movable>, devector_small_buffer_policy<8, 8>>;
-  using fsmall_devector_mov = devector<only_movable, std::allocator<only_movable>, devector_small_buffer_policy<8, 0>>;
-  using bsmall_devector_mov = devector<only_movable, std::allocator<only_movable>, devector_small_buffer_policy<0, 8>>;
+  using small_devector_mov = devector<only_movable, devector_small_buffer_policy<8, 8>>;
+  using fsmall_devector_mov = devector<only_movable, devector_small_buffer_policy<8, 0>>;
+  using bsmall_devector_mov = devector<only_movable, devector_small_buffer_policy<0, 8>>;
 
   using devector_nodef = devector<no_default_ctor>;
-  using small_devector_nodef = devector<no_default_ctor, std::allocator<no_default_ctor>, devector_small_buffer_policy<8, 8>>;
-  using fsmall_devector_nodef = devector<no_default_ctor, std::allocator<no_default_ctor>, devector_small_buffer_policy<8, 0>>;
-  using bsmall_devector_nodef = devector<no_default_ctor, std::allocator<no_default_ctor>, devector_small_buffer_policy<0, 8>>;
+  using small_devector_nodef = devector<no_default_ctor, devector_small_buffer_policy<8, 8>>;
+  using fsmall_devector_nodef = devector<no_default_ctor, devector_small_buffer_policy<8, 0>>;
+  using bsmall_devector_nodef = devector<no_default_ctor, devector_small_buffer_policy<0, 8>>;
 
   test_all<devector_u>();
   test_all<small_devector_u>();

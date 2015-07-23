@@ -80,7 +80,7 @@ struct unsafe_uninitialized_tag {};
  * **Requires**:
  *  - `T` shall be [MoveInsertable] into the devector.
  *  - `T` shall be [Erasable] from any `devector<T, Allocator, SBP, GP>`.
- *  - `Allocator`, `SmallBufferPolicy`, and `GrowthPolicy` must model the concepts with the same names.
+ *  - `SmallBufferPolicy`, `GrowthPolicy`, and `Allocator` must model the concepts with the same names.
  *
  * **Definition**: `T` is `NothrowConstructible` if it's either nothrow move constructible or
  * nothrow copy constructible.
@@ -149,9 +149,9 @@ struct unsafe_uninitialized_tag {};
  */
 template <
   typename T,
-  typename Allocator = std::allocator<T>,
   typename SmallBufferPolicy = devector_small_buffer_policy<0,0>,
-  typename GrowthPolicy = devector_growth_policy
+  typename GrowthPolicy = devector_growth_policy,
+  typename Allocator = std::allocator<T>
 >
 class devector
   #ifndef BOOST_CONTAINER_DOXYGEN_INVOKED
@@ -1940,7 +1940,7 @@ public:
     else
     {
       // avoid buffer overflow if original small buffer is too large
-      typedef devector<T, Allocator, devector_small_buffer_policy<0, 32>, GrowthPolicy> temp_devector;
+      typedef devector<T, devector_small_buffer_policy<0, 32>, GrowthPolicy, Allocator> temp_devector;
 
       temp_devector range(first, last);
       return insert_range(position, range.begin(), range.end());
