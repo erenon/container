@@ -77,7 +77,8 @@ struct reserve_only_tag {};
 struct unsafe_uninitialized_tag {};
 
 /**
- * A vector-like sequence container providing cheap front operations (e.g: `push_front`/`pop_front`),
+ * A vector-like sequence container providing front and back operations
+ * (e.g: `push_front`/`pop_front`/`push_back`/`pop_back`) with amortized linear complexity,
  * small buffer optimization and unsafe methods geared towards additional performance.
  *
  * Models the [SequenceContainer], [ReversibleContainer], and [AllocatorAwareContainer] concepts.
@@ -225,7 +226,8 @@ public:
   /**
    * **Effects**: Constructs an empty devector.
    *
-   * **Postcondition**: `empty()`.
+   * **Postcondition**: `empty() && front_free_capacity() == 0
+   * && back_free_capacity() == small buffer size`.
    *
    * **Complexity**: Constant.
    */
@@ -238,7 +240,8 @@ public:
   /**
    * **Effects**: Constructs an empty devector, using the specified allocator.
    *
-   * **Postcondition**: `empty()`.
+   * **Postcondition**: `empty() && front_free_capacity() == 0
+   * && back_free_capacity() == small buffer size`.
    *
    * **Complexity**: Constant.
    */
@@ -253,7 +256,8 @@ public:
    * **Effects**: Constructs an empty devector, using the specified allocator
    * and reserves `n` slots as if `reserve(n)` was called.
    *
-   * **Postcondition**: `empty() && capacity() >= n`.
+   * **Postcondition**: `empty() && front_free_capacity() == 0
+   * && back_free_capacity() >= n`.
    *
    * **Exceptions**: Strong exception guarantee.
    *
@@ -268,7 +272,8 @@ public:
    * and reserves `front_cap + back_cap` slots as if `reserve_front(front_cap)` and
    * `reserve_back(back_cap)` was called.
    *
-   * **Postcondition**: `empty() && capacity() >= front_cap + back_cap`.
+   * **Postcondition**: `empty() && front_free_capacity() == front_cap
+   * && back_free_capacity() >= back_cap`.
    *
    * **Exceptions**: Strong exception guarantee.
    *
@@ -290,7 +295,7 @@ public:
    *
    * **Effects**: Constructs a devector containing `n` uninitialized elements.
    *
-   * **Postcondition**: `size() == n`.
+   * **Postcondition**: `size() == n && front_free_capacity() == 0`.
    *
    * **Exceptions**: Strong exception guarantee.
    *
@@ -319,7 +324,7 @@ public:
    *
    * **Requires**: `T` shall be [DefaultInsertable] into `*this`.
    *
-   * **Postcondition**: `size() == n`.
+   * **Postcondition**: `size() == n && front_free_capacity() == 0`.
    *
    * **Exceptions**: Strong exception guarantee.
    *
@@ -359,6 +364,8 @@ public:
    *
    * **Requires**: `T` shall be [CopyInsertable] into `*this`.
    *
+   * **Postcondition**: `size() == n && front_free_capacity() == 0`.
+   *
    * **Exceptions**: Strong exception guarantee.
    *
    * **Complexity**: Linear in `n`.
@@ -382,7 +389,7 @@ public:
    * iterator does not meet the forward iterator requirements, `T` shall also be [MoveInsertable]
    * into `*this`.
    *
-   * **Postcondition**: `size() == distance(first, last)`.
+   * **Postcondition**: `size() == std::distance(first, last) && front_free_capacity() == 0`.
    *
    * **Exceptions**: Strong exception guarantee.
    *
@@ -447,7 +454,7 @@ public:
    *
    * **Requires**: `T` shall be [CopyInsertable] into `*this`.
    *
-   * **Postcondition**: `this->size() == x.size()`.
+   * **Postcondition**: `this->size() == x.size() && front_free_capacity() == 0`.
    *
    * **Exceptions**: Strong exception guarantee.
    *
@@ -467,7 +474,7 @@ public:
    *
    * **Requires**: `T` shall be [CopyInsertable] into `*this`.
    *
-   * **Postcondition**: `this->size() == x.size()`.
+   * **Postcondition**: `this->size() == x.size() && front_free_capacity() == 0`.
    *
    * **Exceptions**: Strong exception guarantee.
    *
@@ -516,7 +523,7 @@ public:
   {
     if (rhs.is_small() == false)
     {
-      // buffer is already stolen, reset rhs
+      // buffer is already acquired, reset rhs
       rhs._storage._capacity = small_buffer_size;
       rhs._buffer = rhs._storage.small_buffer_address();
       rhs._front_index = 0;
@@ -2140,7 +2147,8 @@ public:
    * Invalidates all references, pointers and iterators to the
    * elements of the devector.
    *
-   * **Postcondition**: `empy()`.
+   * **Postcondition**: `empty() && front_free_capacity() == 0
+   * && back_free_capacity() == small buffer size`.
    *
    * **Complexity**: Linear in the size of `*this`.
    *
