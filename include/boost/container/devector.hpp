@@ -107,6 +107,9 @@ struct unsafe_uninitialized_tag {};
  *  - [MoveAssignable][]: Move assignment operator
  *  - [CopyAssignable][]: Copy assignment operator
  *
+ * Furthermore, not `noexcept` methods throws whatever the allocator throws
+ * if memory allocation fails.
+ *
  * **Remark**: If a method invalidates some iterators, it also invalidates references
  * and pointers to the elements pointed by the invalidated iterators.
  *
@@ -126,6 +129,7 @@ struct unsafe_uninitialized_tag {};
  * Signature | Description
  * ----------|------------
  * `size_type new_capacity(size_type old_capacity)` | Computes the new capacity to be allocated. The returned value must be greater than `old_capacity`.
+ *                                                    This method is always used when a new buffer gets allocated.
  * `bool should_shrink(size_type size, size_type capacity, size_type small_buffer_size)` | Returns `true`, if superfluous memory should be released.
  *
  * @ref devector_growth_policy models the `GrowthPolicy` concept.
@@ -469,22 +473,6 @@ public:
    * **Complexity**: Linear in the size of `x`.
    */
   devector(const devector& x, const Allocator& allocator)
-    :devector(x.begin(), x.end(), allocator)
-  {}
-
-  /**
-   * **Effects**: Copy constructs a devector, using the specified allocator.
-   *
-   * **Requires**: `T` must be constructible from `U`.
-   *
-   * **Postcondition**: `this->size() == x.size()`.
-   *
-   * **Exceptions**: Strong exception guarantee.
-   *
-   * **Complexity**: Linear in the size of `x`.
-   */
-  template <class U, class A, class SBP, class GP>
-  devector(const devector<U, A, SBP, GP>& x, const Allocator& allocator = Allocator())
     :devector(x.begin(), x.end(), allocator)
   {}
 
@@ -1324,9 +1312,11 @@ public:
   /**
    * [MoveInsertable]: http://en.cppreference.com/w/cpp/concept/MoveInsertable
    *
-   * **Effects**: Reduces `capacity()` to `size()` if the `GrowthPolicy`
-   * allows it and the devector is not _small_.
-   * Invalidates iterators if shrinks.
+   * **Effects**: Reduces `capacity()` to `max(size(), small buffer size)`
+   * if the `GrowthPolicy` allows it (`should_shrink` returns `true`),
+   * otherwise, there are no effects. Invalidates iterators if shrinks.
+   * If shrinks and they fit, moves the contained elements back to
+   * the small buffer.
    *
    * **Requires**: `T` shall be [MoveInsertable] into `*this`.
    *
@@ -1505,12 +1495,14 @@ public:
    * **Effects**: Pushes a new element to the front of the devector.
    * The element is constructed in-place, using the perfect forwarded `args`
    * as constructor arguments. Invalidates iterators if reallocation is needed.
+   * (`front_free_capacity() == 0`)
    *
    * **Requires**: `T` shall be [EmplaceConstructible] from `args` and [MoveInsertable] into `*this`.
    *
    * **Exceptions**: Strong exception guarantee.
    *
    * **Complexity**: Amortized linear in the size of `*this`.
+   * (Constant, if `front_free_capacity() > 0`)
    *
    * [EmplaceConstructible]: http://en.cppreference.com/w/cpp/concept/EmplaceConstructible
    * [MoveInsertable]: http://en.cppreference.com/w/cpp/concept/MoveInsertable
@@ -1536,12 +1528,14 @@ public:
    *
    * **Effects**: Pushes the copy of `x` to the front of the devector.
    * Invalidates iterators if reallocation is needed.
+   * (`front_free_capacity() == 0`)
    *
    * **Requires**: `T` shall be [CopyInsertable] into `*this`.
    *
    * **Exceptions**: Strong exception guarantee.
    *
    * **Complexity**: Amortized linear in the size of `*this`.
+   * (Constant, if `front_free_capacity() > 0`)
    */
   void push_front(const T& x)
   {
@@ -1553,12 +1547,14 @@ public:
    *
    * **Effects**: Move constructs a new element at the front of the devector using `x`.
    * Invalidates iterators if reallocation is needed.
+   * (`front_free_capacity() == 0`)
    *
    * **Requires**: `T` shall be [MoveInsertable] into `*this`.
    *
    * **Exceptions**: Strong exception guarantee, not regarding the state of `x`.
    *
    * **Complexity**: Amortized linear in the size of `*this`.
+   * (Constant, if `front_free_capacity() > 0`)
    */
   void push_front(T&& x)
   {
@@ -1573,6 +1569,9 @@ public:
    * **Requires**: `T` shall be [CopyInsertable] into `*this`.
    *
    * **Precondition**: `front_free_capacity() > 0`.
+   *
+   * **Postcondition**: `size()` is incremented by 1,
+   * `front_free_capacity() is decremented by 1`
    *
    * **Exceptions**: Strong exception guarantee.
    *
@@ -1597,6 +1596,9 @@ public:
    *
    * **Precondition**: `front_free_capacity() > 0`.
    *
+   * **Postcondition**: `size()` is incremented by 1,
+   * `front_free_capacity() is decremented by 1`
+   *
    * **Exceptions**: Strong exception guarantee, not regarding the state of `x`.
    *
    * **Complexity**: Constant.
@@ -1616,6 +1618,8 @@ public:
    *
    * **Precondition**: `!empty()`.
    *
+   * **Postcondition**: `front_free_capacity()` is incremented by 1.
+   *
    * **Exceptions**: Strong exception guarantee.
    *
    * **Complexity**: Constant.
@@ -1632,6 +1636,7 @@ public:
    * **Effects**: Pushes a new element to the back of the devector.
    * The element is constructed in-place, using the perfect forwarded `args`
    * as constructor arguments. Invalidates iterators if reallocation is needed.
+   * (`back_free_capacity() == 0`)
    *
    * **Requires**: `T` shall be [EmplaceConstructible] from `args` and [MoveInsertable] into `*this`,
    * and [MoveAssignable].
@@ -1639,6 +1644,7 @@ public:
    * **Exceptions**: Strong exception guarantee.
    *
    * **Complexity**: Amortized linear in the size of `*this`.
+   * (Constant, if `back_free_capacity() > 0`)
    *
    * [EmplaceConstructible]: http://en.cppreference.com/w/cpp/concept/EmplaceConstructible
    * [MoveInsertable]: http://en.cppreference.com/w/cpp/concept/MoveInsertable
@@ -1665,12 +1671,14 @@ public:
    *
    * **Effects**: Pushes the copy of `x` to the back of the devector.
    * Invalidates iterators if reallocation is needed.
+   * (`back_free_capacity() == 0`)
    *
    * **Requires**: `T` shall be [CopyInsertable] into `*this`.
    *
    * **Exceptions**: Strong exception guarantee.
    *
    * **Complexity**: Amortized linear in the size of `*this`.
+   * (Constant, if `back_free_capacity() > 0`)
    */
   void push_back(const T& x)
   {
@@ -1682,12 +1690,14 @@ public:
    *
    * **Effects**: Move constructs a new element at the back of the devector using `x`.
    * Invalidates iterators if reallocation is needed.
+   * (`back_free_capacity() == 0`)
    *
    * **Requires**: `T` shall be [MoveInsertable] into `*this`.
    *
    * **Exceptions**: Strong exception guarantee, not regarding the state of `x`.
    *
    * **Complexity**: Amortized linear in the size of `*this`.
+   * (Constant, if `back_free_capacity() > 0`)
    */
   void push_back(T&& x)
   {
@@ -1702,6 +1712,9 @@ public:
    * **Requires**: `T` shall be [CopyInsertable] into `*this`.
    *
    * **Precondition**: `back_free_capacity() > 0`.
+   *
+   * **Postcondition**: `size()` is incremented by 1,
+   * `back_free_capacity() is decremented by 1`
    *
    * **Exceptions**: Strong exception guarantee.
    *
@@ -1726,6 +1739,9 @@ public:
    *
    * **Precondition**: `back_free_capacity() > 0`.
    *
+   * **Postcondition**: `size()` is incremented by 1,
+   * `back_free_capacity() is decremented by 1`
+   *
    * **Exceptions**: Strong exception guarantee, not regarding the state of `x`.
    *
    * **Complexity**: Constant.
@@ -1744,6 +1760,8 @@ public:
    * **Effects**: Removes the last element of `*this`.
    *
    * **Precondition**: `!empty()`.
+   *
+   * **Postcondition**: `back_free_capacity()` is incremented by 1.
    *
    * **Exceptions**: Strong exception guarantee.
    *
