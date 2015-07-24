@@ -48,14 +48,14 @@ struct devector_small_buffer_policy
 struct devector_growth_policy
 {
   /**
-   * **Returns**: 4 times the old capacity or 10 if it's 0.
+   * **Returns**: 4 times the old capacity or 16 if it's 0.
    *
    * @param capacity The current capacity of the devector, equals to `capacity()`.
    */
   template <class SizeType>
   static SizeType new_capacity(SizeType capacity)
   {
-    return (capacity) ? capacity * 4u : 16;
+    return (capacity) ? capacity * 4u : 16u;
   }
 
   /**
