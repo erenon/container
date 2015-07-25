@@ -497,14 +497,16 @@
 </h3></div></div></div>
 <p>
         <code class="computeroutput"><span class="identifier">devector</span></code> is a hybrid of the
-        standard vector and deque, and <code class="computeroutput"><span class="identifier">small_vector</span></code>.
-        It offers cheap <code class="computeroutput"><span class="identifier">push_back</span><span class="special">/</span><span class="identifier">push_front</span></code>,
-        while also providing the regular features of <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span></code>.
-        In contrast to the standard vector, however, <code class="computeroutput"><span class="identifier">devector</span></code>
-        offers greater control over its internals.
+        standard vector and deque containers, as well as the <code class="computeroutput"><span class="identifier">small_vector</span></code>
+        of Boost.Container. It offers cheap (amortized constant time) insertion at
+        both the frond and back ends, while also providing the regular features of
+        <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span></code>, in particular the contiguous underlying
+        memory. In contrast to the standard vector, however, <code class="computeroutput"><span class="identifier">devector</span></code>
+        offers greater control over its internals. Like small_vector, it can store
+        elements internally without dynamically allocating memory.
       </p>
 <p>
-        Through policy template argument, it's possible to add small buffer optimization
+        Through a policy template argument, it's possible to add small buffer optimization
         to <code class="computeroutput"><span class="identifier">devector</span></code>: The specified
         number of elements will be stored inline with the internals, without requiring
         additional heap allocation. If the size of the <code class="computeroutput"><span class="identifier">devector</span></code>
@@ -512,17 +514,20 @@
         storage.
       </p>
 <p>
-        Through policy template argument, it's also possible to change how the <code class="computeroutput"><span class="identifier">devector</span></code> grows its storage, allowing to
-        minimize the required reallocations.
+        Furthermore, through another policy template argument, it's also possible
+        to change how the <code class="computeroutput"><span class="identifier">devector</span></code>
+        grows its storage, providing explicit control over the reallocation strategy
+        and consistent behavior across different platforms.
       </p>
 <p>
         To accommodate high performance requirements, <code class="computeroutput"><span class="identifier">devector</span></code>
-        offers unsafe methods: such methods can avoid unnecessary checks or initialization,
-        but can trigger undefined behavior if their contract is broken.
+        offers (potentially) unsafe, less encapsulating methods: such methods can
+        avoid unnecessary checks or initialization, but can trigger undefined behavior
+        if their contract is broken.
       </p>
 <p>
-        <code class="computeroutput"><span class="identifier">devector</span></code> intends to be a
-        drop in replacement of <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span></code>.
+        The <code class="computeroutput"><span class="identifier">devector</span></code> class template
+        intends to be a drop in replacement of <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span></code>.
         However, to keep its size slim (16 bytes on 32 bit, 24 bytes on a typical
         64 bit architecture), its <code class="computeroutput"><span class="identifier">size_type</span></code>
         is defined as <code class="computeroutput"><span class="keyword">unsigned</span> <span class="keyword">int</span></code>
@@ -530,8 +535,9 @@
         to <code class="computeroutput"><span class="identifier">UINT_MAX</span></code>.
       </p>
 <p>
-        <code class="computeroutput"><span class="identifier">devector</span></code> uses <code class="computeroutput"><span class="identifier">move_if_noexcept</span></code> whenever necessary, offering
-        strong exception guarantees. <code class="computeroutput"><span class="identifier">devector</span></code>
+        In general, <code class="computeroutput"><span class="identifier">devector</span></code> uses
+        <code class="computeroutput"><span class="identifier">move_if_noexcept</span></code> whenever
+        necessary, offering strong exception guarantees. <code class="computeroutput"><span class="identifier">devector</span></code>
         implements the NAD (Not A Defect) resolution of <a href="http://www.open-std.org/jtc1/sc22/wg21/docs/lwg-closed.html#526" target="_top">LWG
         Issue 526 (<span class="emphasis"><em>Is it undefined if a function in the standard changes
         in parameters?</em></span>)</a>.
