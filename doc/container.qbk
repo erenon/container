@@ -532,10 +532,10 @@ stateful allocators, etc.
 [section:devector ['devector]]
 
 `devector` is a hybrid of the standard vector and deque containers, as well as the `small_vector` of Boost.Container. 
-It offers cheap (amortized constant time) insertion at both the frond and back ends,
+It offers cheap (amortized constant time) insertion at both the front and back ends,
 while also providing the regular features of `std::vector`, in particular the contiguous underlying memory.
 In contrast to the standard vector, however, `devector` offers greater control over its internals.
-Like small_vector, it can store elements internally without dynamically allocating memory.
+Like `small_vector`, it can store elements internally without dynamically allocating memory.
 
 Through a policy template argument, it's possible to add small buffer optimization to `devector`:
 The specified number of elements will be stored inline with the internals, without requiring
