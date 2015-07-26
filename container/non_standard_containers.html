@@ -499,11 +499,11 @@
         <code class="computeroutput"><span class="identifier">devector</span></code> is a hybrid of the
         standard vector and deque containers, as well as the <code class="computeroutput"><span class="identifier">small_vector</span></code>
         of Boost.Container. It offers cheap (amortized constant time) insertion at
-        both the frond and back ends, while also providing the regular features of
+        both the front and back ends, while also providing the regular features of
         <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span></code>, in particular the contiguous underlying
         memory. In contrast to the standard vector, however, <code class="computeroutput"><span class="identifier">devector</span></code>
-        offers greater control over its internals. Like small_vector, it can store
-        elements internally without dynamically allocating memory.
+        offers greater control over its internals. Like <code class="computeroutput"><span class="identifier">small_vector</span></code>,
+        it can store elements internally without dynamically allocating memory.
       </p>
 <p>
         Through a policy template argument, it's possible to add small buffer optimization

@@ -5,7 +5,7 @@
 <link rel="stylesheet" href="http://www.boost.org/doc/libs/1_55_0/doc/src/boostbook.css" type="text/css">
 <meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
 <link rel="home" href="../../../index.html" title="Chapter&#160;1.&#160;Boost.Container">
-<link rel="up" href="../flex_deque.html#idp94438736" title="Description">
+<link rel="up" href="../flex_deque.html#idp109903168" title="Description">
 <link rel="prev" href="allocator_traits.html" title="Struct allocator_traits">
 <link rel="next" href="policy.html" title="Struct policy">
 </head>
@@ -20,7 +20,7 @@
 </tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="allocator_traits.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/prev.png" alt="Prev"></a><a accesskey="u" href="../flex_deque.html#idp94438736"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/up.png" alt="Up"></a><a accesskey="h" href="../../../index.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/home.png" alt="Home"></a><a accesskey="n" href="policy.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/next.png" alt="Next"></a>
+<a accesskey="p" href="allocator_traits.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/prev.png" alt="Prev"></a><a accesskey="u" href="../flex_deque.html#idp109903168"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/up.png" alt="Up"></a><a accesskey="h" href="../../../index.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/home.png" alt="Home"></a><a accesskey="n" href="policy.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/next.png" alt="Next"></a>
 </div>
 <div class="refentry">
 <a name="boost.container.flex_deque.iterator"></a><div class="titlepage"></div>
@@ -36,50 +36,50 @@
 <span class="keyword">class</span> <a class="link" href="iterator.html" title="Class iterator">iterator</a> <span class="special">:</span> <span class="keyword">public</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">iterator</span><span class="special">&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">random_access_iterator_tag</span><span class="special">,</span> <span class="identifier">T</span> <span class="special">&gt;</span> <span class="special">{</span>
 <span class="keyword">public</span><span class="special">:</span>
   <span class="comment">// <a class="link" href="iterator.html#boost.container.flex_deque.iteratorconstruct-copy-destruct">construct/copy/destruct</a></span>
-  <a class="link" href="iterator.html#idp39631552-bb"><span class="identifier">iterator</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <a class="link" href="iterator.html#idp39631840-bb"><span class="identifier">iterator</span></a><span class="special">(</span><a class="link" href="../flex_deque.html" title="Class template flex_deque">flex_deque</a> <span class="special">*</span><span class="special">,</span> <span class="identifier">T</span> <span class="special">*</span><span class="special">,</span> <span class="keyword">unsigned</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="iterator.html#idp50943424-bb"><span class="identifier">iterator</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="iterator.html#idp50943712-bb"><span class="identifier">iterator</span></a><span class="special">(</span><a class="link" href="../flex_deque.html" title="Class template flex_deque">flex_deque</a> <span class="special">*</span><span class="special">,</span> <span class="identifier">T</span> <span class="special">*</span><span class="special">,</span> <span class="keyword">unsigned</span><span class="special">)</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="iterator.html#idp39627712-bb">public member functions</a></span>
-  <span class="identifier">reference</span> <a class="link" href="iterator.html#idp39628272-bb"><span class="keyword">operator</span><span class="special">*</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <a class="link" href="iterator.html" title="Class iterator">iterator</a> <span class="special">&amp;</span> <a class="link" href="iterator.html#idp39629120-bb"><span class="keyword">operator</span><span class="special">++</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <a class="link" href="iterator.html" title="Class iterator">iterator</a> <span class="special">&amp;</span> <a class="link" href="iterator.html#idp39630256-bb"><span class="keyword">operator</span><span class="special">--</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="comment">// <a class="link" href="iterator.html#idp50939584-bb">public member functions</a></span>
+  <span class="identifier">reference</span> <a class="link" href="iterator.html#idp50940144-bb"><span class="keyword">operator</span><span class="special">*</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="iterator.html" title="Class iterator">iterator</a> <span class="special">&amp;</span> <a class="link" href="iterator.html#idp50940992-bb"><span class="keyword">operator</span><span class="special">++</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="iterator.html" title="Class iterator">iterator</a> <span class="special">&amp;</span> <a class="link" href="iterator.html#idp50942128-bb"><span class="keyword">operator</span><span class="special">--</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="iterator.html#idp39634480-bb">private member functions</a></span>
-  <span class="identifier">T</span> <span class="special">*</span> <a class="link" href="iterator.html#idp39635056-bb"><span class="identifier">next_segment</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="identifier">T</span> <span class="special">*</span> <a class="link" href="iterator.html#idp39635904-bb"><span class="identifier">prev_segment</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> Iterator<span class="special">&gt;</span> <span class="identifier">T</span> <span class="special">*</span> <a class="link" href="iterator.html#idp39636752-bb"><span class="identifier">next_segment_in_range</span></a><span class="special">(</span><span class="identifier">Iterator</span><span class="special">,</span> <span class="identifier">Iterator</span><span class="special">)</span><span class="special">;</span>
-  <span class="identifier">size_type</span> <a class="link" href="iterator.html#idp39639824-bb"><span class="identifier">segment_index</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="comment">// <a class="link" href="iterator.html#idp50946352-bb">private member functions</a></span>
+  <span class="identifier">T</span> <span class="special">*</span> <a class="link" href="iterator.html#idp50946928-bb"><span class="identifier">next_segment</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="identifier">T</span> <span class="special">*</span> <a class="link" href="iterator.html#idp50947776-bb"><span class="identifier">prev_segment</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> Iterator<span class="special">&gt;</span> <span class="identifier">T</span> <span class="special">*</span> <a class="link" href="iterator.html#idp50948624-bb"><span class="identifier">next_segment_in_range</span></a><span class="special">(</span><span class="identifier">Iterator</span><span class="special">,</span> <span class="identifier">Iterator</span><span class="special">)</span><span class="special">;</span>
+  <span class="identifier">size_type</span> <a class="link" href="iterator.html#idp50951696-bb"><span class="identifier">segment_index</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
 <span class="special">}</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idp95020656"></a><h2>Description</h2>
+<a name="idp110484864"></a><h2>Description</h2>
 <div class="refsect2">
-<a name="idp95021072"></a><h3>
+<a name="idp110485280"></a><h3>
 <a name="boost.container.flex_deque.iteratorconstruct-copy-destruct"></a><code class="computeroutput">iterator</code> 
         public
        construct/copy/destruct</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
-<li class="listitem"><pre class="literallayout"><a name="idp39631552-bb"></a><span class="identifier">iterator</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><a name="idp39631840-bb"></a><span class="identifier">iterator</span><span class="special">(</span><a class="link" href="../flex_deque.html" title="Class template flex_deque">flex_deque</a> <span class="special">*</span> container<span class="special">,</span> <span class="identifier">T</span> <span class="special">*</span> segment<span class="special">,</span> <span class="keyword">unsigned</span> elem_index<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><a name="idp50943424-bb"></a><span class="identifier">iterator</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><a name="idp50943712-bb"></a><span class="identifier">iterator</span><span class="special">(</span><a class="link" href="../flex_deque.html" title="Class template flex_deque">flex_deque</a> <span class="special">*</span> container<span class="special">,</span> <span class="identifier">T</span> <span class="special">*</span> segment<span class="special">,</span> <span class="keyword">unsigned</span> elem_index<span class="special">)</span><span class="special">;</span></pre></li>
 </ol></div>
 </div>
 <div class="refsect2">
-<a name="idp95035696"></a><h3>
-<a name="idp39627712-bb"></a><code class="computeroutput">iterator</code> public member functions</h3>
+<a name="idp110499824"></a><h3>
+<a name="idp50939584-bb"></a><code class="computeroutput">iterator</code> public member functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
-<li class="listitem"><pre class="literallayout"><span class="identifier">reference</span> <a name="idp39628272-bb"></a><span class="keyword">operator</span><span class="special">*</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><a class="link" href="iterator.html" title="Class iterator">iterator</a> <span class="special">&amp;</span> <a name="idp39629120-bb"></a><span class="keyword">operator</span><span class="special">++</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><a class="link" href="iterator.html" title="Class iterator">iterator</a> <span class="special">&amp;</span> <a name="idp39630256-bb"></a><span class="keyword">operator</span><span class="special">--</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">reference</span> <a name="idp50940144-bb"></a><span class="keyword">operator</span><span class="special">*</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><a class="link" href="iterator.html" title="Class iterator">iterator</a> <span class="special">&amp;</span> <a name="idp50940992-bb"></a><span class="keyword">operator</span><span class="special">++</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><a class="link" href="iterator.html" title="Class iterator">iterator</a> <span class="special">&amp;</span> <a name="idp50942128-bb"></a><span class="keyword">operator</span><span class="special">--</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
 </ol></div>
 </div>
 <div class="refsect2">
-<a name="idp95054064"></a><h3>
-<a name="idp39634480-bb"></a><code class="computeroutput">iterator</code> private member functions</h3>
+<a name="idp110518256"></a><h3>
+<a name="idp50946352-bb"></a><code class="computeroutput">iterator</code> private member functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
-<li class="listitem"><pre class="literallayout"><span class="identifier">T</span> <span class="special">*</span> <a name="idp39635056-bb"></a><span class="identifier">next_segment</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="identifier">T</span> <span class="special">*</span> <a name="idp39635904-bb"></a><span class="identifier">prev_segment</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">T</span> <span class="special">*</span> <a name="idp50946928-bb"></a><span class="identifier">next_segment</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">T</span> <span class="special">*</span> <a name="idp50947776-bb"></a><span class="identifier">prev_segment</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
 <li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> Iterator<span class="special">&gt;</span> 
-  <span class="identifier">T</span> <span class="special">*</span> <a name="idp39636752-bb"></a><span class="identifier">next_segment_in_range</span><span class="special">(</span><span class="identifier">Iterator</span> first<span class="special">,</span> <span class="identifier">Iterator</span> last<span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="identifier">size_type</span> <a name="idp39639824-bb"></a><span class="identifier">segment_index</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+  <span class="identifier">T</span> <span class="special">*</span> <a name="idp50948624-bb"></a><span class="identifier">next_segment_in_range</span><span class="special">(</span><span class="identifier">Iterator</span> first<span class="special">,</span> <span class="identifier">Iterator</span> last<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">size_type</span> <a name="idp50951696-bb"></a><span class="identifier">segment_index</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
 </ol></div>
 </div>
 </div>
@@ -94,7 +94,7 @@
 </tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="allocator_traits.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/prev.png" alt="Prev"></a><a accesskey="u" href="../flex_deque.html#idp94438736"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/up.png" alt="Up"></a><a accesskey="h" href="../../../index.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/home.png" alt="Home"></a><a accesskey="n" href="policy.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/next.png" alt="Next"></a>
+<a accesskey="p" href="allocator_traits.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/prev.png" alt="Prev"></a><a accesskey="u" href="../flex_deque.html#idp109903168"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/up.png" alt="Up"></a><a accesskey="h" href="../../../index.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/home.png" alt="Home"></a><a accesskey="n" href="policy.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/next.png" alt="Next"></a>
 </div>
 </body>
 </html>
