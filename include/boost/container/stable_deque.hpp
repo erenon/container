@@ -14,6 +14,7 @@
 #include <memory>
 
 #include <boost/container/devector.hpp>
+#include <boost/container/detail/destroyers.hpp>
 
 namespace boost {
 namespace container {
@@ -31,8 +32,6 @@ template <
 >
 class stable_deque : Allocator
 {
-  typedef std::unique_ptr<T[]> segment;
-
   struct allocator_traits : public std::allocator_traits<Allocator>
   {
     // before C++14, std::allocator does not specify propagate_on_container_move_assignment,
@@ -44,11 +43,6 @@ class stable_deque : Allocator
     // poor emulation of a C++17 feature
     static constexpr bool is_always_equal = std::is_same<Allocator, std::allocator<T>>::value;
   };
-
-  typedef typename allocator_traits::template rebind_alloc<segment> map_allocator;
-
-  typedef devector<segment, devector_small_buffer_policy<0>, devector_growth_policy, map_allocator> map_t;
-  typedef typename map_t::iterator map_iterator;
 
   static constexpr unsigned segment_size = FlexDequePolicy::segment_size;
 
@@ -66,6 +60,16 @@ public:
 
   typedef BOOST_CONTAINER_IMPDEF(std::size_t)    size_type;
   typedef BOOST_CONTAINER_IMPDEF(std::ptrdiff_t) difference_type;
+
+private:
+
+  typedef typename allocator_traits::template rebind_alloc<pointer> map_allocator;
+  typedef devector<pointer, devector_small_buffer_policy<0>, devector_growth_policy, map_allocator> map_t;
+  typedef typename map_t::iterator map_iterator;
+
+  typedef container_detail::scoped_array_deallocator<Allocator> allocation_guard;
+
+public:
 
   template <bool IsConst = false>
   class deque_iterator :
@@ -131,7 +135,7 @@ public:
     size_type data_size() const
     {
       // *this must not be singular
-      return (_container->_map.back().get() != _segment)
+      return (_container->_map.back() != _segment)
         ? segment_size - _index
         :_container->_back_index - _index;
     }
@@ -200,7 +204,7 @@ public:
 
       for (; first != last; ++first)
       {
-        if (_segment == first->get())
+        if (_segment == *first)
         {
           ++first;
           break;
@@ -209,7 +213,7 @@ public:
 
       if (first != last)
       {
-        result = first->get();
+        result = *first;
       }
 
       return result;
@@ -220,7 +224,7 @@ public:
       size_type i = 0;
       for (; i < _container->_map.size(); ++i)
       {
-        if (_container->_map[i].get() == _segment)
+        if (_container->_map[i] == _segment)
         {
           break;
         }
@@ -315,6 +319,7 @@ public:
   ~stable_deque()
   {
     destroy_elements(begin(), end());
+    deallocate_segments();
   }
 
   stable_deque& operator=(const stable_deque& x);
@@ -455,22 +460,22 @@ public:
 
   reference front() noexcept
   {
-    return *(_map.front().get() + _front_index);
+    return *(_map.front() + _front_index);
   }
 
   const_reference front() const
   {
-    return *(_map.front().get() + _front_index);
+    return *(_map.front() + _front_index);
   }
 
   reference back()
   {
-    return *(_map.back().get() + _back_index);
+    return *(_map.back() + _back_index);
   }
 
   const_reference back() const
   {
-    return *(_map.back().get() + _back_index);
+    return *(_map.back() + _back_index);
   }
 
   // modifiers:
@@ -479,10 +484,7 @@ public:
   {
     if (front_free_capacity())
     {
-      alloc_construct(
-        _map.front().get() + (_front_index - 1),
-        std::forward<Args>(args)...
-      );
+      alloc_construct(_map.front() + (_front_index - 1), std::forward<Args>(args)...);
       --_front_index;
     }
     else
@@ -498,10 +500,7 @@ public:
   {
     if (back_free_capacity())
     {
-      alloc_construct(
-        _map.back().get() + _back_index,
-        std::forward<Args>(args)...
-      );
+      alloc_construct(_map.back() + _back_index, std::forward<Args>(args)...);
       ++_back_index;
     }
     else
@@ -534,11 +533,12 @@ public:
   {
     BOOST_ASSERT(!empty());
 
-    allocator_traits::destroy(get_allocator_ref(), _map.front().get() + _front_index);
+    allocator_traits::destroy(get_allocator_ref(), _map.front() + _front_index);
     ++_front_index;
 
     if (_front_index == segment_size)
     {
+      allocator_traits::deallocate(get_allocator_ref(), _map.front(), segment_size);
       _map.pop_front();
       _front_index = 0;
     }
@@ -551,10 +551,11 @@ public:
     BOOST_ASSERT(!empty());
 
     --_back_index;
-    allocator_traits::destroy(get_allocator_ref(), _map.back().get() + _back_index);
+    allocator_traits::destroy(get_allocator_ref(), _map.back() + _back_index);
 
     if (_back_index == 0)
     {
+      allocator_traits::deallocate(get_allocator_ref(), _map.back(), segment_size);
       _map.pop_back();
       _back_index = segment_size;
     }
@@ -569,6 +570,8 @@ public:
   void clear() noexcept
   {
     destroy_elements(begin(), end());
+    deallocate_segments();
+
     _map.clear();
     _front_index = 0;
     _back_index = segment_size;
@@ -584,6 +587,14 @@ private:
     }
   }
 
+  void deallocate_segments()
+  {
+    for (pointer segment : _map)
+    {
+      allocator_traits::deallocate(get_allocator_ref(), segment, segment_size);
+    }
+  }
+
   allocator_type& get_allocator_ref()
   {
     return static_cast<allocator_type&>(*this);
@@ -594,12 +605,17 @@ private:
     return static_cast<const allocator_type&>(*this);
   }
 
+  pointer allocate(size_type capacity)
+  {
+    return allocator_traits::allocate(get_allocator_ref(), capacity);
+  }
+
   template <typename Iterator, typename Container>
   static Iterator begin_impl(Container* c)
   {
     if (!c->empty())
     {
-      return Iterator(c, c->_map.front().get(), c->_front_index);
+      return Iterator(c, c->_map.front(), c->_front_index);
     }
 
     return Iterator{};
@@ -610,8 +626,8 @@ private:
   {
     return Iterator{
       c,
-      c->_back_index == segment_size ? nullptr : c->_map.back().get(),
-        c->_back_index % segment_size
+      c->_back_index == segment_size ? nullptr : c->_map.back(),
+      c->_back_index % segment_size
     };
   }
 
@@ -641,17 +657,18 @@ private:
     BOOST_ASSERT(_front_index == 0);
 
     _map.reserve_front(new_map_capacity());
-    segment new_segment(new T[segment_size]);
+
+    pointer new_segment = allocate(segment_size);
+    allocation_guard new_segment_guard(new_segment, get_allocator_ref(), segment_size);
 
     size_type new_front_index = segment_size - 1;
 
-    alloc_construct(
-      new_segment.get() + new_front_index,
-      std::forward<Args>(args)...
-    );
+    alloc_construct(new_segment + new_front_index, std::forward<Args>(args)...);
 
-    _map.push_front(std::move(new_segment));
+    _map.push_front(new_segment);
     _front_index = new_front_index;
+
+    new_segment_guard.release();
   }
 
   template <typename... Args>
@@ -660,15 +677,16 @@ private:
     BOOST_ASSERT(_back_index == segment_size);
 
     _map.reserve_back(new_map_capacity());
-    segment new_segment(new T[segment_size]);
 
-    alloc_construct(
-      new_segment.get(),
-      std::forward<Args>(args)...
-    );
+    pointer new_segment = allocate(segment_size);
+    allocation_guard new_segment_guard(new_segment, get_allocator_ref(), segment_size);
 
-    _map.push_back(std::move(new_segment));
+    alloc_construct(new_segment, std::forward<Args>(args)...);
+
+    _map.push_back(new_segment);
     _back_index = 1;
+
+    new_segment_guard.release();
   }
 
   size_type new_map_capacity() const
