@@ -67,10 +67,6 @@ public:
   typedef BOOST_CONTAINER_IMPDEF(std::size_t)    size_type;
   typedef BOOST_CONTAINER_IMPDEF(std::ptrdiff_t) difference_type;
 
-  /**
-   * @tparam Container stable_deque or const stable_deque
-   * @tparam U T or const T
-   */
   template <bool IsConst = false>
   class deque_iterator :
     public std::iterator
@@ -79,6 +75,7 @@ public:
       typename std::conditional<IsConst, const T, T>::type
     >
   {
+  protected:
     typedef typename std::conditional<IsConst, const stable_deque, stable_deque>::type* container_pointer;
 
     // TODO iterator missing members
@@ -179,7 +176,7 @@ public:
 
     #endif
 
-  private:
+  protected:
     pointer next_segment()
     {
       return next_segment_in_range(
@@ -237,10 +234,59 @@ public:
     unsigned _index = 0;
   };
 
+  template <bool IsConst = false>
+  class deque_segment_iterator : deque_iterator<IsConst>
+  {
+    typedef deque_iterator<IsConst> base;
+
+    typedef typename base::container_pointer container_pointer;
+
+  public:
+    deque_segment_iterator() {}
+
+    deque_segment_iterator(container_pointer container, pointer segment, unsigned elem_index)
+      :base(container, segment, elem_index)
+    {}
+
+    pointer operator*()
+    {
+      return data();
+    }
+
+    using base::data;
+    using base::data_size;
+
+    deque_segment_iterator operator++()
+    {
+      base::_segment = base::next_segment();
+      base::_index = 0;
+      return *this;
+    }
+
+    friend bool operator==(const deque_segment_iterator& a, const deque_segment_iterator& b)
+    {
+      return a.get_base() == b.get_base();
+    }
+
+    friend bool operator!=(const deque_segment_iterator& a, const deque_segment_iterator& b)
+    {
+      return !(a == b);
+    }
+
+  private:
+    const base& get_base() const
+    {
+      return static_cast<const base&>(*this);
+    }
+  };
+
   typedef BOOST_CONTAINER_IMPDEF(deque_iterator<false>) iterator;
   typedef BOOST_CONTAINER_IMPDEF(deque_iterator<true>) const_iterator;
   typedef std::reverse_iterator<iterator> reverse_iterator;
   typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
+
+  typedef deque_segment_iterator<false> segment_iterator;
+  typedef deque_segment_iterator<true> const_segment_iterator;
 
   // construct/copy/destroy:
   stable_deque() : stable_deque(Allocator()) {}
@@ -287,22 +333,22 @@ public:
   // iterators:
   iterator begin() noexcept
   {
-    return begin_impl();
+    return begin_impl<iterator>(this);
   }
 
   const_iterator begin() const noexcept
   {
-    return begin_impl();
+    return begin_impl<const_iterator>(this);
   }
 
   iterator end() noexcept
   {
-    return end_impl();
+    return end_impl<iterator>(this);
   }
 
   const_iterator end() const noexcept
   {
-    return end_impl();
+    return end_impl<const_iterator>(this);
   }
 
   reverse_iterator rbegin() noexcept
@@ -327,12 +373,12 @@ public:
 
   const_iterator cbegin() const noexcept
   {
-    return begin_impl();
+    return begin_impl<const_iterator>(this);
   }
 
   const_iterator cend() const noexcept
   {
-    return end_impl();
+    return end_impl<const_iterator>(this);
   }
 
   const_reverse_iterator crbegin() const noexcept
@@ -343,6 +389,27 @@ public:
   const_reverse_iterator crend() const noexcept
   {
     return const_reverse_iterator(begin());
+  }
+
+  // segment iterators:
+  segment_iterator segment_begin()
+  {
+    return begin_impl<segment_iterator>(this);
+  }
+
+  const_segment_iterator segment_begin() const
+  {
+    return begin_impl<const_segment_iterator>(this);
+  }
+
+  segment_iterator segment_end()
+  {
+    return segment_iterator{};
+  }
+
+  const_segment_iterator segment_end() const
+  {
+    return const_segment_iterator{};
   }
 
   // capacity:
@@ -507,7 +574,6 @@ public:
     _back_index = segment_size;
   }
 
-
 private:
 
   void destroy_elements(iterator first, iterator last)
@@ -528,41 +594,24 @@ private:
     return static_cast<const allocator_type&>(*this);
   }
 
-  iterator begin_impl()
+  template <typename Iterator, typename Container>
+  static Iterator begin_impl(Container* c)
   {
-    if (!empty())
+    if (!c->empty())
     {
-      return iterator(this, _map.front().get(), _front_index);
+      return Iterator(c, c->_map.front().get(), c->_front_index);
     }
 
-    return iterator{};
+    return Iterator{};
   }
 
-  const_iterator begin_impl() const
+  template <typename Iterator, typename Container>
+  static Iterator end_impl(Container* c)
   {
-    if (!empty())
-    {
-      return const_iterator(this, _map.front().get(), _front_index);
-    }
-
-    return const_iterator{};
-  }
-
-  iterator end_impl()
-  {
-    return iterator{
-      this,
-      _back_index == segment_size ? nullptr : _map.back().get(),
-      _back_index % segment_size
-    };
-  }
-
-  const_iterator end_impl() const
-  {
-    return const_iterator{
-      this,
-      _back_index == segment_size ? nullptr : _map.back().get(),
-      _back_index % segment_size
+    return Iterator{
+      c,
+      c->_back_index == segment_size ? nullptr : c->_map.back().get(),
+        c->_back_index % segment_size
     };
   }
 

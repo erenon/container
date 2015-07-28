@@ -26,6 +26,8 @@ using namespace boost::container;
 
 #include <boost/algorithm/cxx14/equal.hpp>
 
+#include "test_elem.hpp"
+
 template <typename T>
 using make_stable_deque = stable_deque<T, std::allocator<T>, stable_deque_policy<8>>;
 
@@ -143,26 +145,21 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(segment_iterator, Deque, t_is_trivial)
 {
   typedef typename Deque::value_type T;
 
-  auto expected = getRange<devector<T>>();
-  auto a = getRange<Deque>();
+  devector<T> expected = getRange<devector<T>>();
+  Deque a = getRange<Deque>();
 
   T* p_expected = expected.data();
 
-  auto a_first = a.begin();
-  auto a_last = a.end();
+  auto a_first = a.segment_begin();
+  auto a_last = a.segment_end();
 
   while (a_first != a_last)
   {
     auto size = a_first.data_size();
-    bool ok = std::memcmp(a_first.data(), p_expected, size) == 0;
+    bool ok = std::memcmp(*a_first, p_expected, size) == 0;
     BOOST_TEST(ok);
 
-    // TODO change this if segment subclass completed
-    for (auto i = 0; i < size; ++i)
-    {
-      ++a_first;
-    }
-
+    ++a_first;
     p_expected += size;
   }
 
@@ -174,7 +171,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(consturctor_default, Deque, all_deques)
   {
     Deque a;
 
-    BOOST_TEST(a.size() == 0);
+    BOOST_TEST(a.size() == 0u);
     BOOST_TEST(a.empty());
   }
 
@@ -316,18 +313,18 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(empty, Deque, all_deques)
 BOOST_AUTO_TEST_CASE_TEMPLATE(size, Deque, all_deques)
 {
   Deque a;
-  BOOST_TEST(a.size() == 0);
+  BOOST_TEST(a.size() == 0u);
 
   a.emplace_front(1);
   a.emplace_front(2);
   a.emplace_front(3);
 
-  BOOST_TEST(a.size() == 3);
+  BOOST_TEST(a.size() == 3u);
 
   a.pop_front();
   a.pop_front();
 
-  BOOST_TEST(a.size() == 1);
+  BOOST_TEST(a.size() == 1u);
 
   a.emplace_back(2);
   a.emplace_back(3);
@@ -335,7 +332,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(size, Deque, all_deques)
   a.emplace_back(5);
   a.emplace_back(6);
 
-  BOOST_TEST(a.size() == 6);
+  BOOST_TEST(a.size() == 6u);
 }
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(max_size, Deque, all_deques)
