@@ -32,8 +32,12 @@ template <typename T>
 using make_stable_deque = stable_deque<T, std::allocator<T>, stable_deque_policy<8>>;
 
 typedef boost::mpl::list<
-  make_stable_deque<unsigned>
-  // TODO add other test_elem types
+  make_stable_deque<unsigned>,
+  make_stable_deque<regular_elem>,
+  make_stable_deque<noex_move>,
+  make_stable_deque<noex_copy>,
+  make_stable_deque<only_movable>,
+  make_stable_deque<no_default_ctor>
 > all_deques;
 
 // TODO mpl::filter_view does not compile if predicate has template template argument. why?
