@@ -352,8 +352,39 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(max_size, Deque, all_deques)
 // TODO op_at -- const, non const
 // TODO at -- const, non const
 
-// TODO front -- const, non const
-// TODO back -- const, non const
+BOOST_AUTO_TEST_CASE_TEMPLATE(front, Deque, all_deques)
+{
+  typedef typename Deque::value_type T;
+
+  { // non-const front
+    Deque a = getRange<Deque>(3);
+    BOOST_TEST(a.front() == T(1));
+    a.front() = T(100);
+    BOOST_TEST(a.front() == T(100));
+  }
+
+  { // const front
+    const Deque a = getRange<Deque>(3);
+    BOOST_TEST(a.front() == T(1));
+  }
+}
+
+BOOST_AUTO_TEST_CASE_TEMPLATE(back, Deque, all_deques)
+{
+  typedef typename Deque::value_type T;
+
+  { // non-const front
+    Deque a = getRange<Deque>(3);
+    BOOST_TEST(a.back() == T(3));
+    a.back() = T(100);
+    BOOST_TEST(a.back() == T(100));
+  }
+
+  { // const front
+    const Deque a = getRange<Deque>(3);
+    BOOST_TEST(a.back() == T(3));
+  }
+}
 
 // TODO emplace_front
 // TODO push_front_copy

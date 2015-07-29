@@ -470,12 +470,12 @@ public:
 
   reference back()
   {
-    return *(_map.back() + _back_index);
+    return *(_map.back() + _back_index - 1);
   }
 
   const_reference back() const
   {
-    return *(_map.back() + _back_index);
+    return *(_map.back() + _back_index - 1);
   }
 
   // modifiers:
@@ -514,10 +514,25 @@ public:
   template <class... Args>
   iterator emplace(const_iterator position, Args&&... args);
 
-  void push_front(const T& x);
-  void push_front(T&& x);
-  void push_back(const T& x);
-  void push_back(T&& x);
+  void push_front(const T& x)
+  {
+    emplace_front(x);
+  }
+
+  void push_front(T&& x)
+  {
+    emplace_front(std::move(x));
+  }
+
+  void push_back(const T& x)
+  {
+    emplace_back(x);
+  }
+
+  void push_back(T&& x)
+  {
+    emplace_back(std::move(x));
+  }
 
   iterator insert(const_iterator position, const T& x);
   iterator insert(const_iterator position, T&& x);
