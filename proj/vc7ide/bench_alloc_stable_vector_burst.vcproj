@@ -2,8 +2,8 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.10"
-	Name="stable_vector_test"
-	ProjectGUID="{5E11C8D3-FA52-760A-84FE-943A6BA05A21}"
+	Name="bench_alloc_stable_vector_burst"
+	ProjectGUID="{C3AD2582-79BF-2FE1-8612-BD707552A6A1}"
 	Keyword="Win32Proj">
 	<Platforms>
 		<Platform
@@ -13,14 +13,14 @@
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory="../../Bin/Win32/Debug"
-			IntermediateDirectory="Debug/stable_vector_test"
+			IntermediateDirectory="Debug/bench_alloc_stable_vector_burst"
 			ConfigurationType="1"
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="../../../.."
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
+				PreprocessorDefinitions="BOOST_CONTAINER_NO_LIB"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -34,12 +34,12 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="winmm.lib"
-				OutputFile="$(OutDir)/stable_vector_test_d.exe"
+				AdditionalDependencies="alloc_lib.lib"
+				OutputFile="$(OutDir)/bench_alloc_stable_vector_burst_d.exe"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="../../../../stage/lib"
+				AdditionalLibraryDirectories="../../bin/debug;../../../../stage/lib"
 				GenerateDebugInformation="TRUE"
-				ProgramDatabaseFile="$(OutDir)/stable_vector_test.pdb"
+				ProgramDatabaseFile="$(OutDir)/bench_alloc_stable_vector_burst.pdb"
 				SubSystem="1"
 				TargetMachine="1"
 				FixedBaseAddress="1"/>
@@ -67,13 +67,14 @@
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="../../Bin/Win32/Release"
-			IntermediateDirectory="Release/stable_vector_test"
+			IntermediateDirectory="Release/bench_alloc_stable_vector_burst"
 			ConfigurationType="1"
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
+				Optimization="1"
 				AdditionalIncludeDirectories="../../../.."
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
+				PreprocessorDefinitions="WIN32;NDEBUG;BOOST_CONTAINER_NO_LIB"
 				RuntimeLibrary="2"
 				TreatWChar_tAsBuiltInType="TRUE"
 				ForceConformanceInForLoopScope="FALSE"
@@ -85,10 +86,10 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="winmm.lib"
-				OutputFile="$(OutDir)/stable_vector_test.exe"
+				AdditionalDependencies="winmm.lib alloc_lib.lib"
+				OutputFile="$(OutDir)/bench_alloc_stable_vector_burst.exe"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="../../../../stage/lib"
+				AdditionalLibraryDirectories="../../bin/release;../../../../stage/lib"
 				GenerateDebugInformation="TRUE"
 				SubSystem="1"
 				OptimizeReferences="2"
@@ -123,9 +124,9 @@
 		<Filter
 			Name="Source Files"
 			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx"
-			UniqueIdentifier="{37BC807F-2451-A306-7AC5-7A35A32A22DF}">
+			UniqueIdentifier="{D80184F5-6450-3A65-55CB-2375A7BCDAEF}">
 			<File
-				RelativePath="..\..\test\stable_vector_test.cpp">
+				RelativePath="..\..\bench\bench_alloc_stable_vector_burst.cpp">
 			</File>
 		</Filter>
 	</Files>
