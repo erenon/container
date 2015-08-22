@@ -22,7 +22,7 @@ namespace container {
 template <std::size_t SegmentSize>
 struct stable_deque_policy
 {
-  static const unsigned segment_size = SegmentSize;
+  static const std::size_t segment_size = SegmentSize;
 };
 
 template <
@@ -44,9 +44,8 @@ class stable_deque : Allocator
     static constexpr bool is_always_equal = std::is_same<Allocator, std::allocator<T>>::value;
   };
 
-  static constexpr unsigned segment_size = FlexDequePolicy::segment_size;
-
-  static_assert(segment_size > 0, "Segment size must be greater than 0");
+  // TODO use is_trivially_copyable instead of is_pod when available
+  static constexpr bool t_is_trivially_copyable = std::is_pod<T>::type::value;
 
 public:
 
@@ -63,11 +62,22 @@ public:
 
 private:
 
+  static constexpr size_type segment_size = FlexDequePolicy::segment_size;
+  static_assert(segment_size > 0, "Segment size must be greater than 0");
+
   typedef typename allocator_traits::template rebind_alloc<pointer> map_allocator;
   typedef devector<pointer, devector_small_buffer_policy<0>, devector_growth_policy, map_allocator> map_t;
   typedef typename map_t::iterator map_iterator;
 
   typedef container_detail::scoped_array_deallocator<Allocator> allocation_guard;
+
+  // Destroy already constructed elements
+  typedef typename container_detail::vector_value_traits<Allocator>::ArrayDestructor construction_guard;
+
+  // When no guard needed
+  typedef container_detail::null_scoped_destructor_n<Allocator> null_construction_guard;
+
+  typedef constant_iterator<value_type, difference_type> cvalue_iterator;
 
 public:
 
@@ -86,7 +96,7 @@ public:
   public:
     deque_iterator() {}
 
-    deque_iterator(container_pointer container, pointer segment, unsigned elem_index)
+    deque_iterator(container_pointer container, pointer segment, size_type elem_index)
       :_container(container),
        _segment(segment),
        _index(elem_index)
@@ -235,7 +245,7 @@ public:
 
     container_pointer _container;
     pointer _segment = nullptr;
-    unsigned _index = 0;
+    size_type _index = 0;
   };
 
   template <bool IsConst = false>
@@ -248,7 +258,7 @@ public:
   public:
     deque_segment_iterator() {}
 
-    deque_segment_iterator(container_pointer container, pointer segment, unsigned elem_index)
+    deque_segment_iterator(container_pointer container, pointer segment, size_type elem_index)
       :base(container, segment, elem_index)
     {}
 
@@ -293,7 +303,7 @@ public:
   typedef deque_segment_iterator<true> const_segment_iterator;
 
   // construct/copy/destroy:
-  stable_deque() : stable_deque(Allocator()) {}
+  stable_deque() noexcept : stable_deque(Allocator()) {}
 
   explicit stable_deque(const Allocator& allocator) noexcept
     :Allocator(allocator),
@@ -301,34 +311,233 @@ public:
      _back_index(segment_size)
   {}
 
-  explicit stable_deque(size_type n, const Allocator& = Allocator());
+  explicit stable_deque(size_type n, const Allocator& allocator = Allocator())
+    :Allocator(allocator),
+     _map((n + segment_size - 1) / segment_size, reserve_only_tag{}),
+     _front_index(),
+     _back_index(n % segment_size)
+  {
+    if (_back_index == 0) { _back_index = segment_size; }
 
-  stable_deque(size_type n, const T& value, const Allocator& = Allocator());
+    size_type i = n;
 
-  template <class InputIterator>
-  stable_deque(InputIterator first, InputIterator last, const Allocator& = Allocator());
+    BOOST_TRY
+    {
+      while (i)
+      {
+        pointer new_segment = allocate_segment();
+        _map.unsafe_push_back(new_segment);
 
-  stable_deque(const stable_deque& x);
-  stable_deque(const stable_deque&, const Allocator&);
+        size_type elems_in_segment = (std::min)(i, size_type{segment_size});
 
-  stable_deque(stable_deque&&);
-  stable_deque(stable_deque&&, const Allocator&);
+        for (size_type j = 0; j < elems_in_segment; ++j, --i)
+        {
+          alloc_construct(new_segment + j);
+        }
+      }
+    }
+    BOOST_CATCH(...)
+    {
+      const size_type to_destroy = n - i;
+      _back_index = to_destroy % segment_size;
+      destructor_impl();
+      BOOST_RETHROW;
+    }
+    BOOST_CATCH_END
 
-  stable_deque(std::initializer_list<T>, const Allocator& = Allocator());
+    BOOST_ASSERT(invariants_ok());
+  }
+
+  stable_deque(size_type n, const T& value, const Allocator& allocator = Allocator())
+    :stable_deque(cvalue_iterator(value, n), cvalue_iterator(), allocator)
+  {}
+
+  template <class InputIterator,
+
+#ifndef BOOST_CONTAINER_DOXYGEN_INVOKED
+
+  typename std::enable_if<
+    container_detail::is_input_iterator<InputIterator>::value
+  ,int>::type = 0
+
+#endif // ifndef BOOST_CONTAINER_DOXYGEN_INVOKED
+
+  >
+  stable_deque(InputIterator first, InputIterator last, const Allocator& allocator = Allocator())
+    :stable_deque(allocator)
+  {
+    while (first != last)
+    {
+      push_back(*first++);
+    }
+
+    BOOST_ASSERT(invariants_ok());
+  }
+
+#ifndef BOOST_CONTAINER_DOXYGEN_INVOKED
+
+  template <typename ForwardIterator, typename std::enable_if<
+    container_detail::is_not_input_iterator<ForwardIterator>::value
+  ,int>::type = 0>
+  stable_deque(ForwardIterator first, ForwardIterator last, const Allocator& allocator = Allocator())
+    :Allocator(allocator),
+     _map((std::distance(first, last) + segment_size - 1) / segment_size, reserve_only_tag{}),
+     _front_index(),
+     _back_index(std::distance(first, last) % segment_size)
+  {
+    if (_back_index == 0) { _back_index = segment_size; }
+
+    ForwardIterator segment_begin = first;
+
+    BOOST_TRY
+    {
+      while (segment_begin != last)
+      {
+        const size_type cur_segment_size = (std::min)(std::distance(segment_begin,last), difference_type(segment_size));
+        ForwardIterator segment_end = segment_begin;
+        std::advance(segment_end, cur_segment_size);
+
+        pointer new_segment = allocate_segment();
+        _map.unsafe_push_back(new_segment);
+
+        opt_copy(segment_begin, segment_end, new_segment);
+        segment_begin = segment_end;
+      }
+    }
+    BOOST_CATCH(...)
+    {
+      deallocate_segment(_map.back());
+      _map.pop_back();
+
+      _back_index = (segment_begin == first) ? 0 : segment_size;
+      destructor_impl();
+      BOOST_RETHROW;
+    }
+    BOOST_CATCH_END
+
+    BOOST_ASSERT(invariants_ok());
+  }
+
+#endif // ifndef BOOST_CONTAINER_DOXYGEN_INVOKED
+
+  stable_deque(const stable_deque& x)
+    :stable_deque(x,
+        allocator_traits::select_on_container_copy_construction(x.get_allocator_ref()))
+  {}
+
+  stable_deque(const stable_deque& rhs, const Allocator& allocator)
+    :Allocator(allocator),
+     _map(rhs._map.size(), reserve_only_tag{}),
+     _front_index(rhs._front_index),
+     _back_index(rhs._back_index)
+  {
+    const_segment_iterator segment_begin = rhs.segment_begin();
+
+    BOOST_TRY
+    {
+      while (segment_begin != rhs.segment_end())
+      {
+        pointer src = segment_begin.data();
+        pointer src_end = src + segment_begin.data_size();
+
+        pointer new_segment = allocate_segment();
+        _map.unsafe_push_back(new_segment);
+
+        size_type offset = (segment_begin == rhs.segment_begin()) ? _front_index : 0;
+
+        opt_copy(src, src_end, new_segment + offset);
+
+        ++segment_begin;
+      }
+    }
+    BOOST_CATCH(...)
+    {
+      deallocate_segment(_map.back());
+      _map.pop_back();
+
+      _back_index = (segment_begin == rhs.segment_begin()) ? _front_index : segment_size;
+      destructor_impl();
+      BOOST_RETHROW;
+    }
+    BOOST_CATCH_END
+
+    BOOST_ASSERT(invariants_ok());
+  }
+
+  stable_deque(stable_deque&& x)
+    :stable_deque(std::move(x), Allocator())
+  {}
+
+  stable_deque(stable_deque&& x, const Allocator& allocator)
+    :Allocator(allocator),
+     _map(std::move(x._map)),
+     _front_index(x._front_index),
+     _back_index(x._back_index)
+  {
+    x._front_index = 0;
+    x._back_index = segment_size;
+  }
+
+  stable_deque(std::initializer_list<T> il, const Allocator& allocator = Allocator())
+    :stable_deque(il.begin(), il.end(), allocator)
+  {}
 
   ~stable_deque()
   {
-    destroy_elements(begin(), end());
-    deallocate_segments();
+    destructor_impl();
   }
 
   stable_deque& operator=(const stable_deque& x);
   stable_deque& operator=(stable_deque&& x) noexcept(allocator_traits::is_always_equal);
   stable_deque& operator=(std::initializer_list<T>);
-  template <class InputIterator>
-  void assign(InputIterator first, InputIterator last);
-  void assign(size_type n, const T& t);
-  void assign(std::initializer_list<T>);
+
+  template <class InputIterator,
+
+#ifndef BOOST_CONTAINER_DOXYGEN_INVOKED
+
+  typename std::enable_if<
+    container_detail::is_input_iterator<InputIterator>::value
+  ,int>::type = 0
+
+#endif // ifndef BOOST_CONTAINER_DOXYGEN_INVOKED
+
+  >
+  void assign(InputIterator first, InputIterator last)
+  {
+    iterator dst = begin();
+    while (dst != end() && first != last)
+    {
+      *dst++ = *first++;
+    }
+
+    while (first != last)
+    {
+      push_back(*first++);
+    }
+  }
+
+#ifndef BOOST_CONTAINER_DOXYGEN_INVOKED
+
+  template <typename ForwardIterator, typename std::enable_if<
+    container_detail::is_not_input_iterator<ForwardIterator>::value
+  ,int>::type = 0>
+  void assign(ForwardIterator first, ForwardIterator last)
+  {
+    (void)first;
+    (void)last;
+  }
+
+#endif // ifndef BOOST_CONTAINER_DOXYGEN_INVOKED
+
+  void assign(size_type n, const T& t)
+  {
+    assign(cvalue_iterator(t, n), cvalue_iterator());
+  }
+
+  void assign(std::initializer_list<T> il)
+  {
+    assign(il.begin(), il.end());
+  }
 
   allocator_type get_allocator() const noexcept
   {
@@ -425,21 +634,14 @@ public:
 
   size_type size() const noexcept
   {
-    size_type map_size = _map.size();
-    if (map_size == 0)
+    if (_map.empty())
     {
       return 0;
     }
-    else if (map_size == 1)
+    else
     {
-      return _back_index - _front_index;
-    }
-    else // map_size >= 2
-    {
-      return
-        (segment_size - _front_index)
-      + _back_index
-      + (map_size - 2) * segment_size;
+      return _back_index - _front_index
+        +    (_map.size() - 1) * segment_size;
     }
   }
 
@@ -584,8 +786,7 @@ public:
 
   void clear() noexcept
   {
-    destroy_elements(begin(), end());
-    deallocate_segments();
+    destructor_impl();
 
     _map.clear();
     _front_index = 0;
@@ -593,6 +794,22 @@ public:
   }
 
 private:
+
+  allocator_type& get_allocator_ref()
+  {
+    return static_cast<allocator_type&>(*this);
+  }
+
+  const allocator_type& get_allocator_ref() const
+  {
+    return static_cast<const allocator_type&>(*this);
+  }
+
+  void destructor_impl()
+  {
+    destroy_elements(begin(), end());
+    deallocate_segments();
+  }
 
   void destroy_elements(iterator first, iterator last)
   {
@@ -606,23 +823,18 @@ private:
   {
     for (pointer segment : _map)
     {
-      allocator_traits::deallocate(get_allocator_ref(), segment, segment_size);
+      deallocate_segment(segment);
     }
   }
 
-  allocator_type& get_allocator_ref()
+  pointer allocate_segment()
   {
-    return static_cast<allocator_type&>(*this);
+    return allocator_traits::allocate(get_allocator_ref(), segment_size);
   }
 
-  const allocator_type& get_allocator_ref() const
+  void deallocate_segment(pointer segment)
   {
-    return static_cast<const allocator_type&>(*this);
-  }
-
-  pointer allocate(size_type capacity)
-  {
-    return allocator_traits::allocate(get_allocator_ref(), capacity);
+    allocator_traits::deallocate(get_allocator_ref(), segment, segment_size);
   }
 
   template <typename Iterator, typename Container>
@@ -673,7 +885,7 @@ private:
 
     _map.reserve_front(new_map_capacity());
 
-    pointer new_segment = allocate(segment_size);
+    pointer new_segment = allocate_segment();
     allocation_guard new_segment_guard(new_segment, get_allocator_ref(), segment_size);
 
     size_type new_front_index = segment_size - 1;
@@ -693,7 +905,7 @@ private:
 
     _map.reserve_back(new_map_capacity());
 
-    pointer new_segment = allocate(segment_size);
+    pointer new_segment = allocate_segment();
     allocation_guard new_segment_guard(new_segment, get_allocator_ref(), segment_size);
 
     alloc_construct(new_segment, std::forward<Args>(args)...);
@@ -711,6 +923,50 @@ private:
       : 4;
   }
 
+  template <typename Iterator>
+  void opt_copy(Iterator begin, Iterator end, pointer dst)
+  {
+    typedef typename std::conditional<
+      std::is_nothrow_copy_constructible<T>::value,
+      null_construction_guard,
+      construction_guard
+    >::type guard_t;
+
+    guard_t guard(dst, get_allocator_ref(), 0);
+
+    opt_copy(begin, end, dst, guard);
+
+    guard.release();
+  }
+
+  template <typename Iterator, typename Guard>
+  void opt_copy(Iterator begin, Iterator end, pointer dst, Guard& guard)
+  {
+    while (begin != end)
+    {
+      alloc_construct(dst++, *begin++);
+      guard.increment_size(1u);
+    }
+  }
+
+  template <typename Guard>
+  void opt_copy(const_pointer begin, const_pointer end, pointer dst, Guard& guard)
+  {
+    // if trivial copy and default allocator, memcpy
+    if (t_is_trivially_copyable)
+    {
+      std::memcpy(dst, begin, (end - begin) * sizeof(T));
+    }
+    else // guard needed
+    {
+      while (begin != end)
+      {
+        alloc_construct(dst++, *begin++);
+        guard.increment_size(1u);
+      }
+    }
+  }
+
   bool invariants_ok()
   {
     return (! _map.empty() || (_front_index == 0 && _back_index == segment_size))
@@ -720,8 +976,8 @@ private:
   }
 
   map_t _map;
-  unsigned _front_index;
-  unsigned _back_index;
+  size_type _front_index;
+  size_type _back_index;
 };
 
 template <class T, class AX, class PX, class AY, class PY>

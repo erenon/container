@@ -9,6 +9,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include <iostream>
+#include <forward_list>
 
 #define BOOST_CONTAINER_TEST
 #include <boost/container/stable_deque.hpp>
@@ -27,6 +28,7 @@ using namespace boost::container;
 #include <boost/algorithm/cxx14/equal.hpp>
 
 #include "test_elem.hpp"
+#include "input_iterator.hpp"
 
 template <typename T>
 using make_stable_deque = stable_deque<T, std::allocator<T>, stable_deque_policy<8>>;
@@ -74,7 +76,7 @@ typedef boost::mpl::filter_view<all_deques, is_value_type_trivial<boost::mpl::_1
   t_is_trivial;
 
 template <typename Container>
-Container getRange(int fbeg, int fend, int bbeg, int bend)
+Container get_range(int fbeg, int fend, int bbeg, int bend)
 {
   Container c;
 
@@ -92,7 +94,7 @@ Container getRange(int fbeg, int fend, int bbeg, int bend)
 }
 
 template <typename Container>
-Container getRange(int count)
+Container get_range(int count)
 {
   Container c;
 
@@ -105,9 +107,9 @@ Container getRange(int count)
 }
 
 template <typename Container>
-Container getRange()
+Container get_range()
 {
-  return getRange<Container>(1, 13, 13, 25);
+  return get_range<Container>(1, 13, 13, 25);
 }
 
 template <typename T, typename A, typename P, typename C2>
@@ -120,7 +122,7 @@ bool operator==(const stable_deque<T, A, P>& a, const C2& b)
 }
 
 template <typename Range>
-void printRange(std::ostream& out, const Range& range)
+void print_range(std::ostream& out, const Range& range)
 {
   out << '[';
   bool first = true;
@@ -137,8 +139,25 @@ void printRange(std::ostream& out, const Range& range)
 template <typename T, typename A, typename P>
 std::ostream& operator<<(std::ostream& out, const stable_deque<T, A, P>& deque)
 {
-  printRange(out, deque);
+  print_range(out, deque);
   return out;
+}
+
+template <typename C1, typename C2>
+void test_equal_range(const C1& a, const C2&b)
+{
+  bool equals = boost::algorithm::equal(
+    a.begin(), a.end(),
+    b.begin(), b.end()
+  );
+
+  BOOST_TEST(equals);
+
+  if (!equals)
+  {
+    print_range(std::cerr, a);
+    print_range(std::cerr, b);
+  }
 }
 
 // END HELPERS
@@ -149,8 +168,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(segment_iterator, Deque, t_is_trivial)
 {
   typedef typename Deque::value_type T;
 
-  devector<T> expected = getRange<devector<T>>();
-  Deque a = getRange<Deque>();
+  devector<T> expected = get_range<devector<T>>();
+  Deque a = get_range<Deque>();
 
   T* p_expected = expected.data();
 
@@ -188,19 +207,244 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(consturctor_default, Deque, all_deques)
   }
 }
 
-// TODO constructor_n_value
-// TODO constructor_n_copy
-// TODO constructor_input_range
-// TODO constructor_forward_range
-// TODO copy_constructor
-// TODO move_constructor
-// TODO constructor_il
+BOOST_AUTO_TEST_CASE_TEMPLATE(constructor_n_value, Deque, t_is_default_constructible)
+{
+  typedef typename Deque::value_type T;
+
+  {
+    Deque a(0);
+    BOOST_TEST(a.empty());
+  }
+
+  {
+    Deque b(18);
+    BOOST_TEST(b.size() == 18);
+
+    const T tmp{};
+
+    for (auto&& elem : b)
+    {
+      BOOST_TEST(elem == tmp);
+    }
+  }
+
+  {
+    Deque b(8);
+    BOOST_TEST(b.size() == 8);
+
+    const T tmp{};
+
+    for (auto&& elem : b)
+    {
+      BOOST_TEST(elem == tmp);
+    }
+  }
+
+  if (! std::is_nothrow_constructible<T>::value)
+  {
+    test_elem_throw::on_ctor_after(10);
+
+    try
+    {
+      Deque a(12);
+      BOOST_TEST(false);
+    } catch (const test_exception&) {}
+
+    BOOST_TEST(test_elem_base::no_living_elem());
+  }
+}
+
+BOOST_AUTO_TEST_CASE_TEMPLATE(constructor_n_copy, Deque, t_is_copy_constructible)
+{
+  typedef typename Deque::value_type T;
+
+  {
+    const T x(9);
+    Deque a(0, x);
+    BOOST_TEST(a.empty());
+  }
+
+  {
+    const T x(9);
+    Deque b(18, x);
+    BOOST_TEST(b.size() == 18);
+
+    for (auto&& elem : b)
+    {
+      BOOST_TEST(elem == x);
+    }
+  }
+
+  {
+    const T x(9);
+    Deque b(8, x);
+    BOOST_TEST(b.size() == 8);
+
+    for (auto&& elem : b)
+    {
+      BOOST_TEST(elem == x);
+    }
+  }
+
+  if (! std::is_nothrow_copy_constructible<T>::value)
+  {
+    test_elem_throw::on_copy_after(10);
+
+    try
+    {
+      const T x(9);
+      Deque a(12, x);
+      BOOST_TEST(false);
+    } catch (const test_exception&) {}
+
+    BOOST_TEST(test_elem_base::no_living_elem());
+  }
+}
+
+BOOST_AUTO_TEST_CASE_TEMPLATE(constructor_input_range, Deque, t_is_copy_constructible)
+{
+  typedef typename Deque::value_type T;
+
+  {
+    const devector<T> expected = get_range<devector<T>>(18);
+    devector<T> input = expected;
+
+    auto input_begin = make_input_iterator(input, input.begin());
+    auto input_end   = make_input_iterator(input, input.end());
+
+    Deque a(input_begin, input_end);
+    BOOST_TEST(a == expected, boost::test_tools::per_element());
+  }
+
+  { // empty range
+    devector<T> input;
+    auto input_begin = make_input_iterator(input, input.begin());
+
+    Deque b(input_begin, input_begin);
+
+    BOOST_TEST(b.empty());
+  }
+
+  if (! std::is_nothrow_copy_constructible<T>::value)
+  {
+    devector<T> input = get_range<devector<T>>(18);
+
+    auto input_begin = make_input_iterator(input, input.begin());
+    auto input_end   = make_input_iterator(input, input.end());
+
+    test_elem_throw::on_copy_after(17);
+
+    try
+    {
+      Deque c(input_begin, input_end);
+      BOOST_TEST(false);
+    } catch (const test_exception&) {}
+  }
+
+  BOOST_TEST(test_elem_base::no_living_elem());
+}
+
+BOOST_AUTO_TEST_CASE_TEMPLATE(constructor_forward_range, Deque, t_is_copy_constructible)
+{
+  typedef typename Deque::value_type T;
+  const std::forward_list<T> x{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
+
+  {
+    Deque a(x.begin(), x.end());
+    test_equal_range(a, x);
+  }
+
+  {
+    Deque b(x.begin(), x.begin());
+    BOOST_TEST(b.empty());
+  }
+
+  if (! std::is_nothrow_copy_constructible<T>::value)
+  {
+    test_elem_throw::on_copy_after(10);
+
+    try
+    {
+      Deque c(x.begin(), x.end());
+      BOOST_TEST(false);
+    } catch (const test_exception&) {}
+  }
+}
+
+BOOST_AUTO_TEST_CASE_TEMPLATE(copy_constructor, Deque, t_is_copy_constructible)
+{
+  typedef typename Deque::value_type T;
+
+  {
+    const Deque a;
+    Deque b(a);
+
+    BOOST_TEST(b.empty());
+  }
+
+  {
+    const Deque a = get_range<Deque>();
+    Deque b(a);
+
+    test_equal_range(a, b);
+  }
+
+  if (! std::is_nothrow_copy_constructible<T>::value)
+  {
+    Deque a = get_range<Deque>();
+
+    test_elem_throw::on_copy_after(12);
+
+    try
+    {
+      Deque b(a);
+      BOOST_TEST(false);
+    } catch (const test_exception&) {}
+  }
+
+  BOOST_TEST(test_elem_base::no_living_elem());
+}
+
+BOOST_AUTO_TEST_CASE_TEMPLATE(move_constructor, Deque, all_deques)
+{
+  { // empty
+    Deque a;
+    Deque b(std::move(a));
+
+    BOOST_TEST(a.empty());
+    BOOST_TEST(b.empty());
+  }
+
+  { 
+    Deque a = get_range<Deque>(1, 5, 5, 9);
+    Deque b(std::move(a));
+
+    test_equal_range(b, get_range<Deque>(1, 5, 5, 9));
+
+    // a is unspecified but valid state
+    a.clear();
+    BOOST_TEST(a.empty());
+  }
+}
+
+BOOST_AUTO_TEST_CASE_TEMPLATE(constructor_il, Deque, t_is_copy_constructible)
+{
+  {
+    Deque a({});
+    BOOST_TEST(a.empty());
+  }
+
+  {
+    Deque b{1, 2, 3, 4, 5, 6, 7, 8};
+    test_equal_range(b, get_range<Deque>(8));
+  }
+}
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(destructor, Deque, all_deques)
 {
   { Deque a; }
   {
-    Deque b = getRange<Deque>();
+    Deque b = get_range<Deque>();
   }
 }
 
@@ -227,8 +471,8 @@ void test_begin_end_impl()
   }
 
   {
-    Deque b = getRange<MutableDeque>(1, 13, 13, 25);
-    auto expected = getRange<std::vector<typename Deque::value_type>>(24);
+    Deque b = get_range<MutableDeque>(1, 13, 13, 25);
+    auto expected = get_range<std::vector<typename Deque::value_type>>(24);
 
     BOOST_TEST(boost::algorithm::equal(
       b.begin(), b.end(),
@@ -252,8 +496,8 @@ void test_rbegin_rend_impl()
   }
 
   {
-    Deque b = getRange<MutableDeque>(1, 13, 13, 25);
-    auto expected = getRange<std::vector<typename Deque::value_type>>(24);
+    Deque b = get_range<MutableDeque>(1, 13, 13, 25);
+    auto expected = get_range<std::vector<typename Deque::value_type>>(24);
 
     BOOST_TEST(boost::algorithm::equal(
       b.rbegin(), b.rend(),
@@ -276,8 +520,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(cbegin_cend, Deque, all_deques)
   }
 
   {
-    Deque b = getRange<Deque>(1, 13, 13, 25);
-    auto expected = getRange<std::vector<typename Deque::value_type>>(24);
+    Deque b = get_range<Deque>(1, 13, 13, 25);
+    auto expected = get_range<std::vector<typename Deque::value_type>>(24);
 
     BOOST_TEST(boost::algorithm::equal(
       b.cbegin(), b.cend(),
@@ -294,8 +538,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(crbegin_crend, Deque, all_deques)
   }
 
   {
-    Deque b = getRange<Deque>(1, 13, 13, 25);
-    auto expected = getRange<std::vector<typename Deque::value_type>>(24);
+    Deque b = get_range<Deque>(1, 13, 13, 25);
+    auto expected = get_range<std::vector<typename Deque::value_type>>(24);
 
     BOOST_TEST(boost::algorithm::equal(
       b.crbegin(), b.crend(),
@@ -337,6 +581,14 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(size, Deque, all_deques)
   a.emplace_back(6);
 
   BOOST_TEST(a.size() == 6u);
+
+  a.emplace_back(7);
+  a.emplace_back(8);
+  a.emplace_back(9);
+  a.emplace_back(10);
+  a.emplace_back(11);
+
+  BOOST_TEST(a.size() == 11u);
 }
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(max_size, Deque, all_deques)
@@ -357,14 +609,14 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(front, Deque, all_deques)
   typedef typename Deque::value_type T;
 
   { // non-const front
-    Deque a = getRange<Deque>(3);
+    Deque a = get_range<Deque>(3);
     BOOST_TEST(a.front() == T(1));
     a.front() = T(100);
     BOOST_TEST(a.front() == T(100));
   }
 
   { // const front
-    const Deque a = getRange<Deque>(3);
+    const Deque a = get_range<Deque>(3);
     BOOST_TEST(a.front() == T(1));
   }
 }
@@ -374,14 +626,14 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(back, Deque, all_deques)
   typedef typename Deque::value_type T;
 
   { // non-const front
-    Deque a = getRange<Deque>(3);
+    Deque a = get_range<Deque>(3);
     BOOST_TEST(a.back() == T(3));
     a.back() = T(100);
     BOOST_TEST(a.back() == T(100));
   }
 
   { // const front
-    const Deque a = getRange<Deque>(3);
+    const Deque a = get_range<Deque>(3);
     BOOST_TEST(a.back() == T(3));
   }
 }
