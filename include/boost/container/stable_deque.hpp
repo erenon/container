@@ -650,15 +650,55 @@ public:
     return allocator_traits::max_size(get_allocator_ref());
   }
 
-  void      resize(size_type sz);
-  void      resize(size_type sz, const T& c);
-  void      shrink_to_fit();
+  void resize(size_type sz);
+  void resize(size_type sz, const T& c);
+
+  void shrink_to_fit() {}
 
   // element access:
-  reference       operator[](size_type n);
-  const_reference operator[](size_type n) const;
-  reference       at(size_type n);
-  const_reference at(size_type n) const;
+  reference operator[](size_type n)
+  {
+    const size_type first_seg_size = segment_size - _front_index;
+    if (n < first_seg_size)
+    {
+      return *(_map.front() + _front_index + n);
+    }
+    else
+    {
+      n -= first_seg_size;
+      const size_type segment_index = n / segment_size + 1;
+      const size_type elem_index = n % segment_size;
+      return *(_map[segment_index] + elem_index);
+    }
+  }
+
+  const_reference operator[](size_type n) const
+  {
+    const size_type first_seg_size = segment_size - _front_index;
+    if (n < first_seg_size)
+    {
+      return *(_map.front() + _front_index + n);
+    }
+    else
+    {
+      n -= first_seg_size;
+      const size_type segment_index = n / segment_size + 1;
+      const size_type elem_index = n % segment_size;
+      return *(_map[segment_index] + elem_index);
+    }
+  }
+
+  reference at(size_type n)
+  {
+    if (n >= size()) { throw_out_of_range("devector::at out of range"); }
+    return (*this)[n];
+  }
+
+  const_reference at(size_type n) const
+  {
+    if (n >= size()) { throw_out_of_range("devector::at out of range"); }
+    return (*this)[n];
+  }
 
   reference front() noexcept
   {

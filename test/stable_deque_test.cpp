@@ -415,7 +415,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(move_constructor, Deque, all_deques)
     BOOST_TEST(b.empty());
   }
 
-  { 
+  {
     Deque a = get_range<Deque>(1, 5, 5, 9);
     Deque b(std::move(a));
 
@@ -454,7 +454,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(destructor, Deque, all_deques)
 // TODO assign_input_range
 // TODO assign_forward_range
 // TODO assign_n_copy
-// TODO assign_in
+// TODO assign_il
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(get_allocator, Deque, all_deques)
 {
@@ -599,10 +599,62 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(max_size, Deque, all_deques)
 
 // TODO resize_value
 // TODO resize_copy
-// TODO shrink_to_fit
 
-// TODO op_at -- const, non const
-// TODO at -- const, non const
+BOOST_AUTO_TEST_CASE_TEMPLATE(shrink_to_fit, Deque, all_deques)
+{
+  Deque a;
+  a.shrink_to_fit();
+}
+
+template <typename Deque, typename MutableDeque>
+void test_op_at_impl()
+{
+  typedef typename Deque::value_type T;
+
+  MutableDeque a = get_range<MutableDeque>(26);
+
+  a.pop_front();
+  a.pop_front();
+
+  Deque b(std::move(a));
+
+  BOOST_TEST(b[0] == T(3));
+  BOOST_TEST(b[8] == T(11));
+  BOOST_TEST(b[14] == T(17));
+  BOOST_TEST(b[23] == T(26));
+}
+
+BOOST_AUTO_TEST_CASE_TEMPLATE(op_at, Deque, all_deques)
+{
+  test_op_at_impl<      Deque, Deque>();
+  test_op_at_impl<const Deque, Deque>();
+}
+
+template <typename Deque, typename MutableDeque>
+void test_at_impl()
+{
+  typedef typename Deque::value_type T;
+
+  MutableDeque a = get_range<MutableDeque>(26);
+
+  a.pop_front();
+  a.pop_front();
+
+  Deque b(std::move(a));
+
+  BOOST_TEST(b.at(0) == T(3));
+  BOOST_TEST(b.at(8) == T(11));
+  BOOST_TEST(b.at(14) == T(17));
+  BOOST_TEST(b.at(23) == T(26));
+
+  BOOST_CHECK_THROW(b.at(24), std::out_of_range);
+}
+
+BOOST_AUTO_TEST_CASE_TEMPLATE(at, Deque, all_deques)
+{
+  test_at_impl<      Deque, Deque>();
+  test_at_impl<const Deque, Deque>();
+}
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(front, Deque, all_deques)
 {
