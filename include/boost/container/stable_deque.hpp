@@ -629,7 +629,7 @@ public:
   // capacity:
   bool empty() const noexcept
   {
-    return _map.empty();
+    return _map.empty() || (_map.size() == 1 && _front_index == _back_index);
   }
 
   size_type size() const noexcept
@@ -653,7 +653,18 @@ public:
   void resize(size_type sz);
   void resize(size_type sz, const T& c);
 
-  void shrink_to_fit() {}
+  void shrink_to_fit()
+  {
+    if (empty() && !_map.empty())
+    {
+      deallocate_segment(_map.back());
+      _map.pop_back();
+      _map.shrink_to_fit();
+
+      _front_index = 0;
+      _back_index = segment_size;
+    }
+  }
 
   // element access:
   reference operator[](size_type n)
@@ -795,9 +806,11 @@ public:
 
     if (_front_index == segment_size)
     {
-      allocator_traits::deallocate(get_allocator_ref(), _map.front(), segment_size);
+      deallocate_segment(_map.front());
       _map.pop_front();
+
       _front_index = 0;
+      if (_map.empty()) { _back_index = segment_size; }
     }
 
     BOOST_ASSERT(invariants_ok());
@@ -812,8 +825,10 @@ public:
 
     if (_back_index == 0)
     {
-      allocator_traits::deallocate(get_allocator_ref(), _map.back(), segment_size);
+      deallocate_segment(_map.back());
       _map.pop_back();
+
+      if (_map.empty()) { _front_index = 0; }
       _back_index = segment_size;
     }
 
@@ -822,7 +837,18 @@ public:
 
   iterator erase(const_iterator position);
   iterator erase(const_iterator first, const_iterator last);
-  void     swap(stable_deque&) noexcept(allocator_traits::is_always_equal);
+
+  void swap(stable_deque& rhs) noexcept
+  {
+    BOOST_ASSERT(
+       !allocator_traits::propagate_on_container_swap::value
+    || get_allocator_ref() == rhs.get_allocator_ref());
+
+    using std::swap;
+    swap(_map, rhs._map);
+    swap(_front_index, rhs._front_index);
+    swap(_back_index, rhs._back_index);
+  }
 
   void clear() noexcept
   {
@@ -880,12 +906,11 @@ private:
   template <typename Iterator, typename Container>
   static Iterator begin_impl(Container* c)
   {
-    if (!c->empty())
-    {
-      return Iterator(c, c->_map.front(), c->_front_index);
-    }
-
-    return Iterator{};
+    return Iterator{
+      c,
+      c->_map.empty() ? nullptr : c->_map.front(),
+      c->_front_index
+    };
   }
 
   template <typename Iterator, typename Container>
