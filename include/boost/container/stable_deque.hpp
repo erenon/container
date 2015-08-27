@@ -677,8 +677,37 @@ public:
     return allocator_traits::max_size(get_allocator_ref());
   }
 
-  void resize(size_type sz);
-  void resize(size_type sz, const T& c);
+  void resize(size_type sz)
+  {
+    if (sz >= size())
+    {
+      for (size_type diff = sz - size(); diff; --diff)
+      {
+        emplace_back();
+      }
+    }
+    else
+    {
+      iterator new_end = begin() + sz;
+      erase(new_end, end());
+    }
+  }
+
+  void resize(size_type sz, const T& c)
+  {
+    if (sz >= size())
+    {
+      for (size_type diff = sz - size(); diff; --diff)
+      {
+        push_back(c);
+      }
+    }
+    else
+    {
+      iterator new_end = begin() + sz;
+      erase(new_end, end());
+    }
+  }
 
   void shrink_to_fit()
   {
