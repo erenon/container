@@ -862,8 +862,35 @@ public:
     BOOST_ASSERT(invariants_ok());
   }
 
-  iterator erase(const_iterator position);
-  iterator erase(const_iterator first, const_iterator last);
+  iterator erase(const_iterator position)
+  {
+    return erase(position, position + 1);
+  }
+
+  iterator erase(const_iterator first, const_iterator last)
+  {
+    iterator ncfirst = unconst_iterator(first);
+    iterator nclast  = unconst_iterator(last);
+
+    // TODO possible optimization: decide on erased end
+    // based on range position
+
+    size_type n = ncfirst - begin();
+
+    iterator new_end = std::move(nclast, end(), ncfirst);
+
+    destroy_elements(new_end, end());
+
+    map_iterator new_map_end = std::find(_map.begin(), _map.end(), new_end._segment);
+    if (new_map_end != _map.end() && new_end._index) { ++new_map_end; }
+    _map.erase(new_map_end, _map.end());
+
+    _back_index = (new_end._index) ? new_end._index : segment_size;
+
+    BOOST_ASSERT(invariants_ok());
+
+    return begin() + n;
+  }
 
   void swap(stable_deque& rhs) noexcept
   {
@@ -948,6 +975,13 @@ private:
       c->_back_index == segment_size ? nullptr : c->_map.back(),
       c->_back_index % segment_size
     };
+  }
+
+  iterator unconst_iterator(const const_iterator& it)
+  {
+    map_iterator segment_it = std::find(_map.begin(), _map.end(), it._segment);
+    pointer segment = (segment_it != _map.end()) ? *segment_it : nullptr;
+    return iterator(this, segment, it._index);
   }
 
   template <typename... Args>

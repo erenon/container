@@ -1,12 +1,12 @@
-////////////////////////////////////////////////////////////////////////////////
-////
-//// (C) Copyright Benedek Thaler 2015-2015. Distributed under the Boost
-//// Software License, Version 1.0. (See accompanying file
-//// LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-////
-//// See http://www.boost.org/libs/container for documentation.
-////
-////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+//
+// (C) Copyright Benedek Thaler 2015-2015. Distributed under the Boost
+// Software License, Version 1.0. (See accompanying file
+// LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+//
+// See http://www.boost.org/libs/container for documentation.
+//
+//////////////////////////////////////////////////////////////////////////////
 
 #include <iostream>
 #include <forward_list>
@@ -971,7 +971,61 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(pop_back, Deque, all_deques)
 }
 
 // TODO erase
-// TODO erase_range
+BOOST_AUTO_TEST_CASE_TEMPLATE(erase, Deque, all_deques)
+{
+  typedef typename Deque::value_type T;
+
+  {
+    Deque a = get_range<Deque>(10);
+
+    auto it = a.erase(a.begin());
+    test_equal_range(a, {2,3,4,5,6,7,8,9,10});
+    BOOST_TEST(*it == T(2));
+
+    it = a.erase(a.begin() + 8);
+    test_equal_range(a, {2,3,4,5,6,7,8,9});
+    BOOST_TEST(it == a.end());
+
+    it = a.erase(a.begin() + 4);
+    test_equal_range(a, {2,3,4,5,7,8,9});
+    BOOST_TEST(*it == T(7));
+  }
+}
+
+BOOST_AUTO_TEST_CASE_TEMPLATE(erase_range, Deque, all_deques)
+{
+  typedef typename Deque::value_type T;
+
+  {
+    Deque a;
+    a.erase(a.begin(), a.begin());
+    BOOST_TEST(a.empty());
+    a.erase(a.begin(), a.end());
+    BOOST_TEST(a.empty());
+    a.erase(a.end(), a.end());
+    BOOST_TEST(a.empty());
+  }
+
+  {
+    Deque b = get_range<Deque>(18);
+    auto it = b.erase(b.begin() + 1, b.begin() + 4);
+    test_equal_range(b, {1,5,6,7,8,9,10,11,12,13,14,15,16,17,18});
+    BOOST_TEST(*it == T(5));
+  }
+
+  {
+    Deque c = get_range<Deque>(18);
+    auto it = c.erase(c.begin() + 3, c.begin() + 14);
+    test_equal_range(c, {1,2,3,15,16,17,18});
+    BOOST_TEST(*it == T(15));
+  }
+
+  {
+    Deque d = get_range<Deque>(22);
+    d.erase(d.begin(), d.end());
+    BOOST_TEST(d.empty());
+  }
+}
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(member_swap, Deque, all_deques)
 {
