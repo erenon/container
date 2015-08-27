@@ -90,24 +90,35 @@ public:
     >
   {
   protected:
+    friend class stable_deque;
+
     typedef typename std::conditional<IsConst, const stable_deque, stable_deque>::type* container_pointer;
+    typedef typename std::conditional<IsConst, const_pointer     , pointer>::type       ipointer;
+    typedef typename std::conditional<IsConst, const_reference   , reference>::type     ireference;
+    typedef ipointer segment_pointer;
 
     // TODO iterator missing members
   public:
-    deque_iterator() {}
+    deque_iterator() noexcept {}
 
-    deque_iterator(container_pointer container, pointer segment, size_type elem_index)
+    deque_iterator(container_pointer container, segment_pointer segment, size_type elem_index) noexcept
       :_container(container),
        _segment(segment),
        _index(elem_index)
     {}
 
-    reference operator*()
+    deque_iterator(const deque_iterator<false>& x) noexcept
+      :_container(x._container),
+       _segment(x._segment),
+       _index(x._index)
+    {}
+
+    ireference operator*() noexcept
     {
       return _segment[_index];
     }
 
-    deque_iterator& operator++()
+    deque_iterator& operator++() noexcept
     {
       ++_index;
       if (_index == segment_size)
@@ -118,7 +129,7 @@ public:
       return *this;
     }
 
-    deque_iterator& operator--()
+    deque_iterator& operator--() noexcept
     {
       if (_index != 0)
       {
@@ -132,17 +143,42 @@ public:
       return *this;
     }
 
-    pointer data()
+    deque_iterator operator+(difference_type n) noexcept
+    {
+
+      size_type index;
+      difference_type segment_diff;
+
+      if (n >= 0)
+      {
+        index = (_index + n) % segment_size;
+        segment_diff = (_index + n) / segment_size;
+      }
+      else
+      {
+        index = (segment_size + _index + (n % segment_size)) % segment_size;
+        segment_diff = (1 - segment_size + _index + n) / segment_size;
+      }
+
+      auto segment_it = std::find(_container->_map.begin(), _container->_map.end(), _segment);
+      auto new_segment_it = segment_it + segment_diff;
+
+      ipointer segment = (new_segment_it != _container->_map.end()) ? *new_segment_it : nullptr;
+
+      return deque_iterator(_container, segment, index);
+    }
+
+    ipointer data() noexcept
     {
       return _segment + _index;
     }
 
-    const_pointer data() const
+    const_pointer data() const noexcept
     {
       return _segment + _index;
     }
 
-    size_type data_size() const
+    size_type data_size() const noexcept
     {
       // *this must not be singular
       return (_container->_map.back() != _segment)
@@ -150,7 +186,7 @@ public:
         :_container->_back_index - _index;
     }
 
-    friend bool operator==(const deque_iterator& a, const deque_iterator& b)
+    friend bool operator==(const deque_iterator& a, const deque_iterator& b) noexcept
     {
       // No need to compare _container, comparing iterators
       // of different sequences is undefined.
@@ -159,13 +195,14 @@ public:
         &&   a._index == b._index;
     }
 
-    friend bool operator!=(const deque_iterator& a, const deque_iterator& b)
+    friend bool operator!=(const deque_iterator& a, const deque_iterator& b) noexcept
     {
       return !(a == b);
     }
 
-    friend difference_type operator-(const deque_iterator& a, const deque_iterator& b)
+    friend difference_type operator-(const deque_iterator& a, const deque_iterator& b) noexcept
     {
+      // TODO use iterators instead
       size_type seg_a = a.segment_index();
       size_type seg_b = b.segment_index();
 
@@ -191,7 +228,7 @@ public:
     #endif
 
   protected:
-    pointer next_segment()
+    segment_pointer next_segment()
     {
       return next_segment_in_range(
         _container->_map.begin(),
@@ -199,7 +236,7 @@ public:
       );
     }
 
-    pointer prev_segment()
+    segment_pointer prev_segment()
     {
       return next_segment_in_range(
         _container->_map.rbegin(),
@@ -208,25 +245,13 @@ public:
     }
 
     template <typename Iterator>
-    pointer next_segment_in_range(Iterator first, Iterator last)
+    segment_pointer next_segment_in_range(Iterator first, Iterator last)
     {
-      pointer result = nullptr;
+      Iterator cur = std::find(first, last, _segment);
+      BOOST_ASSERT(cur != last);
 
-      for (; first != last; ++first)
-      {
-        if (_segment == *first)
-        {
-          ++first;
-          break;
-        }
-      }
-
-      if (first != last)
-      {
-        result = *first;
-      }
-
-      return result;
+      ++cur;
+      return (cur != last) ? *cur : nullptr;
     }
 
     size_type segment_index() const
@@ -244,7 +269,7 @@ public:
     }
 
     container_pointer _container;
-    pointer _segment = nullptr;
+    segment_pointer _segment = nullptr;
     size_type _index = 0;
   };
 
@@ -253,16 +278,18 @@ public:
   {
     typedef deque_iterator<IsConst> base;
 
+    // TODO use using instead of typedef
     typedef typename base::container_pointer container_pointer;
+    typedef typename base::segment_pointer segment_pointer;
 
   public:
-    deque_segment_iterator() {}
+    deque_segment_iterator() noexcept {}
 
-    deque_segment_iterator(container_pointer container, pointer segment, size_type elem_index)
+    deque_segment_iterator(container_pointer container, segment_pointer segment, size_type elem_index) noexcept
       :base(container, segment, elem_index)
     {}
 
-    pointer operator*()
+    segment_pointer operator*() noexcept
     {
       return data();
     }
@@ -270,19 +297,19 @@ public:
     using base::data;
     using base::data_size;
 
-    deque_segment_iterator operator++()
+    deque_segment_iterator operator++() noexcept
     {
       base::_segment = base::next_segment();
       base::_index = 0;
       return *this;
     }
 
-    friend bool operator==(const deque_segment_iterator& a, const deque_segment_iterator& b)
+    friend bool operator==(const deque_segment_iterator& a, const deque_segment_iterator& b) noexcept
     {
       return a.get_base() == b.get_base();
     }
 
-    friend bool operator!=(const deque_segment_iterator& a, const deque_segment_iterator& b)
+    friend bool operator!=(const deque_segment_iterator& a, const deque_segment_iterator& b) noexcept
     {
       return !(a == b);
     }
@@ -437,8 +464,8 @@ public:
     {
       while (segment_begin != rhs.segment_end())
       {
-        pointer src = segment_begin.data();
-        pointer src_end = src + segment_begin.data_size();
+        const_pointer src = segment_begin.data();
+        const_pointer src_end = src + segment_begin.data_size();
 
         pointer new_segment = allocate_segment();
         _map.unsafe_push_back(new_segment);
