@@ -1136,26 +1136,46 @@ private:
 };
 
 template <class T, class AX, class PX, class AY, class PY>
-bool operator==(const stable_deque<T, AX, PX>& x, const stable_deque<T, AY, PY>& y);
+bool operator==(const stable_deque<T, AX, PX>& x, const stable_deque<T, AY, PY>& y)
+{
+  if (x.size() != y.size()) { return false; }
+  return std::equal(x.begin(), x.end(), y.begin());
+}
 
 template <class T, class AX, class PX, class AY, class PY>
-bool operator< (const stable_deque<T, AX, PX>& x, const stable_deque<T, AY, PY>& y);
+bool operator< (const stable_deque<T, AX, PX>& x, const stable_deque<T, AY, PY>& y)
+{
+  return std::lexicographical_compare( x.begin(), x.end(),
+                                       y.begin(), y.end() );
+}
 
 template <class T, class AX, class PX, class AY, class PY>
-bool operator!=(const stable_deque<T, AX, PX>& x, const stable_deque<T, AY, PY>& y);
+bool operator!=(const stable_deque<T, AX, PX>& x, const stable_deque<T, AY, PY>& y)
+{
+  return !(x == y);
+}
 
 template <class T, class AX, class PX, class AY, class PY>
-bool operator> (const stable_deque<T, AX, PX>& x, const stable_deque<T, AY, PY>& y);
+bool operator> (const stable_deque<T, AX, PX>& x, const stable_deque<T, AY, PY>& y)
+{
+  return (y < x);
+}
 
 template <class T, class AX, class PX, class AY, class PY>
-bool operator>=(const stable_deque<T, AX, PX>& x, const stable_deque<T, AY, PY>& y);
+bool operator>=(const stable_deque<T, AX, PX>& x, const stable_deque<T, AY, PY>& y)
+{
+  return !(x < y);
+}
 
 template <class T, class AX, class PX, class AY, class PY>
-bool operator<=(const stable_deque<T, AX, PX>& x, const stable_deque<T, AY, PY>& y);
+bool operator<=(const stable_deque<T, AX, PX>& x, const stable_deque<T, AY, PY>& y)
+{
+  return !(y < x);
+}
 
 // specialized algorithms:
 template <class T, class Allocator, class P>
-void swap(stable_deque<T, Allocator>& x, stable_deque<T, Allocator>& y) noexcept(noexcept(x.swap(y)))
+void swap(stable_deque<T, Allocator, P>& x, stable_deque<T, Allocator, P>& y) noexcept(noexcept(x.swap(y)))
 {
   x.swap(y);
 }

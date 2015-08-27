@@ -1018,7 +1018,6 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(pop_back, Deque, all_deques)
   }
 }
 
-// TODO erase
 BOOST_AUTO_TEST_CASE_TEMPLATE(erase, Deque, all_deques)
 {
   typedef typename Deque::value_type T;
@@ -1123,10 +1122,181 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(clear, Deque, all_deques)
   }
 }
 
-// TODO op_eq
-// TODO op_lt
-// TODO op_ne
-// TODO op_gt
-// TODO op_ge
-// TODO op_le
-// TODO free_swap
+BOOST_AUTO_TEST_CASE_TEMPLATE(op_eq, Deque, all_deques)
+{
+  { // equal
+    Deque a = get_range<Deque>(8);
+    Deque b = get_range<Deque>(8);
+
+    BOOST_TEST(a == b);
+  }
+
+  { // diff size
+    Deque a = get_range<Deque>(8);
+    Deque b = get_range<Deque>(9);
+
+    BOOST_TEST(!(a == b));
+  }
+
+  { // diff content
+    Deque a = get_range<Deque>(8);
+    Deque b = get_range<Deque>(2,6,6,10);
+
+    BOOST_TEST(!(a == b));
+  }
+}
+
+BOOST_AUTO_TEST_CASE_TEMPLATE(op_lt, Deque, all_deques)
+{
+  { // little than
+    Deque a = get_range<Deque>(7);
+    Deque b = get_range<Deque>(8);
+
+    BOOST_TEST(a < b);
+  }
+
+  { // equal
+    Deque a = get_range<Deque>(8);
+    Deque b = get_range<Deque>(8);
+
+    BOOST_TEST(!(a < b));
+  }
+
+  { // greater than
+    Deque a = get_range<Deque>(8);
+    Deque b = get_range<Deque>(7);
+
+    BOOST_TEST(!(a < b));
+  }
+}
+
+BOOST_AUTO_TEST_CASE_TEMPLATE(op_ne, Deque, all_deques)
+{
+  { // equal
+    Deque a = get_range<Deque>(8);
+    Deque b = get_range<Deque>(8);
+
+    BOOST_TEST(!(a != b));
+  }
+
+  { // diff size
+    Deque a = get_range<Deque>(8);
+    Deque b = get_range<Deque>(9);
+
+    BOOST_TEST(a != b);
+  }
+
+  { // diff content
+    Deque a = get_range<Deque>(8);
+    Deque b = get_range<Deque>(2,6,6,10);
+
+    BOOST_TEST(a != b);
+  }
+}
+
+BOOST_AUTO_TEST_CASE_TEMPLATE(op_gt, Deque, all_deques)
+{
+  { // little than
+    Deque a = get_range<Deque>(7);
+    Deque b = get_range<Deque>(8);
+
+    BOOST_TEST(!(a > b));
+  }
+
+  { // equal
+    Deque a = get_range<Deque>(8);
+    Deque b = get_range<Deque>(8);
+
+    BOOST_TEST(!(a > b));
+  }
+
+  { // greater than
+    Deque a = get_range<Deque>(8);
+    Deque b = get_range<Deque>(7);
+
+    BOOST_TEST(a > b);
+  }
+}
+
+BOOST_AUTO_TEST_CASE_TEMPLATE(op_ge, Deque, all_deques)
+{
+  { // little than
+    Deque a = get_range<Deque>(7);
+    Deque b = get_range<Deque>(8);
+
+    BOOST_TEST(!(a >= b));
+  }
+
+  { // equal
+    Deque a = get_range<Deque>(8);
+    Deque b = get_range<Deque>(8);
+
+    BOOST_TEST(a >= b);
+  }
+
+  { // greater than
+    Deque a = get_range<Deque>(8);
+    Deque b = get_range<Deque>(7);
+
+    BOOST_TEST(a >= b);
+  }
+}
+
+BOOST_AUTO_TEST_CASE_TEMPLATE(op_le, Deque, all_deques)
+{
+  { // little than
+    Deque a = get_range<Deque>(7);
+    Deque b = get_range<Deque>(8);
+
+    BOOST_TEST(a <= b);
+  }
+
+  { // equal
+    Deque a = get_range<Deque>(8);
+    Deque b = get_range<Deque>(8);
+
+    BOOST_TEST(a <= b);
+  }
+
+  { // greater than
+    Deque a = get_range<Deque>(8);
+    Deque b = get_range<Deque>(7);
+
+    BOOST_TEST(!(a <= b));
+  }
+}
+
+BOOST_AUTO_TEST_CASE_TEMPLATE(free_swap, Deque, all_deques)
+{
+  using std::swap; // test the ADL trick
+
+  {
+    Deque a;
+    Deque b;
+
+    swap(a, b);
+
+    BOOST_TEST(a.empty());
+    BOOST_TEST(b.empty());
+  }
+
+  {
+    Deque a;
+    Deque b = get_range<Deque>(4);
+
+    swap(a, b);
+
+    test_equal_range(a, {1, 2, 3, 4});
+    BOOST_TEST(b.empty());
+  }
+
+  {
+    Deque a = get_range<Deque>(5, 9, 9, 13);
+    Deque b = get_range<Deque>(4);
+
+    swap(a, b);
+
+    test_equal_range(a, {1, 2, 3, 4});
+    test_equal_range(b, {5, 6, 7, 8, 9, 10, 11, 12});
+  }
+}
