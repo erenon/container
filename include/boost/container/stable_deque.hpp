@@ -670,7 +670,7 @@ public:
     else
     {
       iterator new_end = begin() + sz;
-      erase(new_end, end());
+      erase_at_end(new_end);
     }
   }
 
@@ -686,7 +686,7 @@ public:
     else
     {
       iterator new_end = begin() + sz;
-      erase(new_end, end());
+      erase_at_end(new_end);
     }
   }
 
@@ -1186,6 +1186,7 @@ private:
     }
 
     _map.erase(from_it, _map.end());
+    _back_index = (from._index) ? from._index : segment_size;
   }
 
   bool invariants_ok()
