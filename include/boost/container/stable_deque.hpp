@@ -516,45 +516,26 @@ public:
 
   stable_deque& operator=(const stable_deque& x);
   stable_deque& operator=(stable_deque&& x) noexcept(allocator_traits::is_always_equal);
-  stable_deque& operator=(std::initializer_list<T>);
-
-  template <class InputIterator,
-
-#ifndef BOOST_CONTAINER_DOXYGEN_INVOKED
-
-  typename std::enable_if<
-    container_detail::is_input_iterator<InputIterator>::value
-  ,int>::type = 0
-
-#endif // ifndef BOOST_CONTAINER_DOXYGEN_INVOKED
-
-  >
-  void assign(InputIterator first, InputIterator last)
+  stable_deque& operator=(std::initializer_list<T> il)
   {
-    iterator dst = begin();
-    while (dst != end() && first != last)
-    {
-      *dst++ = *first++;
-    }
+    assign(il.begin(), il.end());
+    return *this;
+  }
 
+  template <typename Iterator>
+  void assign(Iterator first, Iterator last)
+  {
+    typedef typename std::conditional<
+      container_detail::is_input_iterator<Iterator>::value,
+      std::true_type, std::false_type
+    >::type is_input_it;
+
+    overwrite_buffer(first, last, is_input_it{});
     while (first != last)
     {
       push_back(*first++);
     }
   }
-
-#ifndef BOOST_CONTAINER_DOXYGEN_INVOKED
-
-  template <typename ForwardIterator, typename std::enable_if<
-    container_detail::is_not_input_iterator<ForwardIterator>::value
-  ,int>::type = 0>
-  void assign(ForwardIterator first, ForwardIterator last)
-  {
-    (void)first;
-    (void)last;
-  }
-
-#endif // ifndef BOOST_CONTAINER_DOXYGEN_INVOKED
 
   void assign(size_type n, const T& t)
   {
@@ -1120,6 +1101,91 @@ private:
         guard.increment_size(1u);
       }
     }
+  }
+
+  template <typename ForwardIterator>
+  void overwrite_buffer(ForwardIterator& first, const ForwardIterator last, std::false_type /* is input it */)
+  {
+    if (t_is_trivially_copyable && std::is_pointer<ForwardIterator>::value)
+    {
+      size_type input_size = static_cast<size_type>(std::distance(first, last));
+      size_type copy_size = segment_size;
+      map_iterator dst_cur = _map.begin();
+      map_iterator dst_end = _map.end();
+
+      while (input_size && dst_cur != dst_end)
+      {
+        copy_size = (std::min)(input_size, size_type{segment_size});
+        std::memcpy(
+          *dst_cur,
+          container_detail::iterator_to_pointer(first),
+          copy_size * sizeof(value_type)
+        );
+
+        input_size -= copy_size;
+        std::advance(first, copy_size);
+        ++dst_cur;
+      }
+
+      _front_index = 0;
+      _back_index = copy_size;
+      _map.erase(dst_cur, dst_end);
+    }
+    else
+    {
+      overwrite_buffer(first, last, std::true_type{});
+    }
+  }
+
+  template <typename InputIterator>
+  void overwrite_buffer(InputIterator& first, const InputIterator last, std::true_type /* is input it */)
+  {
+    if (empty()) { return; }
+
+    // fill free front
+    iterator dst(this, _map.front(), 0);
+    construction_guard front_guard(dst.data(), get_allocator_ref(), 0u);
+
+    while (first != last && dst != begin())
+    {
+      alloc_construct(dst.data(), *first++);
+      ++dst;
+      front_guard.increment_size(1u);
+    }
+
+    front_guard.release();
+
+    if (dst != begin())
+    {
+      erase_at_end(begin());
+    }
+    else
+    {
+      // assign to existing elements
+      for (; first != last && dst != end(); ++dst, ++first)
+      {
+        *dst = *first;
+      }
+
+      erase_at_end(dst);
+    }
+
+    _front_index = 0;
+    _back_index = dst._index;
+  }
+
+  void erase_at_end(iterator from)
+  {
+    destroy_elements(from, end());
+
+    map_iterator from_it = std::find(_map.begin(), _map.end(), from._segment);
+
+    if (from._index != 0 && from_it != _map.end())
+    {
+      ++from_it;
+    }
+
+    _map.erase(from_it, _map.end());
   }
 
   bool invariants_ok()
