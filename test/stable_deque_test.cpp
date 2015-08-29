@@ -465,9 +465,181 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(destructor, Deque, all_deques)
   }
 }
 
-// TODO op_copy_assign
-// TODO op_move_assign
-// TODO op_assign_il
+BOOST_AUTO_TEST_CASE_TEMPLATE(op_copy_assign, Deque, t_is_copy_constructible)
+{
+  // assign to empty
+  {
+    Deque a;
+
+    const Deque empty;
+    a = empty;
+    BOOST_TEST(a.empty());
+
+    const Deque input{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
+    a = input;
+    test_equal_range(a, {1,2,3,4,5,6,7,8,9,10,11,12});
+  }
+
+  // input exceeds content
+  {
+    Deque b = get_range<Deque>(64,68,68,74);
+    Deque input{1,2,3,4,5,6,7,8,9,10,11,12};
+
+    b = input;
+    test_equal_range(b, {1,2,3,4,5,6,7,8,9,10,11,12});
+  }
+
+  // input fits content
+  {
+    Deque c = get_range<Deque>(64,72,72,80);
+    Deque input{1,2,3,4};
+
+    c = input;
+    test_equal_range(c, {1,2,3,4});
+  }
+
+  // input fits free front
+  {
+    Deque d = get_range<Deque>(10,16,16,16);
+    d.pop_front();
+    d.pop_front();
+    d.pop_front();
+    d.pop_front();
+
+    Deque input{1,2,3,4};
+    d = input;
+    test_equal_range(d, {1,2,3,4});
+  }
+
+  // throw while assign to free front
+  typedef typename Deque::value_type T;
+
+  bool can_throw =
+     ! std::is_nothrow_move_constructible<T>::value
+  && ! std::is_nothrow_copy_constructible<T>::value;
+
+  if (can_throw)
+  {
+    Deque e = get_range<Deque>(10);
+    e.pop_front();
+    e.pop_front();
+    e.pop_front();
+    e.pop_front();
+
+    Deque input{1,2,3,4};
+
+    test_elem_throw::on_copy_after(2);
+    test_elem_throw::on_move_after(2);
+
+    try
+    {
+      e = input;
+      BOOST_TEST(false);
+    } catch (const test_exception&) {}
+
+    test_elem_throw::do_not_throw();
+  }
+
+  BOOST_TEST(test_elem_base::no_living_elem());
+}
+
+BOOST_AUTO_TEST_CASE_TEMPLATE(op_move_assign, Deque, all_deques)
+{
+  // assign to empty
+  {
+    Deque a;
+    Deque b;
+
+    a = std::move(b);
+    b.clear(); // b is in an unspecified but valid state
+
+    BOOST_TEST(b.empty());
+    BOOST_TEST(a.empty());
+  }
+
+  // assign to non-empty
+  {
+    Deque a = get_range<Deque>();
+    Deque b = get_range<Deque>(9);
+
+    a = std::move(b);
+    b.clear();
+
+    test_equal_range(a, {1,2,3,4,5,6,7,8,9});
+    BOOST_TEST(b.empty());
+  }
+}
+
+BOOST_AUTO_TEST_CASE_TEMPLATE(op_assign_il, Deque, t_is_copy_constructible)
+{
+  typedef typename Deque::value_type T;
+
+  // assign to empty
+  {
+    Deque a;
+
+    a = {};
+    BOOST_TEST(a.empty());
+
+    a = {1,2,3,4,5,6,7,8,9,10,11,12};
+    test_equal_range(a, {1,2,3,4,5,6,7,8,9,10,11,12});
+  }
+
+  // input exceeds content
+  {
+    Deque b = get_range<Deque>(64,68,68,74);
+
+    b = {1,2,3,4,5,6,7,8,9,10,11,12,13};
+    test_equal_range(b, {1,2,3,4,5,6,7,8,9,10,11,12,13});
+  }
+
+  // input fits content
+  {
+    Deque c = get_range<Deque>(64,72,72,80);
+
+    c = {1,2,3,4,5};
+    test_equal_range(c, {1,2,3,4,5});
+  }
+
+  // input fits free front
+  {
+    Deque d = get_range<Deque>(10,16,16,16);
+    d.pop_front();
+    d.pop_front();
+    d.pop_front();
+    d.pop_front();
+
+    d = {1,2,3,4};
+    test_equal_range(d, {1,2,3,4});
+  }
+
+  // throw while assign to free front
+  bool can_throw =
+     ! std::is_nothrow_move_constructible<T>::value
+  && ! std::is_nothrow_copy_constructible<T>::value;
+
+  if (can_throw)
+  {
+    Deque e = get_range<Deque>(10);
+    e.pop_front();
+    e.pop_front();
+    e.pop_front();
+    e.pop_front();
+
+    test_elem_throw::on_copy_after(2);
+    test_elem_throw::on_move_after(2);
+
+    try
+    {
+      e = {404,404,404,404,404};
+      BOOST_TEST(false);
+    } catch (const test_exception&) {}
+
+    test_elem_throw::do_not_throw();
+  }
+
+  BOOST_TEST(test_elem_base::no_living_elem());
+}
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(assign_input_range, Deque, t_is_copy_constructible)
 {

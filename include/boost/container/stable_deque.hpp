@@ -498,8 +498,68 @@ public:
     destructor_impl();
   }
 
-  stable_deque& operator=(const stable_deque& x);
-  stable_deque& operator=(stable_deque&& x) noexcept(allocator_traits::is_always_equal);
+  stable_deque& operator=(const stable_deque& x)
+  {
+    if (this == &x) { return *this; } // skip self
+
+    if (allocator_traits::propagate_on_container_copy_assignment::value)
+    {
+      if (get_allocator_ref() != x.get_allocator_ref())
+      {
+        clear(); // new allocator cannot free existing storage
+      }
+
+      get_allocator_ref() = x.get_allocator_ref();
+    }
+
+    assign(x.begin(), x.end());
+
+    return *this;
+  }
+
+  stable_deque& operator=(stable_deque&& x) noexcept(allocator_traits::is_always_equal)
+  {
+    constexpr bool copy_alloc = allocator_traits::propagate_on_move_assignment;
+    const bool equal_alloc = (get_allocator_ref() == x.get_allocator_ref());
+
+    if ((copy_alloc || equal_alloc))
+    {
+      if (copy_alloc)
+      {
+        get_allocator_ref() = std::move(x.get_allocator_ref());
+      }
+
+      using std::swap;
+
+      swap(_map, x._map);
+      swap(_front_index, x._front_index);
+      swap(_back_index, x._back_index);
+    }
+    else
+    {
+      // if the allocator shouldn't be copied and they do not compare equal
+      // we can't steal memory.
+
+      if (copy_alloc)
+      {
+        get_allocator_ref() = std::move(x.get_allocator_ref());
+      }
+
+      auto first = std::make_move_iterator(x.begin());
+      auto last = std::make_move_iterator(x.end());
+
+      overwrite_buffer(first, last);
+
+      while (first != last)
+      {
+        push_back(*first++);
+      }
+    }
+
+    BOOST_ASSERT(invariants_ok());
+    return *this;
+  }
+
   stable_deque& operator=(std::initializer_list<T> il)
   {
     assign(il.begin(), il.end());
@@ -509,16 +569,13 @@ public:
   template <typename Iterator>
   void assign(Iterator first, Iterator last)
   {
-    typedef typename std::conditional<
-      container_detail::is_input_iterator<Iterator>::value,
-      std::true_type, std::false_type
-    >::type is_input_it;
-
-    overwrite_buffer(first, last, is_input_it{});
+    overwrite_buffer(first, last);
     while (first != last)
     {
       push_back(*first++);
     }
+
+    BOOST_ASSERT(invariants_ok());
   }
 
   void assign(size_type n, const T& t)
@@ -1087,12 +1144,11 @@ private:
     }
   }
 
-  template <typename ForwardIterator>
-  void overwrite_buffer(ForwardIterator& first, const ForwardIterator last, std::false_type /* is input it */)
+  void overwrite_buffer(const_pointer& first, const_pointer last)
   {
-    if (t_is_trivially_copyable && std::is_pointer<ForwardIterator>::value)
+    if (t_is_trivially_copyable)
     {
-      size_type input_size = static_cast<size_type>(std::distance(first, last));
+      size_type input_size = last - first;
       size_type copy_size = segment_size;
       map_iterator dst_cur = _map.begin();
       map_iterator dst_end = _map.end();
@@ -1100,14 +1156,10 @@ private:
       while (input_size && dst_cur != dst_end)
       {
         copy_size = (std::min)(input_size, size_type{segment_size});
-        std::memcpy(
-          *dst_cur,
-          container_detail::iterator_to_pointer(first),
-          copy_size * sizeof(value_type)
-        );
+        std::memcpy(*dst_cur, first, copy_size * sizeof(value_type));
 
         input_size -= copy_size;
-        std::advance(first, copy_size);
+        first += copy_size;
         ++dst_cur;
       }
 
@@ -1117,12 +1169,18 @@ private:
     }
     else
     {
-      overwrite_buffer(first, last, std::true_type{});
+      overwrite_buffer_impl(first, last);
     }
   }
 
-  template <typename InputIterator>
-  void overwrite_buffer(InputIterator& first, const InputIterator last, std::true_type /* is input it */)
+  template <typename Iterator>
+  void overwrite_buffer(Iterator& first, const Iterator last)
+  {
+    overwrite_buffer_impl(first, last);
+  }
+
+  template <typename Iterator>
+  void overwrite_buffer_impl(Iterator& first, const Iterator last)
   {
     if (empty()) { return; }
 
