@@ -16,6 +16,8 @@
 #include <boost/container/devector.hpp>
 #include <boost/container/detail/destroyers.hpp>
 
+#include <boost/iterator/iterator_facade.hpp>
+
 namespace boost {
 namespace container {
 
@@ -82,22 +84,15 @@ private:
 public:
 
   template <bool IsConst = false>
-  class deque_iterator :
-    public std::iterator
-    <
-      std::random_access_iterator_tag,
-      typename std::conditional<IsConst, const T, T>::type
+  class deque_iterator : public iterator_facade<
+      deque_iterator<IsConst>,
+      typename std::conditional<IsConst, const value_type, value_type>::type,
+      random_access_traversal_tag
     >
   {
-  protected:
-    friend class stable_deque;
-
     typedef typename std::conditional<IsConst, const stable_deque, stable_deque>::type* container_pointer;
-    typedef typename std::conditional<IsConst, const_pointer     , pointer>::type       ipointer;
-    typedef typename std::conditional<IsConst, const_reference   , reference>::type     ireference;
-    typedef ipointer segment_pointer;
+    typedef pointer segment_pointer;
 
-    // TODO iterator missing members
   public:
     deque_iterator() noexcept {}
 
@@ -113,62 +108,7 @@ public:
        _index(x._index)
     {}
 
-    ireference operator*() noexcept
-    {
-      return _segment[_index];
-    }
-
-    deque_iterator& operator++() noexcept
-    {
-      ++_index;
-      if (_index == segment_size)
-      {
-        _segment = next_segment();
-        _index = 0;
-      }
-      return *this;
-    }
-
-    deque_iterator& operator--() noexcept
-    {
-      if (_index != 0)
-      {
-        --_index;
-      }
-      else
-      {
-        _segment = prev_segment();
-        _index = segment_size - 1;
-      }
-      return *this;
-    }
-
-    deque_iterator operator+(difference_type n) noexcept
-    {
-
-      size_type index;
-      difference_type segment_diff;
-
-      if (n >= 0)
-      {
-        index = (_index + n) % segment_size;
-        segment_diff = (_index + n) / segment_size;
-      }
-      else
-      {
-        index = (segment_size + _index + (n % segment_size)) % segment_size;
-        segment_diff = (1 - segment_size + _index + n) / segment_size;
-      }
-
-      auto segment_it = std::find(_container->_map.begin(), _container->_map.end(), _segment);
-      auto new_segment_it = segment_it + segment_diff;
-
-      ipointer segment = (new_segment_it != _container->_map.end()) ? *new_segment_it : nullptr;
-
-      return deque_iterator(_container, segment, index);
-    }
-
-    ipointer data() noexcept
+    pointer data() noexcept
     {
       return _segment + _index;
     }
@@ -184,30 +124,6 @@ public:
       return (_container->_map.back() != _segment)
         ? segment_size - _index
         :_container->_back_index - _index;
-    }
-
-    friend bool operator==(const deque_iterator& a, const deque_iterator& b) noexcept
-    {
-      // No need to compare _container, comparing iterators
-      // of different sequences is undefined.
-      return
-             a._segment == b._segment
-        &&   a._index == b._index;
-    }
-
-    friend bool operator!=(const deque_iterator& a, const deque_iterator& b) noexcept
-    {
-      return !(a == b);
-    }
-
-    friend difference_type operator-(const deque_iterator& a, const deque_iterator& b) noexcept
-    {
-      // TODO use iterators instead
-      size_type seg_a = a.segment_index();
-      size_type seg_b = b.segment_index();
-
-      return difference_type(segment_size)
-        * (seg_a - seg_b - 1) + a._index + (segment_size - b._index);
     }
 
     #ifdef BOOST_CONTAINER_TEST
@@ -228,6 +144,82 @@ public:
     #endif
 
   protected:
+    friend class stable_deque;
+    friend class boost::iterator_core_access;
+
+    reference dereference()
+    {
+      return _segment[_index];
+    }
+
+    const reference dereference() const
+    {
+      return _segment[_index];
+    }
+
+    bool equal(const deque_iterator& rhs) const
+    {
+      // No need to compare _container, comparing iterators
+      // of different sequences is undefined.
+      return _segment == rhs._segment
+        &&   _index == rhs._index;
+    }
+
+    void increment()
+    {
+      ++_index;
+      if (_index == segment_size)
+      {
+        _segment = next_segment();
+        _index = 0;
+      }
+    }
+
+    void decrement()
+    {
+      if (_index != 0)
+      {
+        --_index;
+      }
+      else
+      {
+        _segment = prev_segment();
+        _index = segment_size - 1;
+      }
+    }
+
+    void advance(difference_type n)
+    {
+      difference_type segment_diff;
+
+      if (n >= 0)
+      {
+        segment_diff = (_index + n) / segment_size;
+        _index = (_index + n) % segment_size;
+      }
+      else
+      {
+        segment_diff = (1 - segment_size + _index + n) / segment_size;
+        _index = (segment_size + _index + (n % segment_size)) % segment_size;
+      }
+
+      auto segment_it = std::find(_container->_map.begin(), _container->_map.end(), _segment);
+      auto new_segment_it = segment_it + segment_diff;
+
+      _segment = (new_segment_it != _container->_map.end()) ? *new_segment_it : nullptr;
+    }
+
+    difference_type distance_to(const deque_iterator& b) const
+    {
+      auto map_begin = _container->_map.begin();
+      auto map_end   = _container->_map.end();
+      auto seg_a = std::find(map_begin, map_end,   _segment);
+      auto seg_b = std::find(map_begin, map_end, b._segment);
+
+      return difference_type{segment_size}
+        * (seg_b - seg_a - 1) + b._index + (segment_size - _index);
+    }
+
     segment_pointer next_segment()
     {
       return next_segment_in_range(
@@ -254,20 +246,6 @@ public:
       return (cur != last) ? *cur : nullptr;
     }
 
-    size_type segment_index() const
-    {
-      size_type i = 0;
-      for (; i < _container->_map.size(); ++i)
-      {
-        if (_container->_map[i] == _segment)
-        {
-          break;
-        }
-      }
-
-      return i;
-    }
-
     container_pointer _container;
     segment_pointer _segment = nullptr;
     size_type _index = 0;
@@ -278,9 +256,8 @@ public:
   {
     typedef deque_iterator<IsConst> base;
 
-    // TODO use using instead of typedef
-    typedef typename base::container_pointer container_pointer;
-    typedef typename base::segment_pointer segment_pointer;
+    using typename base::container_pointer;
+    using typename base::segment_pointer;
 
   public:
     deque_segment_iterator() noexcept {}
@@ -297,11 +274,18 @@ public:
     using base::data;
     using base::data_size;
 
-    deque_segment_iterator operator++() noexcept
+    deque_segment_iterator& operator++() noexcept
     {
       base::_segment = base::next_segment();
       base::_index = 0;
       return *this;
+    }
+
+    deque_segment_iterator operator++(int) noexcept
+    {
+      deque_segment_iterator tmp(*this);
+      ++(*this);
+      return tmp;
     }
 
     friend bool operator==(const deque_segment_iterator& a, const deque_segment_iterator& b) noexcept
