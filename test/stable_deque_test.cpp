@@ -219,7 +219,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(consturctor_default, Deque, all_deques)
     typename Deque::allocator_type allocator;
     Deque b(allocator);
 
-    BOOST_TEST(b.size() == 0);
+    BOOST_TEST(b.size() == 0u);
     BOOST_TEST(b.empty());
   }
 }
@@ -235,7 +235,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(constructor_n_value, Deque, t_is_default_construct
 
   {
     Deque b(18);
-    BOOST_TEST(b.size() == 18);
+    BOOST_TEST(b.size() == 18u);
 
     const T tmp{};
 
@@ -247,7 +247,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(constructor_n_value, Deque, t_is_default_construct
 
   {
     Deque b(8);
-    BOOST_TEST(b.size() == 8);
+    BOOST_TEST(b.size() == 8u);
 
     const T tmp{};
 
@@ -284,7 +284,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(constructor_n_copy, Deque, t_is_copy_constructible
   {
     const T x(9);
     Deque b(18, x);
-    BOOST_TEST(b.size() == 18);
+    BOOST_TEST(b.size() == 18u);
 
     for (auto&& elem : b)
     {
@@ -295,7 +295,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(constructor_n_copy, Deque, t_is_copy_constructible
   {
     const T x(9);
     Deque b(8, x);
-    BOOST_TEST(b.size() == 8);
+    BOOST_TEST(b.size() == 8u);
 
     for (auto&& elem : b)
     {
@@ -1113,15 +1113,15 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(resize_value, Deque, t_is_default_constructible)
     BOOST_TEST(a.empty());
 
     a.resize(10);
-    BOOST_TEST(a.size() == 10);
+    BOOST_TEST(a.size() == 10u);
     test_equal_range(a, {0,0,0,0,0,0,0,0,0,0});
 
     a.resize(10);
-    BOOST_TEST(a.size() == 10);
+    BOOST_TEST(a.size() == 10u);
     test_equal_range(a, {0,0,0,0,0,0,0,0,0,0});
 
     a.resize(5);
-    BOOST_TEST(a.size() == 5);
+    BOOST_TEST(a.size() == 5u);
     test_equal_range(a, {0,0,0,0,0});
 
     a.resize(0);
@@ -1140,15 +1140,15 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(resize_copy, Deque, t_is_copy_constructible)
     BOOST_TEST(a.empty());
 
     a.resize(10, x);
-    BOOST_TEST(a.size() == 10);
+    BOOST_TEST(a.size() == 10u);
     test_equal_range(a, {9,9,9,9,9,9,9,9,9,9});
 
     a.resize(10, x);
-    BOOST_TEST(a.size() == 10);
+    BOOST_TEST(a.size() == 10u);
     test_equal_range(a, {9,9,9,9,9,9,9,9,9,9});
 
     a.resize(5, x);
-    BOOST_TEST(a.size() == 5);
+    BOOST_TEST(a.size() == 5u);
     test_equal_range(a, {9,9,9,9,9});
 
     a.resize(0, x);
