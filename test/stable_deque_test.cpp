@@ -33,6 +33,7 @@ using namespace boost::container;
 template <typename T>
 using make_stable_deque = stable_deque<T, std::allocator<T>, stable_deque_policy<8>>;
 
+#if 0
 typedef boost::mpl::list<
   make_stable_deque<unsigned>,
   make_stable_deque<regular_elem>,
@@ -41,6 +42,12 @@ typedef boost::mpl::list<
   make_stable_deque<only_movable>,
   make_stable_deque<no_default_ctor>
 > all_deques;
+#else
+typedef boost::mpl::list<
+  //make_stable_deque<unsigned>
+  make_stable_deque<regular_elem>
+> all_deques;
+#endif
 
 // TODO mpl::filter_view does not compile if predicate has template template argument. why?
 //template <template<typename> class Predicate, typename Container>
@@ -188,6 +195,11 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(segment_iterator, Deque, t_is_trivial)
   devector<T> expected = get_range<devector<T>>();
   Deque a = get_range<Deque>();
 
+  expected.pop_front();
+  expected.pop_front();
+  a.pop_front();
+  a.pop_front();
+
   T* p_expected = expected.data();
 
   auto a_first = a.segment_begin();
@@ -196,7 +208,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(segment_iterator, Deque, t_is_trivial)
   while (a_first != a_last)
   {
     auto size = a_first.data_size();
-    bool ok = std::memcmp(*a_first, p_expected, size) == 0;
+    bool ok = std::memcmp(a_first.data(), p_expected, size) == 0;
     BOOST_TEST(ok);
 
     ++a_first;
@@ -1092,11 +1104,15 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(size, Deque, all_deques)
 
   a.emplace_back(7);
   a.emplace_back(8);
+
   a.emplace_back(9);
   a.emplace_back(10);
   a.emplace_back(11);
 
   BOOST_TEST(a.size() == 11u);
+
+  Deque b = get_range<Deque>(1,9,0,0);
+  BOOST_TEST(b.size() == 8u);
 }
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(max_size, Deque, all_deques)
@@ -1240,16 +1256,23 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(back, Deque, all_deques)
 {
   typedef typename Deque::value_type T;
 
-  { // non-const front
+  { // non-const back
     Deque a = get_range<Deque>(3);
     BOOST_TEST(a.back() == T(3));
     a.back() = T(100);
     BOOST_TEST(a.back() == T(100));
   }
 
-  { // const front
+  { // const back
     const Deque a = get_range<Deque>(3);
     BOOST_TEST(a.back() == T(3));
+  }
+
+  { // at segment boundary
+    Deque a = get_range<Deque>(8);
+    BOOST_TEST(a.back() == T(8));
+    a.push_back(T(9));
+    BOOST_TEST(a.back() == T(9));
   }
 }
 
@@ -1447,9 +1470,290 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(push_back_rvalue, Deque, all_deques)
 
 // TODO insert_copy
 // TODO insert_rvalue
-// TODO insert_n_copy
-// TODO insert_input_range
-// TODO insert_forward_range
+
+BOOST_AUTO_TEST_CASE_TEMPLATE(insert_n_copy, Deque, t_is_copy_constructible)
+{
+  typedef typename Deque::value_type T;
+
+  { // scope of x
+
+  const T x(9);
+
+  // empty to empty
+  {
+    Deque a;
+
+    auto ret = a.insert(a.begin(), 0, x);
+    BOOST_TEST(a.empty());
+    BOOST_TEST(ret == a.begin());
+
+    ret = a.insert(a.end(), 0, x);
+    BOOST_TEST(a.empty());
+    BOOST_TEST(ret == a.end());
+  }
+
+  // range to empty
+  {
+    Deque b;
+
+    auto ret = b.insert(b.end(), 10, x);
+    test_equal_range(b, {9,9,9,9,9,9,9,9,9,9});
+    BOOST_TEST(ret == b.begin());
+  }
+
+  // range to non-empty front
+  {
+    Deque c = get_range<Deque>(6);
+
+    auto ret = c.insert(c.begin(), 4, x);
+    test_equal_range(c, {9,9,9,9,1,2,3,4,5,6});
+    BOOST_TEST(ret == c.begin());
+  }
+
+  // range to non-empty back
+  {
+    Deque d = get_range<Deque>(6);
+
+    auto ret = d.insert(d.end(), 4, x);
+    test_equal_range(d, {1,2,3,4,5,6,9,9,9,9});
+    BOOST_TEST(ret == d.begin() + 6);
+  }
+
+  // range to non-empty near front
+  {
+    Deque e = get_range<Deque>(12);
+
+    auto ret = e.insert(e.begin() + 2, 3, x);
+    test_equal_range(e, {1,2,9,9,9,3,4,5,6,7,8,9,10,11,12});
+    BOOST_TEST(ret == e.begin() + 2);
+  }
+
+  // range to non-empty near back
+  {
+    Deque f = get_range<Deque>(12);
+
+    auto ret = f.insert(f.begin() + 8, 3, x);
+    test_equal_range(f, {1,2,3,4,5,6,7,8,9,9,9,9,10,11,12});
+    BOOST_TEST(ret == f.begin() + 8);
+  }
+
+  // exception in the middle
+  if (! std::is_nothrow_copy_constructible<T>::value)
+  {
+    test_elem_throw::on_copy_after(10);
+
+    try
+    {
+      Deque g = get_range<Deque>(8);
+      g.insert(g.begin() + 4, 12, x);
+      BOOST_TEST(false);
+    } catch (const test_exception&) {}
+  }
+
+  } // scope of x
+
+  BOOST_TEST(test_elem_base::no_living_elem());
+}
+
+BOOST_AUTO_TEST_CASE_TEMPLATE(insert_input_range, Deque, t_is_copy_constructible)
+{
+  typedef typename Deque::value_type T;
+
+  // empty to empty
+  {
+    Deque a;
+
+    devector<T> input;
+
+    auto input_begin = make_input_iterator(input, input.begin());
+    auto input_end   = make_input_iterator(input, input.end());
+
+    auto ret = a.insert(a.begin(), input_begin, input_end);
+    BOOST_TEST(a.empty());
+    BOOST_TEST(ret == a.begin());
+
+    ret = a.insert(a.end(), input_begin, input_end);
+    BOOST_TEST(a.empty());
+    BOOST_TEST(ret == a.end());
+  }
+
+  // range to empty
+  {
+    Deque b;
+
+    devector<T> input = get_range<devector<T>>(10);
+
+    auto input_begin = make_input_iterator(input, input.begin());
+    auto input_end   = make_input_iterator(input, input.end());
+
+    auto ret = b.insert(b.begin(), input_begin, input_end);
+    test_equal_range(b, {1,2,3,4,5,6,7,8,9,10});
+    BOOST_TEST(ret == b.begin());
+  }
+
+  // range to non-empty front
+  {
+    Deque c = get_range<Deque>(6);
+
+    devector<T> input = get_range<devector<T>>(4);
+
+    auto input_begin = make_input_iterator(input, input.begin());
+    auto input_end   = make_input_iterator(input, input.end());
+
+    auto ret = c.insert(c.begin(), input_begin, input_end);
+    test_equal_range(c, {1,2,3,4,1,2,3,4,5,6});
+    BOOST_TEST(ret == c.begin());
+  }
+
+  // range to non-empty back
+  {
+    Deque d = get_range<Deque>(6);
+
+    devector<T> input = get_range<devector<T>>(4);
+
+    auto input_begin = make_input_iterator(input, input.begin());
+    auto input_end   = make_input_iterator(input, input.end());
+
+    auto ret = d.insert(d.end(), input_begin, input_end);
+    test_equal_range(d, {1,2,3,4,5,6,1,2,3,4});
+    BOOST_TEST(ret == d.begin() + 6);
+  }
+
+  // range to non-empty near front
+  {
+    Deque e = get_range<Deque>(12);
+
+    devector<T> input = get_range<devector<T>>(4);
+
+    auto input_begin = make_input_iterator(input, input.begin());
+    auto input_end   = make_input_iterator(input, input.end());
+
+    auto ret = e.insert(e.begin() + 2, input_begin, input_end);
+    test_equal_range(e, {1,2,1,2,3,4,3,4,5,6,7,8,9,10,11,12});
+    BOOST_TEST(ret == e.begin() + 2);
+  }
+
+  // range to non-empty near back
+  {
+    Deque f = get_range<Deque>(12);
+
+    devector<T> input = get_range<devector<T>>(4);
+
+    auto input_begin = make_input_iterator(input, input.begin());
+    auto input_end   = make_input_iterator(input, input.end());
+
+    auto ret = f.insert(f.begin() + 8, input_begin, input_end);
+    test_equal_range(f, {1,2,3,4,5,6,7,8,1,2,3,4,9,10,11,12});
+    BOOST_TEST(ret == f.begin() + 8);
+  }
+
+  // exception in the middle
+  if (! std::is_nothrow_copy_constructible<T>::value)
+  {
+    devector<T> input = get_range<devector<T>>(12);
+
+    auto input_begin = make_input_iterator(input, input.begin());
+    auto input_end   = make_input_iterator(input, input.end());
+
+    test_elem_throw::on_copy_after(10);
+
+    try
+    {
+      Deque g = get_range<Deque>(8);
+      g.insert(g.begin() + 4, input_begin, input_end);
+      BOOST_TEST(false);
+    } catch (const test_exception&) {}
+  }
+
+  BOOST_TEST(test_elem_base::no_living_elem());
+}
+
+BOOST_AUTO_TEST_CASE_TEMPLATE(insert_forward_range, Deque, t_is_copy_constructible)
+{
+  typedef typename Deque::value_type T;
+
+  { // scope of input
+
+  const std::forward_list<T> input{1,2,3,4,5,6,7,8,9,10,11,12};
+  auto four = input.begin();
+  std::advance(four, 4);
+
+  // empty to empty
+  {
+    Deque a;
+
+    auto ret = a.insert(a.begin(), input.begin(), input.begin());
+    BOOST_TEST(a.empty());
+    BOOST_TEST(ret == a.begin());
+
+    ret = a.insert(a.end(), input.begin(), input.begin());
+    BOOST_TEST(a.empty());
+    BOOST_TEST(ret == a.end());
+  }
+
+  // range to empty
+  {
+    Deque b;
+
+    auto ret = b.insert(b.begin(), input.begin(), input.end());
+    test_equal_range(b, {1,2,3,4,5,6,7,8,9,10,11,12});
+    BOOST_TEST(ret == b.begin());
+  }
+
+  // range to non-empty front
+  {
+    Deque c = get_range<Deque>(6);
+
+    auto ret = c.insert(c.begin(), input.begin(), input.end());
+    test_equal_range(c, {1,2,3,4,5,6,7,8,9,10,11,12,1,2,3,4,5,6});
+    BOOST_TEST(ret == c.begin());
+  }
+
+  // range to non-empty back
+  {
+    Deque d = get_range<Deque>(6);
+
+    auto ret = d.insert(d.end(), input.begin(), four);
+    test_equal_range(d, {1,2,3,4,5,6,1,2,3,4});
+    BOOST_TEST(ret == d.begin() + 6);
+  }
+
+  // range to non-empty near front
+  {
+    Deque e = get_range<Deque>(12);
+
+    auto ret = e.insert(e.begin() + 2, input.begin(), four);
+    test_equal_range(e, {1,2,1,2,3,4,3,4,5,6,7,8,9,10,11,12});
+    BOOST_TEST(ret == e.begin() + 2);
+  }
+
+  // range to non-empty near back
+  {
+    Deque f = get_range<Deque>(12);
+
+    auto ret = f.insert(f.begin() + 8, input.begin(), four);
+    test_equal_range(f, {1,2,3,4,5,6,7,8,1,2,3,4,9,10,11,12});
+    BOOST_TEST(ret == f.begin() + 8);
+  }
+
+  // exception in the middle
+  if (! std::is_nothrow_copy_constructible<T>::value)
+  {
+    test_elem_throw::on_copy_after(10);
+
+    try
+    {
+      Deque g = get_range<Deque>(8);
+      g.insert(g.begin() + 4, input.begin(), input.end());
+      BOOST_TEST(false);
+    } catch (const test_exception&) {}
+  }
+
+  } // scope of input
+
+  BOOST_TEST(test_elem_base::no_living_elem());
+}
+
 // TODO insert_il
 // TODO stable_insert
 
