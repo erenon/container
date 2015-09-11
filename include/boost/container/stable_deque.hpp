@@ -238,7 +238,7 @@ private:
       const auto map_end = _p_container->_map.end();
 
       if (map_size == 0 || _p_segment == map_end) { return 0; }
-      if (map_size == 1 || _p_segment + 1 == map_end) { return _p_container->_back_index - _index; }
+      if (map_size == 1 || _p_segment + 1 == map_end) { return _p_container->_end._index - _index; }
       return segment_size - _index;
     }
 
@@ -271,7 +271,7 @@ private:
       --_p_segment;
       if (_p_segment == _p_container->_map.begin())
       {
-        _index = _p_container->_back_index;
+        _index = _p_container->_end_index;
       }
     }
 
@@ -306,15 +306,15 @@ public:
 
   explicit stable_deque(const Allocator& allocator) noexcept
     :Allocator(allocator),
-     _front_index(),
-     _back_index()
+     _begin(_map.begin(), 0u),
+     _end(_map.begin(), 0u)
   {}
 
   explicit stable_deque(size_type n, const Allocator& allocator = Allocator())
     :Allocator(allocator),
      _map((n + segment_size - 1) / segment_size, reserve_only_tag{}),
-     _front_index(),
-     _back_index(n % segment_size)
+     _begin(_map.begin(), 0u),
+     _end(_begin + n)
   {
     size_type i = n;
 
@@ -336,7 +336,7 @@ public:
     BOOST_CATCH(...)
     {
       const size_type to_destroy = n - i;
-      _back_index = to_destroy % segment_size;
+      _end = _begin + to_destroy;
       destructor_impl();
       BOOST_RETHROW;
     }
@@ -379,8 +379,8 @@ public:
   stable_deque(ForwardIterator first, ForwardIterator last, const Allocator& allocator = Allocator())
     :Allocator(allocator),
      _map((std::distance(first, last) + segment_size - 1) / segment_size, reserve_only_tag{}),
-     _front_index(),
-     _back_index(std::distance(first, last) % segment_size)
+     _begin(_map.begin(), 0),
+     _end(_begin + std::distance(first, last))
   {
     ForwardIterator segment_begin = first;
 
@@ -404,7 +404,7 @@ public:
       deallocate_segment(_map.back());
       _map.pop_back();
 
-      _back_index = 0;
+      _end = {_map.end(), 0};
       destructor_impl();
       BOOST_RETHROW;
     }
@@ -423,8 +423,8 @@ public:
   stable_deque(const stable_deque& rhs, const Allocator& allocator)
     :Allocator(allocator),
      _map(rhs._map.size(), reserve_only_tag{}),
-     _front_index(rhs._front_index),
-     _back_index(rhs._back_index)
+     _begin(_map.begin(), rhs._begin._index),
+     _end(_begin + rhs.size())
   {
     const_segment_iterator segment_begin = rhs.segment_begin();
 
@@ -438,7 +438,7 @@ public:
         pointer new_segment = allocate_segment();
         _map.unsafe_push_back(new_segment);
 
-        size_type offset = (segment_begin == rhs.segment_begin()) ? _front_index : 0;
+        size_type offset = (segment_begin == rhs.segment_begin()) ? _begin._index : 0;
 
         opt_copy(src, src_end, new_segment + offset);
 
@@ -450,7 +450,7 @@ public:
       deallocate_segment(_map.back());
       _map.pop_back();
 
-      _back_index = (segment_begin == rhs.segment_begin()) ? _front_index : 0;
+      _end = (segment_begin == rhs.segment_begin()) ? _begin : iterator{_map.end(), 0};
       destructor_impl();
       BOOST_RETHROW;
     }
@@ -466,11 +466,11 @@ public:
   stable_deque(stable_deque&& x, const Allocator& allocator)
     :Allocator(allocator),
      _map(std::move(x._map)),
-     _front_index(x._front_index),
-     _back_index(x._back_index)
+     _begin(x._begin),
+     _end(x._end)
   {
-    x._front_index = 0;
-    x._back_index = 0;
+    x._begin = {x._map.begin(), 0};
+    x._end = {x._map.begin(), 0};
   }
 
   stable_deque(std::initializer_list<T> il, const Allocator& allocator = Allocator())
@@ -516,8 +516,8 @@ public:
       using std::swap;
 
       swap(_map, x._map);
-      swap(_front_index, x._front_index);
-      swap(_back_index, x._back_index);
+      swap(_begin, x._begin);
+      swap(_end, x._end);
     }
     else
     {
@@ -580,26 +580,22 @@ public:
   // iterators:
   iterator begin() noexcept
   {
-    return iterator{_map.begin(), _front_index};
+    return _begin;
   }
 
   const_iterator begin() const noexcept
   {
-    return const_iterator{_map.begin(), _front_index};
+    return _begin;
   }
 
   iterator end() noexcept
   {
-    auto back_it = _map.end();
-    if (_back_index) { --back_it; }
-    return iterator{back_it, _back_index};
+    return _end;
   }
 
   const_iterator end() const noexcept
   {
-    auto back_it = _map.cend();
-    if (_back_index) { --back_it; }
-    return const_iterator{back_it, _back_index};
+    return _end;
   }
 
   reverse_iterator rbegin() noexcept
@@ -645,12 +641,12 @@ public:
   // segment iterators:
   segment_iterator segment_begin()
   {
-    return segment_iterator{this, _map.begin(), _front_index};
+    return segment_iterator{this, _map.begin(), _begin._index};
   }
 
   const_segment_iterator segment_begin() const
   {
-    return const_segment_iterator{this, _map.begin(), _front_index};
+    return const_segment_iterator{this, _map.begin(), _begin._index};
   }
 
   segment_iterator segment_end()
@@ -666,21 +662,12 @@ public:
   // capacity:
   bool empty() const noexcept
   {
-    return _map.empty() || (_map.size() == 1 && _front_index == _back_index);
+    return _begin == _end;
   }
 
   size_type size() const noexcept
   {
-    if (_map.empty())
-    {
-      return 0;
-    }
-    else
-    {
-      size_type scaled_back = (_back_index + segment_size - 1) % segment_size + 1;
-      return scaled_back - _front_index
-        +    (_map.size() - 1) * segment_size;
-    }
+    return _end - _begin;
   }
 
   size_type max_size() const noexcept
@@ -722,48 +709,25 @@ public:
 
   void shrink_to_fit()
   {
-    if (empty() && !_map.empty())
+    if (empty() && ! _map.empty())
     {
       deallocate_segment(_map.back());
       _map.pop_back();
       _map.shrink_to_fit();
 
-      _front_index = 0;
-      _back_index = 0;
+      _end = _begin = {_map.begin(), 0};
     }
   }
 
   // element access:
   reference operator[](size_type n)
   {
-    const size_type first_seg_size = segment_size - _front_index;
-    if (n < first_seg_size)
-    {
-      return *(_map.front() + _front_index + n);
-    }
-    else
-    {
-      n -= first_seg_size;
-      const size_type segment_index = n / segment_size + 1;
-      const size_type elem_index = n % segment_size;
-      return *(_map[segment_index] + elem_index);
-    }
+    return *(_begin + n);
   }
 
   const_reference operator[](size_type n) const
   {
-    const size_type first_seg_size = segment_size - _front_index;
-    if (n < first_seg_size)
-    {
-      return *(_map.front() + _front_index + n);
-    }
-    else
-    {
-      n -= first_seg_size;
-      const size_type segment_index = n / segment_size + 1;
-      const size_type elem_index = n % segment_size;
-      return *(_map[segment_index] + elem_index);
-    }
+    return *(_begin + n);
   }
 
   reference at(size_type n)
@@ -780,24 +744,24 @@ public:
 
   reference front() noexcept
   {
-    return *(_map.front() + _front_index);
+    return *_begin;
   }
 
   const_reference front() const noexcept
   {
-    return *(_map.front() + _front_index);
+    return *_begin;
   }
 
   reference back() noexcept
   {
-    size_type index = (_back_index) ? _back_index - 1 : segment_size - 1;
-    return *(_map.back() + index);
+    iterator back_it = _end - 1;
+    return *back_it;
   }
 
   const_reference back() const noexcept
   {
-    size_type index = (_back_index) ? _back_index - 1 : segment_size - 1;
-    return *(_map.back() + index);
+    iterator back_it = _end - 1;
+    return *back_it;
   }
 
   // modifiers:
@@ -806,8 +770,8 @@ public:
   {
     if (front_free_capacity())
     {
-      alloc_construct(_map.front() + (_front_index - 1), std::forward<Args>(args)...);
-      --_front_index;
+      alloc_construct(_map.front() + (_begin._index - 1), std::forward<Args>(args)...);
+      --_begin;
     }
     else
     {
@@ -822,8 +786,8 @@ public:
   {
     if (back_free_capacity())
     {
-      alloc_construct(_map.back() + _back_index, std::forward<Args>(args)...);
-      _back_index = (_back_index + 1) % segment_size;
+      alloc_construct(_map.back() + _end._index, std::forward<Args>(args)...);
+      ++_end;
     }
     else
     {
@@ -885,15 +849,13 @@ public:
     BOOST_ASSERT(!empty());
 
     allocator_traits::destroy(get_allocator_ref(), &front());
-    ++_front_index;
+    ++_begin;
 
-    if (_front_index == segment_size)
+    if (_begin._index == 0)
     {
       // TODO keep the last segment
       deallocate_segment(_map.front());
       _map.pop_front();
-
-      _front_index = 0;
     }
 
     BOOST_ASSERT(invariants_ok());
@@ -903,30 +865,14 @@ public:
   {
     BOOST_ASSERT(!empty());
 
-    // TODO XXX FIXME
-    // DESIGN ERROR: can tell these from eachother:
-    // [....]
-    // ^     ^
-    // [....]
-    // ^
-    // ^
-    // Must use full iterator instead of simple indices
-
     allocator_traits::destroy(get_allocator_ref(), &back());
+    --_end;
 
-    if (_back_index)
+    if (_end._index == 0)
     {
-      --_back_index;
-
-      if (_back_index == 0)
-      {
-        deallocate_segment(_map.back());
-        _map.pop_back();
-      }
-    }
-    else
-    {
-      _back_index = segment_size - 1;
+      // TODO keep the last segment
+      deallocate_segment(_map.back());
+      _map.pop_back();
     }
 
     BOOST_ASSERT(invariants_ok());
@@ -945,17 +891,10 @@ public:
     // TODO possible optimization: decide on erased end
     // based on range position
 
-    size_type n = ncfirst - begin();
+    const size_type n = ncfirst - begin();
 
     iterator new_end = std::move(nclast, end(), ncfirst);
-
-    destroy_elements(new_end, end());
-
-    const_map_iterator new_map_end = new_end._p_segment;
-    if (new_end._index && new_map_end != _map.end()) { ++new_map_end; }
-    _map.erase(new_map_end, _map.end());
-
-    _back_index = new_end._index;
+    erase_at_end(new_end);
 
     BOOST_ASSERT(invariants_ok());
 
@@ -970,8 +909,8 @@ public:
 
     using std::swap;
     swap(_map, rhs._map);
-    swap(_front_index, rhs._front_index);
-    swap(_back_index, rhs._back_index);
+    swap(_begin, rhs._begin);
+    swap(_end, rhs._end);
   }
 
   void clear() noexcept
@@ -979,8 +918,7 @@ public:
     destructor_impl();
 
     _map.clear();
-    _front_index = 0;
-    _back_index = 0;
+    _end = _begin = {_map.begin(), 0};
   }
 
 private:
@@ -1029,9 +967,8 @@ private:
 
   iterator unconst_iterator(const const_iterator& it) noexcept
   {
-    const value_type* const* const p_first_segment = _map.cbegin(); // why?
-    size_type segment_index = it._p_segment - p_first_segment;
-    return iterator(_map.begin() + segment_index, it._index);
+    size_type offset = it - cbegin();
+    return begin() + offset;
   }
 
   template <typename... Args>
@@ -1046,20 +983,21 @@ private:
 
   size_type front_free_capacity() const noexcept
   {
-    return _front_index;
+    return _begin._index;
   }
 
   size_type back_free_capacity() const noexcept
   {
-    return (segment_size - _back_index) % segment_size;
+    return (segment_size - _end._index) % segment_size;
   }
 
   template <typename... Args>
   void emplace_front_slow_path(Args&&... args)
   {
-    BOOST_ASSERT(_front_index == 0);
+    BOOST_ASSERT(front_free_capacity() == 0);
 
     _map.reserve_front(new_map_capacity());
+    fix_iterators();
 
     pointer new_segment = allocate_segment();
     allocation_guard new_segment_guard(new_segment, get_allocator_ref(), segment_size);
@@ -1069,7 +1007,7 @@ private:
     alloc_construct(new_segment + new_front_index, std::forward<Args>(args)...);
 
     _map.push_front(new_segment); // noexcept because of reserve_front above
-    _front_index = new_front_index;
+    _begin = {_map.begin(), new_front_index};
 
     new_segment_guard.release();
   }
@@ -1077,9 +1015,10 @@ private:
   template <typename... Args>
   void emplace_back_slow_path(Args&&... args)
   {
-    BOOST_ASSERT(_back_index == 0);
+    BOOST_ASSERT(back_free_capacity() == 0);
 
     _map.reserve_back(new_map_capacity());
+    fix_iterators();
 
     pointer new_segment = allocate_segment();
     allocation_guard new_segment_guard(new_segment, get_allocator_ref(), segment_size);
@@ -1087,9 +1026,15 @@ private:
     alloc_construct(new_segment, std::forward<Args>(args)...);
 
     _map.push_back(new_segment); // noexcept because of reserve_back above
-    _back_index = 1;
+    _end = {&_map.back(), 1};
 
     new_segment_guard.release();
+  }
+
+  void fix_iterators()
+  {
+    _begin = {_map.begin(), _begin._index};
+    _end = (_end._index) ? iterator{&_map.back(), _end._index} : iterator{_map.end(), 0};
   }
 
   size_type new_map_capacity() const
@@ -1146,10 +1091,11 @@ private:
   {
     if (t_is_trivially_copyable)
     {
+      const const_pointer first_origi = first;
       size_type input_size = last - first;
       size_type copy_size = segment_size;
       map_iterator dst_cur = _map.begin();
-      map_iterator dst_end = _map.end();
+      const map_iterator dst_end = _map.end();
 
       while (input_size && dst_cur != dst_end)
       {
@@ -1161,8 +1107,10 @@ private:
         ++dst_cur;
       }
 
-      _front_index = 0;
-      _back_index = copy_size % segment_size;
+      BOOST_ASSERT(_begin._p_segment == _map.begin());
+      _begin._index = 0;
+      _end = _begin + std::distance(first_origi, first);
+
       _map.erase(dst_cur, dst_end);
     }
     else
@@ -1210,23 +1158,25 @@ private:
       erase_at_end(dst);
     }
 
-    _front_index = 0;
-    _back_index = dst._index;
+    BOOST_ASSERT(_begin._p_segment == _map.begin());
+    _begin._index = 0;
+    _end = dst;
   }
 
-  void erase_at_end(iterator from)
+  void erase_at_end(iterator new_end)
   {
-    destroy_elements(from, end());
+    destroy_elements(new_end, end());
 
-    const_map_iterator from_it = from._p_segment;
+    const_map_iterator new_map_end = new_end._p_segment;
 
-    if (from._index && from_it != _map.end())
+    if (new_end._index)
     {
-      ++from_it;
+      BOOST_ASSERT(new_map_end != _map.end());
+      ++new_map_end;
     }
 
-    _map.erase(from_it, _map.end());
-    _back_index = from._index;
+    _map.erase(new_map_end, _map.end());
+    _end = new_end;
   }
 
   template <typename InputIterator,
@@ -1306,14 +1256,15 @@ private:
 
   bool invariants_ok()
   {
-    return (! _map.empty() || (_front_index == 0 && _back_index == 0))
-      &&    _front_index < segment_size
-      &&    _back_index  < segment_size;
+    return (! _map.empty() || (_begin == _end))
+      &&    _begin._p_segment == _map.begin()
+      &&    _begin._index < segment_size
+      &&    _end._index  < segment_size;
   }
 
   map_t _map;
-  size_type _front_index;
-  size_type _back_index;
+  iterator _begin;
+  iterator _end;
 };
 
 template <class T, class AX, class PX, class AY, class PY>

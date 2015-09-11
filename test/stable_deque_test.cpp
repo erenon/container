@@ -33,7 +33,7 @@ using namespace boost::container;
 template <typename T>
 using make_stable_deque = stable_deque<T, std::allocator<T>, stable_deque_policy<8>>;
 
-#if 0
+#if 1
 typedef boost::mpl::list<
   make_stable_deque<unsigned>,
   make_stable_deque<regular_elem>,
