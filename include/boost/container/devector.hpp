@@ -2046,7 +2046,7 @@ public:
     size_type back_distance = end() - first;
     size_type n = std::distance(first, last);
 
-    if (front_distance <= back_distance)
+    if (front_distance < back_distance)
     {
       // move n to the right
       move_if_noexcept_backward(begin(), first, last);
