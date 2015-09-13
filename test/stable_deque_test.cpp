@@ -1754,7 +1754,83 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(insert_forward_range, Deque, t_is_copy_constructib
   BOOST_TEST(test_elem_base::no_living_elem());
 }
 
-// TODO insert_il
+BOOST_AUTO_TEST_CASE_TEMPLATE(insert_il, Deque, t_is_copy_constructible)
+{
+  // empty to empty
+  {
+    Deque a;
+
+    auto ret = a.insert(a.begin(), {});
+    BOOST_TEST(a.empty());
+    BOOST_TEST(ret == a.begin());
+
+    ret = a.insert(a.end(), {});
+    BOOST_TEST(a.empty());
+    BOOST_TEST(ret == a.end());
+  }
+
+  // range to empty
+  {
+    Deque b;
+
+    auto ret = b.insert(b.begin(), {1,2,3,4,5,6,7,8,9,10,11,12});
+    test_equal_range(b, {1,2,3,4,5,6,7,8,9,10,11,12});
+    BOOST_TEST(ret == b.begin());
+  }
+
+  // range to non-empty front
+  {
+    Deque c = get_range<Deque>(6);
+
+    auto ret = c.insert(c.begin(), {1,2,3,4,5,6,7,8,9,10,11,12});
+    test_equal_range(c, {1,2,3,4,5,6,7,8,9,10,11,12,1,2,3,4,5,6});
+    BOOST_TEST(ret == c.begin());
+  }
+
+  // range to non-empty back
+  {
+    Deque d = get_range<Deque>(6);
+
+    auto ret = d.insert(d.end(), {1,2,3,4});
+    test_equal_range(d, {1,2,3,4,5,6,1,2,3,4});
+    BOOST_TEST(ret == d.begin() + 6);
+  }
+
+  // range to non-empty near front
+  {
+    Deque e = get_range<Deque>(12);
+
+    auto ret = e.insert(e.begin() + 2, {1,2,3,4});
+    test_equal_range(e, {1,2,1,2,3,4,3,4,5,6,7,8,9,10,11,12});
+    BOOST_TEST(ret == e.begin() + 2);
+  }
+
+  // range to non-empty near back
+  {
+    Deque f = get_range<Deque>(12);
+
+    auto ret = f.insert(f.begin() + 8, {1,2,3,4});
+    test_equal_range(f, {1,2,3,4,5,6,7,8,1,2,3,4,9,10,11,12});
+    BOOST_TEST(ret == f.begin() + 8);
+  }
+
+  typedef typename Deque::value_type T;
+
+  // exception in the middle
+  if (! std::is_nothrow_copy_constructible<T>::value)
+  {
+    test_elem_throw::on_copy_after(10);
+
+    try
+    {
+      Deque g = get_range<Deque>(8);
+      g.insert(g.begin() + 4, {1,2,3,4,5,6,7,8,9,10,11,12});
+      BOOST_TEST(false);
+    } catch (const test_exception&) {}
+  }
+
+  BOOST_TEST(test_elem_base::no_living_elem());
+}
 // TODO stable_insert
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(pop_front, Deque, all_deques)
