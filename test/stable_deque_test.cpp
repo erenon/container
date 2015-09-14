@@ -1466,10 +1466,217 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(push_back_rvalue, Deque, all_deques)
   }
 }
 
-// TODO emplace
+BOOST_AUTO_TEST_CASE_TEMPLATE(emplace, Deque, all_deques)
+{
+  typedef typename Deque::value_type T;
 
-// TODO insert_copy
-// TODO insert_rvalue
+  // emplace to empty begin
+  {
+    Deque a;
+    auto res = a.emplace(a.begin(), 1);
+    test_equal_range(a, {1});
+    BOOST_TEST(*res == T(1));
+  }
+
+  // to empty end
+  {
+    Deque b;
+    auto res = b.emplace(b.end(), 2);
+    test_equal_range(b, {2});
+    BOOST_TEST(*res == T(2));
+  }
+
+  // to front
+  {
+    Deque c = get_range<Deque>(8);
+    auto res = c.emplace(c.begin(), 9);
+    test_equal_range(c, {9,1,2,3,4,5,6,7,8});
+    BOOST_TEST(*res == T(9));
+  }
+
+  // to back
+  {
+    Deque d = get_range<Deque>(8);
+    auto res = d.emplace(d.end(), 9);
+    test_equal_range(d, {1,2,3,4,5,6,7,8,9});
+    BOOST_TEST(*res == T(9));
+  }
+
+  // to near front
+  {
+    Deque e = get_range<Deque>(8);
+    auto res = e.emplace(e.begin() + 3, 9);
+    test_equal_range(e, {1,2,3,9,4,5,6,7,8});
+    BOOST_TEST(*res == T(9));
+  }
+
+  // to near back
+  {
+    Deque f = get_range<Deque>(8);
+    auto res = f.emplace(f.end() - 3, 9);
+    test_equal_range(f, {1,2,3,4,5,9,6,7,8});
+    BOOST_TEST(*res == T(9));
+  }
+
+  // middle with ctor exception
+  if (! std::is_nothrow_constructible<T>::value)
+  {
+    Deque g = get_range<Deque>(8);
+    auto begin = g.begin();
+
+    test_elem_throw::on_ctor_after(1);
+
+    try
+    {
+      g.emplace(g.begin() + 4, 404);
+      BOOST_TEST(false);
+    } catch (const test_exception&) {}
+
+    BOOST_TEST(begin == g.begin());
+  }
+}
+
+BOOST_AUTO_TEST_CASE_TEMPLATE(insert_copy, Deque, t_is_copy_constructible)
+{
+  typedef typename Deque::value_type T;
+
+  const T x(9);
+
+  // insert to empty begin
+  {
+    Deque a;
+    auto res = a.insert(a.begin(), x);
+    test_equal_range(a, {9});
+    BOOST_TEST(*res == x);
+  }
+
+  // to empty end
+  {
+    Deque b;
+    auto res = b.insert(b.end(), x);
+    test_equal_range(b, {9});
+    BOOST_TEST(*res == x);
+  }
+
+  // to front
+  {
+    Deque c = get_range<Deque>(8);
+    auto res = c.insert(c.begin(), x);
+    test_equal_range(c, {9,1,2,3,4,5,6,7,8});
+    BOOST_TEST(*res == x);
+  }
+
+  // to back
+  {
+    Deque d = get_range<Deque>(8);
+    auto res = d.insert(d.end(), x);
+    test_equal_range(d, {1,2,3,4,5,6,7,8,9});
+    BOOST_TEST(*res == x);
+  }
+
+  // to near front
+  {
+    Deque e = get_range<Deque>(8);
+    auto res = e.insert(e.begin() + 3, x);
+    test_equal_range(e, {1,2,3,9,4,5,6,7,8});
+    BOOST_TEST(*res == x);
+  }
+
+  // to near back
+  {
+    Deque f = get_range<Deque>(8);
+    auto res = f.insert(f.end() - 3, x);
+    test_equal_range(f, {1,2,3,4,5,9,6,7,8});
+    BOOST_TEST(*res == x);
+  }
+
+  // middle with copy ctor exception
+  if (! std::is_nothrow_copy_constructible<T>::value)
+  {
+    Deque g = get_range<Deque>(8);
+    auto begin = g.begin();
+
+    test_elem_throw::on_copy_after(1);
+
+    try
+    {
+      g.insert(g.begin() + 4, x);
+      BOOST_TEST(false);
+    } catch (const test_exception&) {}
+
+    BOOST_TEST(begin == g.begin());
+  }
+}
+
+BOOST_AUTO_TEST_CASE_TEMPLATE(insert_rvalue, Deque, all_deques)
+{
+  typedef typename Deque::value_type T;
+
+  // insert to empty begin
+  {
+    Deque a;
+    auto res = a.insert(a.begin(), T(1));
+    test_equal_range(a, {1});
+    BOOST_TEST(*res == T(1));
+  }
+
+  // to empty end
+  {
+    Deque b;
+    auto res = b.insert(b.end(), T(2));
+    test_equal_range(b, {2});
+    BOOST_TEST(*res == T(2));
+  }
+
+  // to front
+  {
+    Deque c = get_range<Deque>(8);
+    auto res = c.insert(c.begin(), T(9));
+    test_equal_range(c, {9,1,2,3,4,5,6,7,8});
+    BOOST_TEST(*res == T(9));
+  }
+
+  // to back
+  {
+    Deque d = get_range<Deque>(8);
+    auto res = d.insert(d.end(), T(9));
+    test_equal_range(d, {1,2,3,4,5,6,7,8,9});
+    BOOST_TEST(*res == T(9));
+  }
+
+  // to near front
+  {
+    Deque e = get_range<Deque>(8);
+    auto res = e.insert(e.begin() + 3, T(9));
+    test_equal_range(e, {1,2,3,9,4,5,6,7,8});
+    BOOST_TEST(*res == T(9));
+  }
+
+  // to near back
+  {
+    Deque f = get_range<Deque>(8);
+    auto res = f.insert(f.end() - 3, T(9));
+    test_equal_range(f, {1,2,3,4,5,9,6,7,8});
+    BOOST_TEST(*res == T(9));
+  }
+
+  // middle with ctor exception
+  if (! std::is_nothrow_constructible<T>::value)
+  {
+    Deque g = get_range<Deque>(8);
+    auto begin = g.begin();
+
+    test_elem_throw::on_ctor_after(1);
+
+    try
+    {
+      g.insert(g.begin() + 4, T(404));
+      BOOST_TEST(false);
+    } catch (const test_exception&) {}
+
+    BOOST_TEST(begin == g.begin());
+  }
+}
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(insert_n_copy, Deque, t_is_copy_constructible)
 {

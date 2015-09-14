@@ -798,7 +798,28 @@ public:
   }
 
   template <class... Args>
-  iterator emplace(const_iterator position, Args&&... args);
+  iterator emplace(const_iterator position, Args&&... args)
+  {
+    if (position == cend())
+    {
+      emplace_back(std::forward<Args>(args)...);
+      iterator result = end();
+      --result;
+      return result;
+    }
+    else if (position == cbegin())
+    {
+      emplace_front(std::forward<Args>(args)...);
+      return begin();
+    }
+    else
+    {
+      return emplace_slow_path(
+        unconst_iterator(position),
+        std::forward<Args>(args)...
+      );
+    }
+  }
 
   void push_front(const T& x)
   {
@@ -820,8 +841,15 @@ public:
     emplace_back(std::move(x));
   }
 
-  iterator insert(const_iterator position, const T& x);
-  iterator insert(const_iterator position, T&& x);
+  iterator insert(const_iterator position, const T& x)
+  {
+    return emplace(position, x);
+  }
+
+  iterator insert(const_iterator position, T&& x)
+  {
+    return emplace(position, std::move(x));
+  }
 
   iterator insert(const_iterator position, size_type n, const T& x)
   {
@@ -1029,6 +1057,28 @@ private:
     _end = {&_map.back(), 1};
 
     new_segment_guard.release();
+  }
+
+  template <class... Args>
+  iterator emplace_slow_path(iterator pos, Args&&... args)
+  {
+    const size_type pos_index = pos - begin();
+    const bool prefer_ins_back = (pos_index >= size() / 2);
+
+    if (prefer_ins_back)
+    {
+      emplace_back(std::forward<Args>(args)...);
+      iterator npos = begin() + pos_index;
+      std::rotate(npos, end() - 1, end());
+      return npos;
+    }
+    else
+    {
+      emplace_front(std::forward<Args>(args)...);
+      iterator npos = begin() + pos_index;
+      std::rotate(begin(), begin() + 1, npos + 1);
+      return npos;
+    }
   }
 
   void fix_iterators()
