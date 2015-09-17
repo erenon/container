@@ -1251,21 +1251,11 @@ private:
 
   template <typename InputIterator,
     typename std::enable_if<
-      container_detail::is_input_iterator<InputIterator>::value
+         container_detail::is_input_iterator<InputIterator>::value
+     ||  container_detail::is_forward_iterator<InputIterator>::value
     ,int>::type = 0
   >
   iterator insert_range(const_iterator pos, InputIterator first, InputIterator last)
-  {
-    devector<T, devector_small_buffer_policy<0>, devector_growth_policy, Allocator> buffer(first, last);
-    return insert_range(pos, buffer.begin(), buffer.end());
-  }
-
-  template <typename ForwardIterator,
-    typename std::enable_if<
-       container_detail::is_forward_iterator<ForwardIterator>::value
-    ,int>::type = 0
-  >
-  iterator insert_range(const_iterator pos, ForwardIterator first, ForwardIterator last)
   {
     const size_type pos_index = pos - cbegin();
     const size_type old_end_index = size();
