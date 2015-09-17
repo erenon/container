@@ -870,7 +870,27 @@ public:
   }
 
   template <class InputIterator>
-  iterator stable_insert(const_iterator position_hint, InputIterator first, InputIterator last);
+  iterator stable_insert(const_iterator position_hint, InputIterator first, InputIterator last)
+  {
+    if (position_hint == _end || position_hint == _begin)
+    {
+      return insert(position_hint, first, last);
+    }
+    else
+    {
+      stable_deque tmp(first, last);
+      tmp.resize(tmp.size() + tmp.back_free_capacity());
+
+      const const_map_iterator hint_segment = unconst_iterator(position_hint)._p_segment;
+      map_iterator result_segment = _map.insert(hint_segment, tmp._map.begin(), tmp._map.end());
+      fix_iterators();
+
+      tmp._map.clear();
+      tmp._end = tmp._begin = {tmp._map.begin(), 0};
+
+      return iterator{result_segment, 0};
+    }
+  }
 
   void pop_front()
   {

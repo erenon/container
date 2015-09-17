@@ -2038,7 +2038,136 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(insert_il, Deque, t_is_copy_constructible)
 
   BOOST_TEST(test_elem_base::no_living_elem());
 }
-// TODO stable_insert
+
+BOOST_AUTO_TEST_CASE_TEMPLATE(stable_insert, Deque, t_is_default_constructible)
+{
+  typedef typename Deque::value_type T;
+  typedef typename Deque::iterator iterator;
+
+  devector<const T*> valid_pointers;
+
+  auto save_pointers = [&](const Deque& d)
+  {
+    valid_pointers.clear();
+    valid_pointers.reserve(d.size());
+    for (auto&& e : d) { valid_pointers.unsafe_push_back(&e); }
+  };
+
+  auto check_pointers = [&]()
+  {
+    unsigned i = 0;
+    for (const T* p : valid_pointers) { BOOST_TEST(*p == T(++i)); }
+  };
+
+  auto check_inserted = [](iterator f, iterator l)
+  {
+    unsigned i = 0;
+    while (f != l) { BOOST_TEST(*f++ == T(++i)); }
+  };
+
+  // empty to empty
+  {
+    devector<T> x;
+    auto xb = std::make_move_iterator(x.begin());
+    auto xe = std::make_move_iterator(x.end());
+
+    Deque a;
+    auto res = a.stable_insert(a.begin(), xb, xb);
+    BOOST_TEST(a.empty());
+    BOOST_TEST(res == a.begin());
+
+    res = a.stable_insert(a.end(), xe, xe);
+    BOOST_TEST(a.empty());
+    BOOST_TEST(res == a.end());
+  }
+
+  // range to empty
+  {
+    devector<T> x = get_range<devector<T>>(12);
+    auto xb = std::make_move_iterator(x.begin());
+    auto xe = std::make_move_iterator(x.end());
+
+    Deque b;
+    auto res = b.stable_insert(b.end(), xb, xe);
+    test_equal_range(b, {1,2,3,4,5,6,7,8,9,10,11,12});
+    BOOST_TEST(res == b.begin());
+  }
+
+  // range to begin
+  {
+    devector<T> x = get_range<devector<T>>(12);
+    auto xb = std::make_move_iterator(x.begin());
+    auto xe = std::make_move_iterator(x.end());
+
+    Deque c = get_range<Deque>(4);
+    save_pointers(c);
+
+    auto res = c.stable_insert(c.begin(), xb, xe);
+
+    check_pointers();
+    check_inserted(res, res + x.size());
+  }
+
+  // range to end
+  {
+    devector<T> x = get_range<devector<T>>(12);
+    auto xb = std::make_move_iterator(x.begin());
+    auto xe = std::make_move_iterator(x.end());
+
+    Deque d = get_range<Deque>(4);
+    save_pointers(d);
+
+    auto res = d.stable_insert(d.end(), xb, xe);
+
+    check_pointers();
+    check_inserted(res, res + x.size());
+  }
+
+  // range to mid mid-segment
+  {
+    devector<T> x = get_range<devector<T>>(4);
+    auto xb = std::make_move_iterator(x.begin());
+    auto xe = std::make_move_iterator(x.end());
+
+    Deque e = get_range<Deque>(14);
+    save_pointers(e);
+
+    auto res = e.stable_insert(e.begin() + 6, xb, xe);
+
+    check_pointers();
+    check_inserted(res, res + x.size());
+  }
+
+  // range to mid segment boundary
+  {
+    devector<T> x = get_range<devector<T>>(6);
+    auto xb = std::make_move_iterator(x.begin());
+    auto xe = std::make_move_iterator(x.end());
+
+    Deque f = get_range<Deque>(11);
+    save_pointers(f);
+
+    auto res = f.stable_insert(f.begin() + 8, xb, xe);
+
+    check_pointers();
+    check_inserted(res, res + x.size());
+  }
+
+  // range to mid segment, no default ctr
+  {
+    devector<T> x = get_range<devector<T>>(8);
+    auto xb = std::make_move_iterator(x.begin());
+    auto xe = std::make_move_iterator(x.end());
+
+    Deque g = get_range<Deque>(14);
+    save_pointers(g);
+
+    auto res = g.stable_insert(g.begin() + 6, xb, xe);
+
+    check_pointers();
+    check_inserted(res, res + x.size());
+  }
+}
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(pop_front, Deque, all_deques)
 {
