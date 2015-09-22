@@ -34,16 +34,35 @@ struct batch_deque_policy
  * A standard conforming deque, providing more control over implementation details
  * (segment size), enabling better performance in certain use-cases (see Examples).
  *
+ * In contrast with a standard vector, batch_deque stores the elements in multiple
+ * chunks, called segments, thus avoiding moving or copying each element upon reallocation.
+ *
  * Models the [SequenceContainer], [ReversibleContainer], and [AllocatorAwareContainer] concepts.
  *
  * **Requires**:
  *  - `T` shall be [MoveInsertable] into the batch_deque.
  *  - `T` shall be [Erasable] from any `batch_deque<T, P, Allocator>`.
- *  - `SmallBufferPolicy`, `GrowthPolicy`, and `Allocator` must model the concepts with the same names.
+ *  - `BatchDequePolicy` must model the concept with the same name.
+ *
+ * **Definition**: `T` is `NothrowConstructible` if it's either nothrow move constructible or
+ * nothrow copy constructible.
+ *
+ * **Exceptions**: The exception specifications assume `T` is nothrow [Destructible].
+ *
+ * **Policies**:
+ *
+ * Models of the `BatchDequePolicy` concept must have the following static values:
+ *
+ * Type | Name | Description
+ * -----|------|------------
+ * `size_type` | `segment_size` | The number of elements a segment can hold
+ *
+ * @ref devector_small_buffer_policy models the `SmallBufferPolicy` concept.
  *
  * [SequenceContainer]: http://en.cppreference.com/w/cpp/concept/SequenceContainer
  * [ReversibleContainer]: http://en.cppreference.com/w/cpp/concept/ReversibleContainer
  * [AllocatorAwareContainer]: http://en.cppreference.com/w/cpp/concept/AllocatorAwareContainer
+ * [Destructible]: http://en.cppreference.com/w/cpp/concept/Destructible
  */
 template <
   typename T,
@@ -63,6 +82,10 @@ class batch_deque : Allocator
     // poor emulation of a C++17 feature
     static constexpr bool is_always_equal = std::is_same<Allocator, std::allocator<T>>::value;
   };
+
+  static constexpr bool t_is_nothrow_constructible =
+       std::is_nothrow_copy_constructible<T>::value
+    || std::is_nothrow_move_constructible<T>::value;
 
   // TODO use is_trivially_copyable instead of is_pod when available
   static constexpr bool t_is_trivially_copyable = std::is_pod<T>::type::value;
@@ -319,14 +342,42 @@ public:
   typedef deque_segment_iterator<true> const_segment_iterator;
 
   // construct/copy/destroy:
+
+  /**
+   * **Effects**: Constructs an empty deque.
+   *
+   * **Postcondition**: `empty()
+   *
+   * **Complexity**: Constant.
+   */
   batch_deque() noexcept : batch_deque(Allocator()) {}
 
+  /**
+   * **Effects**: Constructs an empty deque, using the specified allocator.
+   *
+   * **Postcondition**: `empty()
+   *
+   * **Complexity**: Constant.
+   */
   explicit batch_deque(const Allocator& allocator) noexcept
     :Allocator(allocator),
      _begin(_map.begin(), 0u),
      _end(_map.begin(), 0u)
   {}
 
+  /**
+   * [DefaultInsertable]: http://en.cppreference.com/w/cpp/concept/DefaultInsertable
+   *
+   * **Effects**: Constructs a deque with `n` default-inserted elements using the specified allocator.
+   *
+   * **Requires**: `T` shall be [DefaultInsertable] into `*this`.
+   *
+   * **Postcondition**: `size() == n.
+   *
+   * **Exceptions**: Strong exception guarantee.
+   *
+   * **Complexity**: Linear in `n`.
+   */
   explicit batch_deque(size_type n, const Allocator& allocator = Allocator())
     :Allocator(allocator),
      _map((n + segment_size - 1) / segment_size, reserve_only_tag{}),
@@ -362,10 +413,43 @@ public:
     BOOST_ASSERT(invariants_ok());
   }
 
+  /**
+   * [CopyInsertable]: http://en.cppreference.com/w/cpp/concept/CopyInsertable
+   *
+   * **Effects**: Constructs a deque with `n` copies of `value`, using the specified allocator.
+   *
+   * **Requires**: `T` shall be [CopyInsertable] into `*this`.
+   *
+   * **Postcondition**: `size() == n.
+   *
+   * **Exceptions**: Strong exception guarantee.
+   *
+   * **Complexity**: Linear in `n`.
+   */
   batch_deque(size_type n, const T& value, const Allocator& allocator = Allocator())
     :batch_deque(cvalue_iterator(value, n), cvalue_iterator(), allocator)
   {}
 
+  /**
+   * **Effects**: Constructs a deque equal to the range `[first,last)`, using the specified allocator.
+   *
+   * **Requires**: `T` shall be [EmplaceConstructible] into `*this` from `*first`. If the specified
+   * iterator does not meet the forward iterator requirements, `T` shall also be [MoveInsertable]
+   * into `*this`.
+   *
+   * **Postcondition**: `size() == std::distance(first, last)
+   *
+   * **Exceptions**: Strong exception guarantee.
+   *
+   * **Complexity**: Linear in the distance between `first` and `last`.
+   *
+   * **Remarks**: Each iterator in the range `[first,last)` shall be dereferenced exactly once,
+   * unless an exception is thrown.
+   * Although only `InputIterator` is required, different optimizations are provided if `first` and `last` meet the requirement of `ForwardIterator` or are pointers.
+   *
+   * [EmplaceConstructible]: http://en.cppreference.com/w/cpp/concept/EmplaceConstructible
+   * [MoveInsertable]: http://en.cppreference.com/w/cpp/concept/MoveInsertable
+   */
   template <class InputIterator,
 
 #ifndef BOOST_CONTAINER_DOXYGEN_INVOKED
@@ -432,11 +516,37 @@ public:
 
 #endif // ifndef BOOST_CONTAINER_DOXYGEN_INVOKED
 
+  /**
+   * [CopyInsertable]: http://en.cppreference.com/w/cpp/concept/CopyInsertable
+   *
+   * **Effects**: Copy constructs a devector.
+   *
+   * **Requires**: `T` shall be [CopyInsertable] into `*this`.
+   *
+   * **Postcondition**: `this->size() == x.size()`
+   *
+   * **Exceptions**: Strong exception guarantee.
+   *
+   * **Complexity**: Linear in the size of `x`.
+   */
   batch_deque(const batch_deque& x)
     :batch_deque(x,
         allocator_traits::select_on_container_copy_construction(x.get_allocator_ref()))
   {}
 
+  /**
+   * [CopyInsertable]: http://en.cppreference.com/w/cpp/concept/CopyInsertable
+   *
+   * **Effects**: Copy constructs a devector, using the specified allocator.
+   *
+   * **Requires**: `T` shall be [CopyInsertable] into `*this`.
+   *
+   * **Postcondition**: `this->size() == x.size()
+   *
+   * **Exceptions**: Strong exception guarantee.
+   *
+   * **Complexity**: Linear in the size of `x`.
+   */
   batch_deque(const batch_deque& rhs, const Allocator& allocator)
     :Allocator(allocator),
      _map(rhs._map.size(), reserve_only_tag{}),
@@ -476,12 +586,15 @@ public:
     BOOST_ASSERT(invariants_ok());
   }
 
-  batch_deque(batch_deque&& x)
-    :batch_deque(std::move(x), Allocator())
-  {}
-
-  batch_deque(batch_deque&& x, const Allocator& allocator)
-    :Allocator(allocator),
+  /**
+   * **Effects**: Moves `rhs`'s resources to `*this`.
+   *
+   * **Postcondition**: `rhs` is left in an unspecified but valid state.
+   *
+   * **Complexity**: Constant.
+   */
+  batch_deque(batch_deque&& x) noexcept
+    :Allocator(std::move(x.get_allocator_ref())),
      _map(std::move(x._map)),
      _begin(x._begin),
      _end(x._end)
@@ -490,15 +603,77 @@ public:
     x._end = {x._map.begin(), 0};
   }
 
+  /**
+   * **Effects**: Moves `rhs`'s resources to `*this`,
+   *
+   * **Postcondition**: `rhs` is left in an unspecified but valid state.
+   *
+   * **Complexity**: Constant.
+   */
+  batch_deque(batch_deque&& x, const Allocator& allocator) noexcept
+    :Allocator(allocator),
+     _map(std::move(x._map)),
+     _begin(x._begin),
+     _end(x._end)
+  {
+    if (allocator == x.get_allocator_ref())
+    {
+      x._begin = {x._map.begin(), 0};
+      x._end = {x._map.begin(), 0};
+    }
+    else
+    {
+      x._map = std::move(_map);
+      _map.clear();
+      _begin = {_map.begin(), 0};
+      _end = {_map.begin(), 0};
+
+      auto first = std::make_move_iterator(x.begin());
+      auto last = std::make_move_iterator(x.end());
+      assign(first, last);
+    }
+  }
+
+  /**
+   * **Equivalent to**: `batch_deque(il.begin(), il.end())` or `batch_deque(il.begin(), il.end(), allocator)`.
+   */
   batch_deque(std::initializer_list<T> il, const Allocator& allocator = Allocator())
     :batch_deque(il.begin(), il.end(), allocator)
   {}
 
-  ~batch_deque()
+  /**
+   * **Effects**: Destroys the batch_deque. All stored values are destroyed and
+   * used memory, if any, deallocated.
+   *
+   * **Complexity**: Linear in the size of `*this`.
+   */
+  ~batch_deque() noexcept
   {
     destructor_impl();
   }
 
+  /**
+   * **Effects**: Copies elements of `x` to `*this`. Previously
+   * held elements get copy assigned to or destroyed.
+   *
+   * **Requires**: `T` shall be [CopyInsertable] into `*this`.
+   *
+   * **Postcondition**: `this->size() == x.size()`, the elements of
+   * `*this` are copies of elements in `x` in the same order.
+   *
+   * **Returns**: `*this`.
+   *
+   * **Exceptions**: Strong exception guarantee if `T` has noexcept copy constructor and
+   * either has noexcept copy assignment operator.
+   * or the allocator is not allowed to be propagated
+   * ([propagate_on_container_copy_assignment] is false),
+   * Basic exception guarantee otherwise.
+   *
+   * **Complexity**: Linear in the size of `x` and `*this`.
+   *
+   * [CopyInsertable]: http://en.cppreference.com/w/cpp/concept/CopyInsertable
+   * [propagate_on_container_copy_assignment]: http://en.cppreference.com/w/cpp/memory/allocator_traits
+   */
   batch_deque& operator=(const batch_deque& x)
   {
     if (this == &x) { return *this; } // skip self
@@ -518,7 +693,31 @@ public:
     return *this;
   }
 
-  batch_deque& operator=(batch_deque&& x) noexcept(allocator_traits::is_always_equal)
+  /**
+   * [MoveInsertable]: http://en.cppreference.com/w/cpp/concept/MoveInsertable
+   *
+   * **Effects**: `*this` takes ownership of the resources of `x`.
+   * The fate of the previously held elements are unspecified.
+   *
+   * **Requires**: `T` shall be [MoveInsertable] into `*this`.
+   *
+   * **Postcondition**: `x` is left in an unspecified but valid state.
+   *
+   * **Returns**: `*this`.
+   *
+   * **Exceptions**: Basic exception guarantee if not `noexcept`.
+   *
+   * Remark: If the allocator forbids propagation,
+   * the contents of `x` is moved one-by-one instead of stealing the buffer.
+   *
+   * **Complexity**: Constant, if allocator can be propagated or the two
+   * allocators compare equal, linear in the size of `x` and `*this` otherwise.
+   */
+  batch_deque& operator=(batch_deque&& x) noexcept(
+      t_is_nothrow_constructible
+   || allocator_traits::is_always_equal
+   || allocator_traits::propagate_on_move_assignment
+  )
   {
     constexpr bool copy_alloc = allocator_traits::propagate_on_move_assignment;
     const bool equal_alloc = (get_allocator_ref() == x.get_allocator_ref());
@@ -561,12 +760,52 @@ public:
     return *this;
   }
 
+  /**
+   * **Effects**: Copies elements of `il` to `*this`. Previously
+   * held elements get copy assigned to or destroyed.
+   *
+   * **Requires**: `T` shall be [CopyInsertable] into `*this` and [CopyAssignable].
+   *
+   * **Postcondition**: `this->size() == il.size()`, the elements of
+   * `*this` are copies of elements in `il` in the same order.
+   *
+   * **Exceptions**: Strong exception guarantee if `T` is nothrow copy assignable
+   * from `T` and `NothrowConstructible`, Basic exception guarantee otherwise.
+   *
+   * **Returns**: `*this`.
+   *
+   * **Complexity**: Linear in the size of `il` and `*this`.
+   *
+   * [CopyInsertable]: http://en.cppreference.com/w/cpp/concept/CopyInsertable
+   * [CopyAssignable]: http://en.cppreference.com/w/cpp/concept/CopyAssignable
+   */
   batch_deque& operator=(std::initializer_list<T> il)
   {
     assign(il.begin(), il.end());
     return *this;
   }
 
+  /**
+   * **Effects**: Replaces elements of `*this` with a copy of `[first,last)`.
+   * Previously held elements get copy assigned to or destroyed.
+   *
+   * **Requires**: `T` shall be [EmplaceConstructible] from `*first`.
+   *
+   * **Precondition**: `first` and `last` are not iterators into `*this`.
+   *
+   * **Postcondition**: `size() == N`, where `N` is the distance between `first` and `last`.
+   *
+   * **Exceptions**: Strong exception guarantee if `T` is nothrow copy assignable
+   * from `*first` and `NothrowConstructible`, Basic exception guarantee otherwise.
+   *
+   * **Complexity**: Linear in the distance between `first` and `last`.
+   *
+   * **Remarks**: Each iterator in the range `[first,last)` shall be dereferenced exactly once,
+   * unless an exception is thrown.
+   *
+   * [EmplaceConstructible]: http://en.cppreference.com/w/cpp/concept/EmplaceConstructible
+   * [MoveInsertable]: http://en.cppreference.com/w/cpp/concept/MoveInsertable
+   */
   template <typename Iterator>
   void assign(Iterator first, Iterator last)
   {
@@ -579,77 +818,175 @@ public:
     BOOST_ASSERT(invariants_ok());
   }
 
+  /**
+   * **Effects**: Replaces elements of `*this` with `n` copies of `t`.
+   * Previously held elements get copy assigned to or destroyed.
+   *
+   * **Requires**: `T` shall be [CopyInsertable] into `*this` and
+   * [CopyAssignable].
+   *
+   * **Precondition**: `u` is not a reference into `*this`.
+   *
+   * **Postcondition**: `size() == n` and the elements of
+   * `*this` are copies of `u`.
+   *
+   * **Exceptions**: Strong exception guarantee if `T` is nothrow copy assignable
+   * from `u` and `NothrowConstructible`, Basic exception guarantee otherwise.
+   *
+   * **Complexity**: Linear in `n` and the size of `*this`.
+   *
+   * [CopyInsertable]: http://en.cppreference.com/w/cpp/concept/CopyInsertable
+   * [CopyAssignable]: http://en.cppreference.com/w/cpp/concept/CopyAssignable
+   */
   void assign(size_type n, const T& t)
   {
     assign(cvalue_iterator(t, n), cvalue_iterator());
   }
 
+  /** **Equivalent to**: `assign(il.begin(), il.end())`. */
   void assign(std::initializer_list<T> il)
   {
     assign(il.begin(), il.end());
   }
 
+  /**
+   * **Returns**: A copy of the allocator associated with the container.
+   *
+   * **Complexity**: Constant.
+   */
   allocator_type get_allocator() const noexcept
   {
     return static_cast<const Allocator&>(*this);
   }
 
   // iterators:
+
+  /**
+   * **Returns**: A iterator pointing to the first element in the devector,
+   * or the past the end iterator if the devector is empty.
+   *
+   * **Complexity**: Constant.
+   */
   iterator begin() noexcept
   {
     return _begin;
   }
 
+  /**
+   * **Returns**: A constant iterator pointing to the first element in the devector,
+   * or the past the end iterator if the devector is empty.
+   *
+   * **Complexity**: Constant.
+   */
   const_iterator begin() const noexcept
   {
     return _begin;
   }
 
+  /**
+   * **Returns**: An iterator pointing past the last element of the container.
+   *
+   * **Complexity**: Constant.
+   */
   iterator end() noexcept
   {
     return _end;
   }
 
+  /**
+   * **Returns**: A constant iterator pointing past the last element of the container.
+   *
+   * **Complexity**: Constant.
+   */
   const_iterator end() const noexcept
   {
     return _end;
   }
 
+  /**
+   * **Returns**: A reverse iterator pointing to the first element in the reversed devector,
+   * or the reverse past the end iterator if the devector is empty.
+   *
+   * **Complexity**: Constant.
+   */
   reverse_iterator rbegin() noexcept
   {
     return reverse_iterator(end());
   }
 
+  /**
+   * **Returns**: A constant reverse iterator
+   * pointing to the first element in the reversed devector,
+   * or the reverse past the end iterator if the devector is empty.
+   *
+   * **Complexity**: Constant.
+   */
   const_reverse_iterator rbegin() const noexcept
   {
     return const_reverse_iterator(end());
   }
 
+  /**
+   * **Returns**: A reverse iterator pointing past the last element in the
+   * reversed container, or to the beginning of the reversed container if it's empty.
+   *
+   * **Complexity**: Constant.
+   */
   reverse_iterator rend() noexcept
   {
     return reverse_iterator(begin());
   }
 
+  /**
+   * **Returns**: A constant reverse iterator pointing past the last element in the
+   * reversed container, or to the beginning of the reversed container if it's empty.
+   *
+   * **Complexity**: Constant.
+   */
   const_reverse_iterator rend() const noexcept
   {
     return const_reverse_iterator(begin());
   }
 
+  /**
+   * **Returns**: A constant iterator pointing to the first element in the devector,
+   * or the past the end iterator if the devector is empty.
+   *
+   * **Complexity**: Constant.
+   */
   const_iterator cbegin() const noexcept
   {
     return begin();
   }
 
+  /**
+   * **Returns**: A constant iterator pointing past the last element of the container.
+   *
+   * **Complexity**: Constant.
+   */
   const_iterator cend() const noexcept
   {
     return end();
   }
 
+  /**
+   * **Returns**: A constant reverse iterator
+   * pointing to the first element in the reversed devector,
+   * or the reverse past the end iterator if the devector is empty.
+   *
+   * **Complexity**: Constant.
+   */
   const_reverse_iterator crbegin() const noexcept
   {
     return const_reverse_iterator(end());
   }
 
+  /**
+   * **Returns**: A constant reverse iterator pointing past the last element in the
+   * reversed container, or to the beginning of the reversed container if it's empty.
+   *
+   * **Complexity**: Constant.
+   */
   const_reverse_iterator crend() const noexcept
   {
     return const_reverse_iterator(begin());
@@ -677,21 +1014,54 @@ public:
   }
 
   // capacity:
+
+  /**
+   * **Returns**: True, if `size() == 0`, false otherwise.
+   *
+   * **Complexity**: Constant.
+   */
   bool empty() const noexcept
   {
     return _begin == _end;
   }
 
+  /**
+   * **Returns**: The number of elements the container contains.
+   *
+   * **Complexity**: Constant.
+   */
   size_type size() const noexcept
   {
     return _end - _begin;
   }
 
+  /**
+   * **Returns**: The maximum number of elements the container could possibly hold.
+   *
+   * **Complexity**: Constant.
+   */
   size_type max_size() const noexcept
   {
     return allocator_traits::max_size(get_allocator_ref());
   }
 
+  /**
+   * [DefaultConstructible]: http://en.cppreference.com/w/cpp/concept/DefaultConstructible
+   *
+   * **Effects**: If `sz` is greater than the size of `*this`,
+   * additional value-initialized elements are inserted
+   * to the back. Invalidates iterators if segment allocation is needed.
+   * If `sz` is smaller than than the size of `*this`,
+   * elements are popped from the back.
+   *
+   * **Requires**: T shall be [DefaultConstructible].
+   *
+   * **Postcondition**: `sz == size()`.
+   *
+   * **Exceptions**: Strong exception guarantee.
+   *
+   * **Complexity**: Linear in the size of `*this` and `sz`.
+   */
   void resize(size_type sz)
   {
     if (sz >= size())
@@ -708,6 +1078,23 @@ public:
     }
   }
 
+  /**
+   * [CopyInsertable]: http://en.cppreference.com/w/cpp/concept/CopyInsertable
+   *
+   * **Effects**: If `sz` is greater than the size of `*this`,
+   * copies of `c` are inserted to the back. Invalidates iterators if
+   * segment allocation is needed.
+   * If `sz` is smaller than than the size of `*this`,
+   * elements are popped from the back.
+   *
+   * **Postcondition**: `sz == size()`.
+   *
+   * **Requires**: `T` shall be [CopyInsertable] into `*this`.
+   *
+   * **Exceptions**: Strong exception guarantee.
+   *
+   * **Complexity**: Linear in the size of `*this` and `sz`.
+   */
   void resize(size_type sz, const T& c)
   {
     if (sz >= size())
@@ -724,7 +1111,16 @@ public:
     }
   }
 
-  void shrink_to_fit()
+  /**
+   * **Effects**: Deallocates empty segments.
+   *
+   * **Complexity**: Constant.
+   *
+   * **Remarks**: Any empty segment is retained only if it's
+   * the last segment of the container. Therefore, this method has
+   * no effects if the container is not empty.
+   */
+  void shrink_to_fit() noexcept
   {
     if (empty() && ! _map.empty())
     {
@@ -737,46 +1133,119 @@ public:
   }
 
   // element access:
+
+  /**
+   * **Returns**: A reference to the `n`th element in the container.
+   *
+   * **Precondition**: `n < size()`.
+   *
+   * **Complexity**: Constant.
+   */
   reference operator[](size_type n)
   {
+    BOOST_ASSERT(n < size());
+
     return *(_begin + n);
   }
 
+  /**
+   * **Returns**: A constant reference to the `n`th element in the container.
+   *
+   * **Precondition**: `n < size()`.
+   *
+   * **Complexity**: Constant.
+   */
   const_reference operator[](size_type n) const
   {
+    BOOST_ASSERT(n < size());
+
     return *(_begin + n);
   }
 
+  /**
+   * **Returns**: A reference to the `n`th element in the container.
+   *
+   * **Throws**: `std::out_of_range`, if `n >= size()`.
+   *
+   * **Exceptions**: Strong exception guarantee.
+   *
+   * **Complexity**: Constant.
+   */
   reference at(size_type n)
   {
     if (n >= size()) { throw_out_of_range("devector::at out of range"); }
     return (*this)[n];
   }
 
+  /**
+   * **Returns**: A constant reference to the `n`th element in the devector.
+   *
+   * **Throws**: `std::out_of_range`, if `n >= size()`.
+   *
+   * **Exceptions**: Strong exception guarantee.
+   *
+   * **Complexity**: Constant.
+   */
   const_reference at(size_type n) const
   {
     if (n >= size()) { throw_out_of_range("devector::at out of range"); }
     return (*this)[n];
   }
 
+  /**
+   * **Returns**: A reference to the first element in the devector.
+   *
+   * **Precondition**: `!empty()`.
+   *
+   * **Complexity**: Constant.
+   */
   reference front() noexcept
   {
+    BOOST_ASSERT(!empty());
+
     return *_begin;
   }
 
+  /**
+   * **Returns**: A constant reference to the first element in the devector.
+   *
+   * **Precondition**: `!empty()`.
+   *
+   * **Complexity**: Constant.
+   */
   const_reference front() const noexcept
   {
+    BOOST_ASSERT(!empty());
+
     return *_begin;
   }
 
+  /**
+   * **Returns**: A reference to the last element in the devector.
+   *
+   * **Precondition**: `!empty()`.
+   *
+   * **Complexity**: Constant.
+   */
   reference back() noexcept
   {
+    BOOST_ASSERT(!empty());
+
     iterator back_it = _end - 1;
     return *back_it;
   }
 
+  /**
+   * **Returns**: A constant reference to the last element in the devector.
+   *
+   * **Precondition**: `!empty()`.
+   *
+   * **Complexity**: Constant.
+   */
   const_reference back() const noexcept
   {
+    BOOST_ASSERT(!empty());
+
     iterator back_it = _end - 1;
     return *back_it;
   }
