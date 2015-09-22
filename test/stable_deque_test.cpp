@@ -49,37 +49,20 @@ typedef boost::mpl::list<
 > all_deques;
 #endif
 
-// TODO mpl::filter_view does not compile if predicate has template template argument. why?
-//template <template<typename> class Predicate, typename Container>
-//struct if_value_type
-//  : public Predicate<typename Container::value_type>
-//{};
-//
-//typedef boost::mpl::filter_view<all_deques, if_value_type<std::is_default_constructible, boost::mpl::_1>>::type
-//  t_is_default_constructible;
+template <template<typename> class Predicate>
+struct if_value_type
+{
+  template <typename Container>
+  struct apply : Predicate<typename Container::value_type> {};
+};
 
-template <typename Container>
-struct is_value_type_default_constructible
-  : public std::is_default_constructible<typename Container::value_type>
-{};
-
-typedef boost::mpl::filter_view<all_deques, is_value_type_default_constructible<boost::mpl::_1>>::type
+typedef boost::mpl::filter_view<all_deques, if_value_type<std::is_default_constructible>>::type
   t_is_default_constructible;
 
-template <typename Container>
-struct is_value_type_copy_constructible
-  : public std::is_copy_constructible<typename Container::value_type>
-{};
-
-typedef boost::mpl::filter_view<all_deques, is_value_type_copy_constructible<boost::mpl::_1>>::type
+typedef boost::mpl::filter_view<all_deques, if_value_type<std::is_copy_constructible>>::type
   t_is_copy_constructible;
 
-template <typename Container>
-struct is_value_type_trivial
-  : public std::is_trivial<typename Container::value_type>
-{};
-
-typedef boost::mpl::filter_view<all_deques, is_value_type_trivial<boost::mpl::_1>>::type
+typedef boost::mpl::filter_view<all_deques, if_value_type<std::is_trivial>>::type
   t_is_trivial;
 
 template <typename Container>
