@@ -12,12 +12,12 @@
 #include <forward_list>
 
 #define BOOST_CONTAINER_TEST
-#include <boost/container/stable_deque.hpp>
+#include <boost/container/batch_deque.hpp>
 #undef BOOST_CONTAINER_TEST
 
 using namespace boost::container;
 
-#define BOOST_TEST_MODULE stable_deque
+#define BOOST_TEST_MODULE batch_deque
 #include <boost/test/included/unit_test.hpp>
 
 #include <boost/mpl/list.hpp>
@@ -31,21 +31,21 @@ using namespace boost::container;
 #include "input_iterator.hpp"
 
 template <typename T>
-using make_stable_deque = stable_deque<T, std::allocator<T>, stable_deque_policy<8>>;
+using make_batch_deque = batch_deque<T, std::allocator<T>, batch_deque_policy<8>>;
 
 #if 1
 typedef boost::mpl::list<
-  make_stable_deque<unsigned>,
-  make_stable_deque<regular_elem>,
-  make_stable_deque<noex_move>,
-  make_stable_deque<noex_copy>,
-  make_stable_deque<only_movable>,
-  make_stable_deque<no_default_ctor>
+  make_batch_deque<unsigned>,
+  make_batch_deque<regular_elem>,
+  make_batch_deque<noex_move>,
+  make_batch_deque<noex_copy>,
+  make_batch_deque<only_movable>,
+  make_batch_deque<no_default_ctor>
 > all_deques;
 #else
 typedef boost::mpl::list<
-  //make_stable_deque<unsigned>
-  make_stable_deque<regular_elem>
+  //make_batch_deque<unsigned>
+  make_batch_deque<regular_elem>
 > all_deques;
 #endif
 
@@ -103,7 +103,7 @@ Container get_range()
 }
 
 template <typename T, typename A, typename P, typename C2>
-bool operator==(const stable_deque<T, A, P>& a, const C2& b)
+bool operator==(const batch_deque<T, A, P>& a, const C2& b)
 {
   return std::lexicographical_compare(
     a.begin(), a.end(),
@@ -127,7 +127,7 @@ void print_range(std::ostream& out, const Range& range)
 }
 
 template <typename T, typename A, typename P>
-std::ostream& operator<<(std::ostream& out, const stable_deque<T, A, P>& deque)
+std::ostream& operator<<(std::ostream& out, const batch_deque<T, A, P>& deque)
 {
   print_range(out, deque);
   return out;

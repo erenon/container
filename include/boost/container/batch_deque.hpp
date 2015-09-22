@@ -22,18 +22,35 @@
 namespace boost {
 namespace container {
 
+/** * Controls the deques implementation defined behavior */
 template <std::size_t SegmentSize>
-struct stable_deque_policy
+struct batch_deque_policy
 {
+  /** The size of the allocated chunks in elements */
   static const std::size_t segment_size = SegmentSize;
 };
 
+/**
+ * A standard conforming deque, providing more control over implementation details
+ * (segment size), enabling better performance in certain use-cases (see Examples).
+ *
+ * Models the [SequenceContainer], [ReversibleContainer], and [AllocatorAwareContainer] concepts.
+ *
+ * **Requires**:
+ *  - `T` shall be [MoveInsertable] into the batch_deque.
+ *  - `T` shall be [Erasable] from any `batch_deque<T, P, Allocator>`.
+ *  - `SmallBufferPolicy`, `GrowthPolicy`, and `Allocator` must model the concepts with the same names.
+ *
+ * [SequenceContainer]: http://en.cppreference.com/w/cpp/concept/SequenceContainer
+ * [ReversibleContainer]: http://en.cppreference.com/w/cpp/concept/ReversibleContainer
+ * [AllocatorAwareContainer]: http://en.cppreference.com/w/cpp/concept/AllocatorAwareContainer
+ */
 template <
   typename T,
   typename Allocator = std::allocator<T>,
-  typename StableDequePolicy = stable_deque_policy<512>
+  typename BatchDequePolicy = batch_deque_policy<512>
 >
-class stable_deque : Allocator
+class batch_deque : Allocator
 {
   struct allocator_traits : public std::allocator_traits<Allocator>
   {
@@ -80,7 +97,7 @@ private:
 
   typedef constant_iterator<value_type, difference_type> cvalue_iterator;
 
-  static constexpr size_type segment_size = StableDequePolicy::segment_size;
+  static constexpr size_type segment_size = BatchDequePolicy::segment_size;
   static_assert(segment_size > 1, "Segment size must be greater than 1");
 
   template <bool IsConst>
@@ -126,7 +143,7 @@ private:
     #endif
 
   private:
-    friend class stable_deque;
+    friend class batch_deque;
     friend class boost::iterator_core_access;
 
     ireference dereference()
@@ -206,7 +223,7 @@ private:
       random_access_traversal_tag
     >
   {
-    typedef typename std::conditional<IsConst, const stable_deque*, stable_deque*>::type container_pointer;
+    typedef typename std::conditional<IsConst, const batch_deque*, batch_deque*>::type container_pointer;
 
     typedef typename std::conditional<IsConst, const value_type, value_type>::type ivalue_type;
     typedef typename std::add_lvalue_reference<ivalue_type>::type ireference;
@@ -302,15 +319,15 @@ public:
   typedef deque_segment_iterator<true> const_segment_iterator;
 
   // construct/copy/destroy:
-  stable_deque() noexcept : stable_deque(Allocator()) {}
+  batch_deque() noexcept : batch_deque(Allocator()) {}
 
-  explicit stable_deque(const Allocator& allocator) noexcept
+  explicit batch_deque(const Allocator& allocator) noexcept
     :Allocator(allocator),
      _begin(_map.begin(), 0u),
      _end(_map.begin(), 0u)
   {}
 
-  explicit stable_deque(size_type n, const Allocator& allocator = Allocator())
+  explicit batch_deque(size_type n, const Allocator& allocator = Allocator())
     :Allocator(allocator),
      _map((n + segment_size - 1) / segment_size, reserve_only_tag{}),
      _begin(_map.begin(), 0u),
@@ -345,8 +362,8 @@ public:
     BOOST_ASSERT(invariants_ok());
   }
 
-  stable_deque(size_type n, const T& value, const Allocator& allocator = Allocator())
-    :stable_deque(cvalue_iterator(value, n), cvalue_iterator(), allocator)
+  batch_deque(size_type n, const T& value, const Allocator& allocator = Allocator())
+    :batch_deque(cvalue_iterator(value, n), cvalue_iterator(), allocator)
   {}
 
   template <class InputIterator,
@@ -360,8 +377,8 @@ public:
 #endif // ifndef BOOST_CONTAINER_DOXYGEN_INVOKED
 
   >
-  stable_deque(InputIterator first, InputIterator last, const Allocator& allocator = Allocator())
-    :stable_deque(allocator)
+  batch_deque(InputIterator first, InputIterator last, const Allocator& allocator = Allocator())
+    :batch_deque(allocator)
   {
     while (first != last)
     {
@@ -376,7 +393,7 @@ public:
   template <typename ForwardIterator, typename std::enable_if<
     container_detail::is_not_input_iterator<ForwardIterator>::value
   ,int>::type = 0>
-  stable_deque(ForwardIterator first, ForwardIterator last, const Allocator& allocator = Allocator())
+  batch_deque(ForwardIterator first, ForwardIterator last, const Allocator& allocator = Allocator())
     :Allocator(allocator),
      _map((std::distance(first, last) + segment_size - 1) / segment_size, reserve_only_tag{}),
      _begin(_map.begin(), 0),
@@ -415,12 +432,12 @@ public:
 
 #endif // ifndef BOOST_CONTAINER_DOXYGEN_INVOKED
 
-  stable_deque(const stable_deque& x)
-    :stable_deque(x,
+  batch_deque(const batch_deque& x)
+    :batch_deque(x,
         allocator_traits::select_on_container_copy_construction(x.get_allocator_ref()))
   {}
 
-  stable_deque(const stable_deque& rhs, const Allocator& allocator)
+  batch_deque(const batch_deque& rhs, const Allocator& allocator)
     :Allocator(allocator),
      _map(rhs._map.size(), reserve_only_tag{}),
      _begin(_map.begin(), rhs._begin._index),
@@ -459,11 +476,11 @@ public:
     BOOST_ASSERT(invariants_ok());
   }
 
-  stable_deque(stable_deque&& x)
-    :stable_deque(std::move(x), Allocator())
+  batch_deque(batch_deque&& x)
+    :batch_deque(std::move(x), Allocator())
   {}
 
-  stable_deque(stable_deque&& x, const Allocator& allocator)
+  batch_deque(batch_deque&& x, const Allocator& allocator)
     :Allocator(allocator),
      _map(std::move(x._map)),
      _begin(x._begin),
@@ -473,16 +490,16 @@ public:
     x._end = {x._map.begin(), 0};
   }
 
-  stable_deque(std::initializer_list<T> il, const Allocator& allocator = Allocator())
-    :stable_deque(il.begin(), il.end(), allocator)
+  batch_deque(std::initializer_list<T> il, const Allocator& allocator = Allocator())
+    :batch_deque(il.begin(), il.end(), allocator)
   {}
 
-  ~stable_deque()
+  ~batch_deque()
   {
     destructor_impl();
   }
 
-  stable_deque& operator=(const stable_deque& x)
+  batch_deque& operator=(const batch_deque& x)
   {
     if (this == &x) { return *this; } // skip self
 
@@ -501,7 +518,7 @@ public:
     return *this;
   }
 
-  stable_deque& operator=(stable_deque&& x) noexcept(allocator_traits::is_always_equal)
+  batch_deque& operator=(batch_deque&& x) noexcept(allocator_traits::is_always_equal)
   {
     constexpr bool copy_alloc = allocator_traits::propagate_on_move_assignment;
     const bool equal_alloc = (get_allocator_ref() == x.get_allocator_ref());
@@ -544,7 +561,7 @@ public:
     return *this;
   }
 
-  stable_deque& operator=(std::initializer_list<T> il)
+  batch_deque& operator=(std::initializer_list<T> il)
   {
     assign(il.begin(), il.end());
     return *this;
@@ -878,7 +895,7 @@ public:
     }
     else
     {
-      stable_deque tmp(first, last);
+      batch_deque tmp(first, last);
       tmp.resize(tmp.size() + tmp.back_free_capacity());
 
       const const_map_iterator hint_segment = unconst_iterator(position_hint)._p_segment;
@@ -949,7 +966,7 @@ public:
     return begin() + n;
   }
 
-  void swap(stable_deque& rhs) noexcept
+  void swap(batch_deque& rhs) noexcept
   {
     BOOST_ASSERT(
        !allocator_traits::propagate_on_container_swap::value
@@ -1328,46 +1345,46 @@ private:
 };
 
 template <class T, class AX, class PX, class AY, class PY>
-bool operator==(const stable_deque<T, AX, PX>& x, const stable_deque<T, AY, PY>& y)
+bool operator==(const batch_deque<T, AX, PX>& x, const batch_deque<T, AY, PY>& y)
 {
   if (x.size() != y.size()) { return false; }
   return std::equal(x.begin(), x.end(), y.begin());
 }
 
 template <class T, class AX, class PX, class AY, class PY>
-bool operator< (const stable_deque<T, AX, PX>& x, const stable_deque<T, AY, PY>& y)
+bool operator< (const batch_deque<T, AX, PX>& x, const batch_deque<T, AY, PY>& y)
 {
   return std::lexicographical_compare( x.begin(), x.end(),
                                        y.begin(), y.end() );
 }
 
 template <class T, class AX, class PX, class AY, class PY>
-bool operator!=(const stable_deque<T, AX, PX>& x, const stable_deque<T, AY, PY>& y)
+bool operator!=(const batch_deque<T, AX, PX>& x, const batch_deque<T, AY, PY>& y)
 {
   return !(x == y);
 }
 
 template <class T, class AX, class PX, class AY, class PY>
-bool operator> (const stable_deque<T, AX, PX>& x, const stable_deque<T, AY, PY>& y)
+bool operator> (const batch_deque<T, AX, PX>& x, const batch_deque<T, AY, PY>& y)
 {
   return (y < x);
 }
 
 template <class T, class AX, class PX, class AY, class PY>
-bool operator>=(const stable_deque<T, AX, PX>& x, const stable_deque<T, AY, PY>& y)
+bool operator>=(const batch_deque<T, AX, PX>& x, const batch_deque<T, AY, PY>& y)
 {
   return !(x < y);
 }
 
 template <class T, class AX, class PX, class AY, class PY>
-bool operator<=(const stable_deque<T, AX, PX>& x, const stable_deque<T, AY, PY>& y)
+bool operator<=(const batch_deque<T, AX, PX>& x, const batch_deque<T, AY, PY>& y)
 {
   return !(y < x);
 }
 
 // specialized algorithms:
 template <class T, class Allocator, class P>
-void swap(stable_deque<T, Allocator, P>& x, stable_deque<T, Allocator, P>& y) noexcept(noexcept(x.swap(y)))
+void swap(batch_deque<T, Allocator, P>& x, batch_deque<T, Allocator, P>& y) noexcept(noexcept(x.swap(y)))
 {
   x.swap(y);
 }
