@@ -31,7 +31,7 @@ using namespace boost::container;
 #include "input_iterator.hpp"
 
 template <typename T>
-using make_batch_deque = batch_deque<T, std::allocator<T>, batch_deque_policy<8>>;
+using make_batch_deque = batch_deque<T, batch_deque_policy<8>, std::allocator<T>>;
 
 #if 1
 typedef boost::mpl::list<
@@ -102,8 +102,8 @@ Container get_range()
   return get_range<Container>(1, 13, 13, 25);
 }
 
-template <typename T, typename A, typename P, typename C2>
-bool operator==(const batch_deque<T, A, P>& a, const C2& b)
+template <typename T, typename P, typename A, typename C2>
+bool operator==(const batch_deque<T, P, A>& a, const C2& b)
 {
   return std::lexicographical_compare(
     a.begin(), a.end(),
@@ -126,8 +126,8 @@ void print_range(std::ostream& out, const Range& range)
   out << ']';
 }
 
-template <typename T, typename A, typename P>
-std::ostream& operator<<(std::ostream& out, const batch_deque<T, A, P>& deque)
+template <typename T, typename P, typename A>
+std::ostream& operator<<(std::ostream& out, const batch_deque<T, P, A>& deque)
 {
   print_range(out, deque);
   return out;

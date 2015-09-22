@@ -47,8 +47,8 @@ struct batch_deque_policy
  */
 template <
   typename T,
-  typename Allocator = std::allocator<T>,
-  typename BatchDequePolicy = batch_deque_policy<512>
+  typename BatchDequePolicy = batch_deque_policy<512>,
+  typename Allocator = std::allocator<T>
 >
 class batch_deque : Allocator
 {
@@ -1344,47 +1344,47 @@ private:
   iterator _end;
 };
 
-template <class T, class AX, class PX, class AY, class PY>
-bool operator==(const batch_deque<T, AX, PX>& x, const batch_deque<T, AY, PY>& y)
+template <class T, class PX, class AX, class PY, class AY>
+bool operator==(const batch_deque<T, PX, AX>& x, const batch_deque<T, PY, AY>& y)
 {
   if (x.size() != y.size()) { return false; }
   return std::equal(x.begin(), x.end(), y.begin());
 }
 
-template <class T, class AX, class PX, class AY, class PY>
-bool operator< (const batch_deque<T, AX, PX>& x, const batch_deque<T, AY, PY>& y)
+template <class T, class PX, class AX, class PY, class AY>
+bool operator< (const batch_deque<T, PX, AX>& x, const batch_deque<T, PY, AY>& y)
 {
   return std::lexicographical_compare( x.begin(), x.end(),
                                        y.begin(), y.end() );
 }
 
-template <class T, class AX, class PX, class AY, class PY>
-bool operator!=(const batch_deque<T, AX, PX>& x, const batch_deque<T, AY, PY>& y)
+template <class T, class PX, class AX, class PY, class AY>
+bool operator!=(const batch_deque<T, PX, AX>& x, const batch_deque<T, PY, AY>& y)
 {
   return !(x == y);
 }
 
-template <class T, class AX, class PX, class AY, class PY>
-bool operator> (const batch_deque<T, AX, PX>& x, const batch_deque<T, AY, PY>& y)
+template <class T, class PX, class AX, class PY, class AY>
+bool operator> (const batch_deque<T, PX, AX>& x, const batch_deque<T, PY, AY>& y)
 {
   return (y < x);
 }
 
-template <class T, class AX, class PX, class AY, class PY>
-bool operator>=(const batch_deque<T, AX, PX>& x, const batch_deque<T, AY, PY>& y)
+template <class T, class PX, class AX, class PY, class AY>
+bool operator>=(const batch_deque<T, PX, AX>& x, const batch_deque<T, PY, AY>& y)
 {
   return !(x < y);
 }
 
-template <class T, class AX, class PX, class AY, class PY>
-bool operator<=(const batch_deque<T, AX, PX>& x, const batch_deque<T, AY, PY>& y)
+template <class T, class PX, class AX, class PY, class AY>
+bool operator<=(const batch_deque<T, PX, AX>& x, const batch_deque<T, PY, AY>& y)
 {
   return !(y < x);
 }
 
 // specialized algorithms:
-template <class T, class Allocator, class P>
-void swap(batch_deque<T, Allocator, P>& x, batch_deque<T, Allocator, P>& y) noexcept(noexcept(x.swap(y)))
+template <class T, class P, class Allocator>
+void swap(batch_deque<T, P, Allocator>& x, batch_deque<T, P, Allocator>& y) noexcept(noexcept(x.swap(y)))
 {
   x.swap(y);
 }
