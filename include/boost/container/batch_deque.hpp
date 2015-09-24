@@ -26,7 +26,12 @@ namespace container {
 template <std::size_t SegmentSize>
 struct batch_deque_policy
 {
-  /** The size of the allocated chunks in elements */
+  /**
+   * The size of the allocated chunks in elements
+   *
+   * **Remark**: Using a power of two increases performance
+   * because of the cheaper division and modulo operations.
+   */
   static const std::size_t segment_size = SegmentSize;
 };
 
@@ -169,24 +174,19 @@ private:
     friend class batch_deque;
     friend class boost::iterator_core_access;
 
-    ireference dereference()
-    {
-      return (*_p_segment)[_index];
-    }
-
-    ireference dereference() const
+    ireference dereference() const noexcept
     {
       return (*_p_segment)[_index];
     }
 
     template <bool IsRhsConst>
-    bool equal(const deque_iterator<IsRhsConst>& rhs) const
+    bool equal(const deque_iterator<IsRhsConst>& rhs) const noexcept
     {
       return _p_segment == rhs._p_segment
         &&   _index == rhs._index;
     }
 
-    void increment()
+    void increment() noexcept
     {
       ++_index;
       if (_index == segment_size)
@@ -196,7 +196,7 @@ private:
       }
     }
 
-    void decrement()
+    void decrement() noexcept
     {
       if (_index != 0)
       {
@@ -209,7 +209,7 @@ private:
       }
     }
 
-    void advance(difference_type n)
+    void advance(difference_type n) noexcept
     {
       difference_type segment_diff;
 
@@ -229,7 +229,7 @@ private:
       _p_segment += segment_diff;
     }
 
-    difference_type distance_to(const deque_iterator& b) const
+    difference_type distance_to(const deque_iterator& b) const noexcept
     {
       return difference_type{segment_size}
         * (b._p_segment - _p_segment - 1) + b._index + (segment_size - _index);
@@ -285,28 +285,23 @@ private:
   private:
     friend class boost::iterator_core_access;
 
-    ireference dereference()
+    ireference dereference() const noexcept
     {
       return (*_p_segment)[_index];
     }
 
-    ireference dereference() const
-    {
-      return (*_p_segment)[_index];
-    }
-
-    bool equal(const deque_segment_iterator& rhs) const
+    bool equal(const deque_segment_iterator& rhs) const noexcept
     {
       return _p_segment == rhs._p_segment;
     }
 
-    void increment()
+    void increment() noexcept
     {
       ++_p_segment;
       _index = 0;
     }
 
-    void decrement()
+    void decrement() noexcept
     {
       --_p_segment;
       if (_p_segment == _p_container->_map.begin())
@@ -315,13 +310,13 @@ private:
       }
     }
 
-    void advance(difference_type n)
+    void advance(difference_type n) noexcept
     {
       _p_segment += n;
       _index = 0;
     }
 
-    difference_type distance_to(const deque_segment_iterator& b) const
+    difference_type distance_to(const deque_segment_iterator& b) const noexcept
     {
       return b._p_segment - _p_segment;
     }
@@ -350,7 +345,10 @@ public:
    *
    * **Complexity**: Constant.
    */
-  batch_deque() noexcept : batch_deque(Allocator()) {}
+  batch_deque() noexcept : batch_deque(Allocator())
+  {
+    BOOST_ASSERT(invariants_ok());
+  }
 
   /**
    * **Effects**: Constructs an empty deque, using the specified allocator.
@@ -362,8 +360,10 @@ public:
   explicit batch_deque(const Allocator& allocator) noexcept
     :Allocator(allocator),
      _begin(_map.begin(), 0u),
-     _end(_map.begin(), 0u)
-  {}
+     _end(_begin)
+  {
+    BOOST_ASSERT(invariants_ok());
+  }
 
   /**
    * [DefaultInsertable]: http://en.cppreference.com/w/cpp/concept/DefaultInsertable
@@ -380,7 +380,7 @@ public:
    */
   explicit batch_deque(size_type n, const Allocator& allocator = Allocator())
     :Allocator(allocator),
-     _map((n + segment_size - 1) / segment_size, reserve_only_tag{}),
+     _map(ceil_int_div(n, segment_size), reserve_only_tag{}),
      _begin(_map.begin(), 0u),
      _end(_begin + n)
   {
@@ -479,7 +479,7 @@ public:
   ,int>::type = 0>
   batch_deque(ForwardIterator first, ForwardIterator last, const Allocator& allocator = Allocator())
     :Allocator(allocator),
-     _map((std::distance(first, last) + segment_size - 1) / segment_size, reserve_only_tag{}),
+     _map(ceil_int_div(std::distance(first, last), segment_size), reserve_only_tag{}),
      _begin(_map.begin(), 0),
      _end(_begin + std::distance(first, last))
   {
@@ -599,8 +599,10 @@ public:
      _begin(x._begin),
      _end(x._end)
   {
-    x._begin = {x._map.begin(), 0};
-    x._end = {x._map.begin(), 0};
+    x._end = x._begin = {x._map.begin(), 0};
+
+    BOOST_ASSERT(invariants_ok());
+    BOOST_ASSERT(x.invariants_ok());
   }
 
   /**
@@ -618,20 +620,21 @@ public:
   {
     if (allocator == x.get_allocator_ref())
     {
-      x._begin = {x._map.begin(), 0};
-      x._end = {x._map.begin(), 0};
+      x._end = x._begin = {x._map.begin(), 0};
     }
     else
     {
       x._map = std::move(_map);
       _map.clear();
-      _begin = {_map.begin(), 0};
-      _end = {_map.begin(), 0};
+      _end = _begin = {_map.begin(), 0};
 
       auto first = std::make_move_iterator(x.begin());
       auto last = std::make_move_iterator(x.end());
       assign(first, last);
     }
+
+    BOOST_ASSERT(invariants_ok());
+    BOOST_ASSERT(x.invariants_ok());
   }
 
   /**
@@ -1109,6 +1112,8 @@ public:
       iterator new_end = begin() + sz;
       erase_at_end(new_end);
     }
+
+    BOOST_ASSERT(invariants_ok());
   }
 
   /**
@@ -1130,6 +1135,8 @@ public:
 
       _end = _begin = {_map.begin(), 0};
     }
+
+    BOOST_ASSERT(invariants_ok());
   }
 
   // element access:
@@ -1286,25 +1293,28 @@ public:
   template <class... Args>
   iterator emplace(const_iterator position, Args&&... args)
   {
+    iterator result;
+
     if (position == cend())
     {
       emplace_back(std::forward<Args>(args)...);
-      iterator result = end();
-      --result;
-      return result;
+      result = end() - 1;
     }
     else if (position == cbegin())
     {
       emplace_front(std::forward<Args>(args)...);
-      return begin();
+      result = begin();
     }
     else
     {
-      return emplace_slow_path(
+      result = emplace_slow_path(
         unconst_iterator(position),
         std::forward<Args>(args)...
       );
     }
+
+    BOOST_ASSERT(invariants_ok());
+    return result;
   }
 
   void push_front(const T& x)
@@ -1374,6 +1384,7 @@ public:
       tmp._map.clear();
       tmp._end = tmp._begin = {tmp._map.begin(), 0};
 
+      BOOST_ASSERT(invariants_ok());
       return iterator{result_segment, 0};
     }
   }
@@ -1755,6 +1766,8 @@ private:
     iterator old_end = begin() + old_end_index;
     std::rotate(ncpos, old_end, end());
 
+    BOOST_ASSERT(invariants_ok());
+
     return ncpos;
   }
 
@@ -1803,9 +1816,17 @@ private:
   bool invariants_ok()
   {
     return (! _map.empty() || (_begin == _end))
+      &&    _begin <= _end
       &&    _begin._p_segment == _map.begin()
       &&    _begin._index < segment_size
+      &&    (_end._index ? *_end._p_segment == _map.back() : _end._p_segment == _map.end())
       &&    _end._index  < segment_size;
+  }
+
+  template <typename N>
+  static constexpr N ceil_int_div(N n, size_type d)
+  {
+    return (n + d - 1) / d;
   }
 
   map_t _map;
