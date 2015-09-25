@@ -380,7 +380,7 @@ public:
    */
   explicit batch_deque(size_type n, const Allocator& allocator = Allocator())
     :Allocator(allocator),
-     _map(ceil_int_div(n, segment_size), reserve_only_tag{}),
+     _map(segment_count(n), reserve_only_tag{}),
      _begin(_map.begin(), 0u),
      _end(_begin + n)
   {
@@ -479,7 +479,7 @@ public:
   ,int>::type = 0>
   batch_deque(ForwardIterator first, ForwardIterator last, const Allocator& allocator = Allocator())
     :Allocator(allocator),
-     _map(ceil_int_div(std::distance(first, last), segment_size), reserve_only_tag{}),
+     _map(segment_count(std::distance(first, last)), reserve_only_tag{}),
      _begin(_map.begin(), 0),
      _end(_begin + std::distance(first, last))
   {
@@ -1830,9 +1830,10 @@ private:
   }
 
   template <typename N>
-  static constexpr N ceil_int_div(N n, size_type d)
+  static constexpr N segment_count(N elem_count)
   {
-    return (n + d - 1) / d;
+    // integer division with ceiling
+    return (elem_count + segment_size - 1) / segment_size;
   }
 
   map_t _map;
