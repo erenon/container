@@ -11,7 +11,7 @@
 #ifndef BOOST_CONTAINER_CONTAINER_FLEX_DEQUE_HPP
 #define BOOST_CONTAINER_CONTAINER_FLEX_DEQUE_HPP
 
-#include <memory>
+#include <iterator> // next, prev
 
 #include <boost/container/devector.hpp>
 #include <boost/container/detail/iterators.hpp>
@@ -732,7 +732,7 @@ public:
         get_allocator_ref() = std::move(x.get_allocator_ref());
       }
 
-      using std::swap;
+      using std::swap; // enable ADL
 
       swap(_map, x._map);
       swap(_begin, x._begin);
@@ -1238,7 +1238,7 @@ public:
   {
     BOOST_ASSERT(!empty());
 
-    iterator back_it = _end - 1;
+    iterator back_it = std::prev(_end);
     return *back_it;
   }
 
@@ -1253,7 +1253,7 @@ public:
   {
     BOOST_ASSERT(!empty());
 
-    iterator back_it = _end - 1;
+    iterator back_it = std::prev(_end);
     return *back_it;
   }
 
@@ -1298,7 +1298,7 @@ public:
     if (position == cend())
     {
       emplace_back(std::forward<Args>(args)...);
-      result = end() - 1;
+      result = std::prev(end());
     }
     else if (position == cbegin())
     {
@@ -1425,7 +1425,7 @@ public:
 
   iterator erase(const_iterator position)
   {
-    return erase(position, position + 1);
+    return erase(position, std::next(position));
   }
 
   iterator erase(const_iterator first, const_iterator last)
@@ -1449,10 +1449,17 @@ public:
   void swap(batch_deque& rhs) noexcept
   {
     BOOST_ASSERT(
-       !allocator_traits::propagate_on_container_swap::value
-    || get_allocator_ref() == rhs.get_allocator_ref());
+       ! allocator_traits::propagate_on_container_swap::value
+    || get_allocator_ref() == rhs.get_allocator_ref()
+    ); // else it's undefined behavior
 
-    using std::swap;
+    using std::swap; // enable ADL
+
+    if (allocator_traits::propagate_on_container_swap::value)
+    {
+      swap(get_allocator_ref(), rhs.get_allocator_ref());
+    }
+
     swap(_map, rhs._map);
     swap(_begin, rhs._begin);
     swap(_end, rhs._end);
@@ -1512,8 +1519,7 @@ private:
 
   iterator unconst_iterator(const const_iterator& it) noexcept
   {
-    size_type offset = it - cbegin();
-    return begin() + offset;
+    return iterator(const_cast<typename iterator::segment_pointer>(it._p_segment), it._index);
   }
 
   template <typename... Args>
@@ -1586,14 +1592,14 @@ private:
     {
       emplace_back(std::forward<Args>(args)...);
       iterator npos = begin() + pos_index;
-      std::rotate(npos, end() - 1, end());
+      std::rotate(npos, std::prev(end()), end());
       return npos;
     }
     else
     {
       emplace_front(std::forward<Args>(args)...);
       iterator npos = begin() + pos_index;
-      std::rotate(begin(), begin() + 1, npos + 1);
+      std::rotate(begin(), std::next(begin()), std::next(npos));
       return npos;
     }
   }
@@ -1874,7 +1880,7 @@ bool operator<=(const batch_deque<T, PX, AX>& x, const batch_deque<T, PY, AY>& y
 
 // specialized algorithms:
 template <class T, class P, class Allocator>
-void swap(batch_deque<T, P, Allocator>& x, batch_deque<T, P, Allocator>& y) noexcept(noexcept(x.swap(y)))
+void swap(batch_deque<T, P, Allocator>& x, batch_deque<T, P, Allocator>& y) noexcept
 {
   x.swap(y);
 }
