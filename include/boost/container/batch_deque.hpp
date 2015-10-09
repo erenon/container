@@ -1258,6 +1258,21 @@ public:
   }
 
   // modifiers:
+
+  /**
+   * [EmplaceConstructible]: http://en.cppreference.com/w/cpp/concept/EmplaceConstructible
+   *
+   * **Effects**: Constructs a new element at the front of the sequence.
+   * The element is constructed in-place, using the perfect forwarded `args`
+   * as constructor arguments. Might invalidate iterators.
+   *
+   * **Requires**: `T` shall be [EmplaceConstructible] from `args`.
+   *
+   * **Exceptions**: Strong exception guarantee.
+   *
+   * **Complexity**: Amortized linear in the number of segments the deque has.
+   *
+   */
   template <class... Args>
   void emplace_front(Args&&... args)
   {
@@ -1274,6 +1289,19 @@ public:
     BOOST_ASSERT(invariants_ok());
   }
 
+  /**
+   * [EmplaceConstructible]: http://en.cppreference.com/w/cpp/concept/EmplaceConstructible
+   *
+   * **Effects**: Constructs a new element at the back of the sequence.
+   * The element is constructed in-place, using the perfect forwarded `args`
+   * as constructor arguments. Might invalidate iterators.
+   *
+   * **Requires**: `T` shall be [EmplaceConstructible] from `args`.
+   *
+   * **Exceptions**: Strong exception guarantee.
+   *
+   * **Complexity**: Amortized linear in the number of segments the deque has.
+   */
   template <class... Args>
   void emplace_back(Args&&... args)
   {
@@ -1290,6 +1318,20 @@ public:
     BOOST_ASSERT(invariants_ok());
   }
 
+  /**
+   * **Effects**: Constructs a new element before the element pointed by `position`.
+   * The element is constructed in-place, using the perfect forwarded `args`
+   * as constructor arguments. Might invalidate iterators.
+   *
+   * **Requires**: `T` shall be [EmplaceConstructible] from `args` and [MoveAssignable]
+   *
+   * **Exceptions**: Strong exception guarantee.
+   *
+   * **Complexity**: Linear in the size of `*this`.
+   *
+   * [EmplaceConstructible]: http://en.cppreference.com/w/cpp/concept/EmplaceConstructible
+   * [MoveAssignable]: http://en.cppreference.com/w/cpp/concept/MoveAssignable
+   */
   template <class... Args>
   iterator emplace(const_iterator position, Args&&... args)
   {
@@ -1317,36 +1359,130 @@ public:
     return result;
   }
 
+  /**
+   * [CopyInsertable]: http://en.cppreference.com/w/cpp/concept/CopyInsertable
+   *
+   * **Effects**: Pushes the copy of `x` to the front of the sequence.
+   * Might invalidate iterators.
+   *
+   * **Requires**: `T` shall be [CopyInsertable] into `*this`.
+   *
+   * **Exceptions**: Strong exception guarantee.
+   *
+   * **Complexity**: Amortized linear in the number of segments the deque has.
+   */
   void push_front(const T& x)
   {
     emplace_front(x);
   }
 
+  /**
+   * [MoveInsertable]: http://en.cppreference.com/w/cpp/concept/MoveInsertable
+   *
+   * **Effects**: Move constructs a new element at the front of the sequence using `x`.
+   * Might invalidate iterators.
+   *
+   * **Requires**: `T` shall be [MoveInsertable] into `*this`.
+   *
+   * **Exceptions**: Strong exception guarantee, not regarding the state of `x`.
+   *
+   * **Complexity**: Amortized linear in the number of segments the deque has.
+   */
   void push_front(T&& x)
   {
     emplace_front(std::move(x));
   }
 
+  /**
+   * [CopyInsertable]: http://en.cppreference.com/w/cpp/concept/CopyInsertable
+   *
+   * **Effects**: Pushes the copy of `x` to the back of the sequence.
+   * Might invalidate iterators.
+   *
+   * **Requires**: `T` shall be [CopyInsertable] into `*this`.
+   *
+   * **Exceptions**: Strong exception guarantee.
+   *
+   * **Complexity**: Amortized linear in the number of segments the deque has.
+   */
   void push_back(const T& x)
   {
     emplace_back(x);
   }
 
+  /**
+   * [MoveInsertable]: http://en.cppreference.com/w/cpp/concept/MoveInsertable
+   *
+   * **Effects**: Move constructs a new element at the back of the sequence using `x`.
+   * Might invalidate iterators.
+   *
+   * **Requires**: `T` shall be [MoveInsertable] into `*this`.
+   *
+   * **Exceptions**: Strong exception guarantee, not regarding the state of `x`.
+   *
+   * **Complexity**: Amortized linear in the number of segments the deque has.
+   */
   void push_back(T&& x)
   {
     emplace_back(std::move(x));
   }
 
+  /**
+   * **Effects**: Copy constructs a new element before the element pointed by `position`,
+   * using `x` as constructor argument. Invalidates iterators.
+   *
+   * **Requires**: `T` shall be [CopyInsertable] into `*this` and and [CopyAssignable].
+   *
+   * **Returns**: Iterator pointing to the newly constructed element.
+   *
+   * **Exceptions**: Strong exception guarantee.
+   *
+   * **Complexity**: Linear in the size of `*this`.
+   *
+   * [CopyInsertable]: http://en.cppreference.com/w/cpp/concept/CopyInsertable
+   * [CopyAssignable]: http://en.cppreference.com/w/cpp/concept/CopyAssignable
+   */
   iterator insert(const_iterator position, const T& x)
   {
     return emplace(position, x);
   }
 
+  /**
+   * **Effects**: Move constructs a new element before the element pointed by `position`,
+   * using `x` as constructor argument. Invalidates iterators.
+   *
+   * **Requires**: `T` shall be [MoveInsertable] into `*this` and and [MoveAssignable].
+   *
+   * **Returns**: Iterator pointing to the newly constructed element.
+   *
+   * **Exceptions**: Strong exception guarantee.
+   *
+   * **Complexity**: Linear in the size of `*this`.
+   *
+   * [MoveInsertable]: http://en.cppreference.com/w/cpp/concept/MoveInsertable
+   * [MoveAssignable]: http://en.cppreference.com/w/cpp/concept/MoveAssignable
+   */
   iterator insert(const_iterator position, T&& x)
   {
     return emplace(position, std::move(x));
   }
 
+  /**
+   * **Effects**: Copy constructs `n` elements before the element pointed by `position`,
+   * using `x` as constructor argument. Invalidates iterators.
+   *
+   * **Requires**: `T` shall be [CopyInsertable] into `*this` and [MoveAssignable].
+   *
+   * **Returns**: Iterator pointing to the first inserted element, or `position`, if `n` is zero.
+   *
+   * **Exceptions**: Strong exception guarantee if `T` is `NothrowConstructible`
+   * and `NothrowAssignable`, Basic exception guarantee otherwise.
+   *
+   * **Complexity**: Linear in the size of `*this` and `n`.
+   *
+   * [CopyInsertable]: http://en.cppreference.com/w/cpp/concept/CopyInsertable
+   * [MoveAssignable]: http://en.cppreference.com/w/cpp/concept/MoveAssignable
+   */
   iterator insert(const_iterator position, size_type n, const T& x)
   {
     cvalue_iterator first(x, n);
@@ -1354,17 +1490,67 @@ public:
     return insert_range(position, first, last);
   }
 
+  /**
+   * **Effects**: Copy constructs elements before the element pointed by `position`
+   * using each element in the rage pointed by `first` and `last` as constructor arguments.
+   * Invalidates iterators.
+   *
+   * **Requires**: `T` shall be [EmplaceConstructible] into `*this` from `*first`,
+   * [MoveAssignable] and [MoveConstructible].
+   *
+   * **Precondition**: `first` and `last` are not iterators into `*this`.
+   *
+   * **Returns**: Iterator pointing to the first inserted element, or `position`, if `first == last`.
+   *
+   * **Complexity**: Linear in the size of `*this` and in the distance between `first` and `last`.
+   *
+   * **Exceptions**: Strong exception guarantee if `T` is `NothrowConstructible`
+   * and `NothrowAssignable`, Basic exception guarantee otherwise.
+   *
+   * **Remarks**: Each iterator in the range `[first,last)` shall be dereferenced exactly once,
+   * unless an exception is thrown.
+   *
+   * [EmplaceConstructible]: http://en.cppreference.com/w/cpp/concept/EmplaceConstructible
+   * [MoveAssignable]: http://en.cppreference.com/w/cpp/concept/MoveAssignable
+   * [MoveConstructible]: http://en.cppreference.com/w/cpp/concept/MoveConstructible
+   */
   template <class InputIterator>
   iterator insert(const_iterator position, InputIterator first, InputIterator last)
   {
     return insert_range(position, first, last);
   }
 
+  /** **Equivalent to**: `insert(position, il.begin(), il.end())` */
   iterator insert(const_iterator position, std::initializer_list<T> il)
   {
     return insert_range(position, il.begin(), il.end());
   }
 
+  /**
+   * **Effects**: Copy constructs elements at the nearest segment boundary before
+   * `position_hint` using each element in the range `[first, last)` as constructor arguments without invalidating any iterators or references. If necessary, inserts default
+   * constructed elements to avoid a gap in the newly created segment.
+   *
+   * **Requires**: `T` shall be [EmplaceConstructible] into `*this` from `*first`,
+   * [MoveAssignable], [MoveConstructible] and [DefaultConstructible].
+   *
+   * **Precondition**: `first` and `last` are not iterators into `*this`.
+   *
+   * **Returns**: Iterator pointing to the first inserted element, or `position`, if `first == last`.
+   *
+   * **Complexity**: Linear in the size of `*this` and in the distance between `first` and `last`.
+   *
+   * **Exceptions**: Strong exception guarantee if `T` is `NothrowConstructible`
+   * and `NothrowAssignable`, Basic exception guarantee otherwise.
+   *
+   * **Remarks**: Each iterator in the range `[first,last)` shall be dereferenced exactly once,
+   * unless an exception is thrown.
+   *
+   * [EmplaceConstructible]: http://en.cppreference.com/w/cpp/concept/EmplaceConstructible
+   * [MoveAssignable]: http://en.cppreference.com/w/cpp/concept/MoveAssignable
+   * [MoveConstructible]: http://en.cppreference.com/w/cpp/concept/MoveConstructible
+   * [DefaultConstructible]: http://en.cppreference.com/w/cpp/concept/DefaultConstructible
+   */
   template <class InputIterator>
   iterator stable_insert(const_iterator position_hint, InputIterator first, InputIterator last)
   {
@@ -1389,6 +1575,15 @@ public:
     }
   }
 
+  /**
+   * **Effects**: Removes the first element of `*this`.
+   *
+   * **Precondition**: `!empty()`.
+   *
+   * **Exceptions**: Strong exception guarantee.
+   *
+   * **Complexity**: Constant.
+   */
   void pop_front()
   {
     BOOST_ASSERT(!empty());
@@ -1406,6 +1601,15 @@ public:
     BOOST_ASSERT(invariants_ok());
   }
 
+  /**
+   * **Effects**: Removes the last element of `*this`.
+   *
+   * **Precondition**: `!empty()`.
+   *
+   * **Exceptions**: Strong exception guarantee.
+   *
+   * **Complexity**: Constant.
+   */
   void pop_back()
   {
     BOOST_ASSERT(!empty());
@@ -1423,11 +1627,48 @@ public:
     BOOST_ASSERT(invariants_ok());
   }
 
+  /**
+   * [MoveAssignable]: http://en.cppreference.com/w/cpp/concept/MoveAssignable
+   *
+   * **Effects**: Destroys the element pointed by `position` and removes it from the sequence.
+   * Invalidates iterators.
+   *
+   * **Requires**: `T` shall be [MoveAssignable].
+   *
+   * **Precondition**: `position` must be in the range of `[begin(), end())`.
+   *
+   * **Returns**: Iterator pointing to the element immediately following the erased element
+   * prior to its erasure. If no such element exists, `end()` is returned.
+   *
+   * **Exceptions**: Strong exception guarantee if `T` is `NothrowAssignable`,
+   * Basic exception guarantee otherwise.
+   *
+   * **Complexity**: Linear in the size of `*this`.
+   */
   iterator erase(const_iterator position)
   {
     return erase(position, std::next(position));
   }
 
+  /**
+   * [MoveAssignable]: http://en.cppreference.com/w/cpp/concept/MoveAssignable
+   *
+   * **Effects**: Destroys the range `[first,last)` and removes it from the sequence.
+   * Invalidates iterators.
+   *
+   * **Requires**: `T` shall be [MoveAssignable].
+   *
+   * **Precondition**: `[first,last)` must be in the range of `[begin(), end())`.
+   *
+   * **Returns**: Iterator pointing to the element pointed to by `last` prior to any elements
+   * being erased. If no such element exists, `end()` is returned.
+   *
+   * **Exceptions**: Strong exception guarantee if `T` is `NothrowAssignable`,
+   * Basic exception guarantee otherwise.
+   *
+   * **Complexity**: Linear in the size of `*this`
+   * plus the distance between `first` and `last`.
+   */
   iterator erase(const_iterator first, const_iterator last)
   {
     iterator ncfirst = unconst_iterator(first);
@@ -1446,6 +1687,14 @@ public:
     return begin() + n;
   }
 
+  /**
+   * **Effects**: exchanges the contents of `*this` with those of `rhs`. Does not invoke any move, copy, or swap operations on individual elements.
+   * All iterators and references remain valid. The past-the-end iterator is invalidated.
+   *
+   * **Precondition**: The allocators should allow propagation or should compare equal.
+   *
+   * **Complexity**: Constant.
+   */
   void swap(batch_deque& rhs) noexcept
   {
     BOOST_ASSERT(
@@ -1465,6 +1714,14 @@ public:
     swap(_end, rhs._end);
   }
 
+  /**
+   * **Effects**: Destroys all elements in the sequence.
+   * Invalidates all references, pointers and iterators.
+   *
+   * **Postcondition**: `empty()`.
+   *
+   * **Complexity**: Linear in the size of `*this`.
+   */
   void clear() noexcept
   {
     destructor_impl();
