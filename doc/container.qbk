@@ -561,6 +561,17 @@ In general, `devector` uses `move_if_noexcept` whenever necessary, offering stro
 
 [endsect]
 
+[section:batch_deque ['batch_deque]]
+
+`batch_deque` is very similar to the standard `deque`, with a slight twist. It lets you specify its /segment size/:
+The size of the contiguous pages it uses to store its elements. This provides a consistent layout across platforms,
+and lets you iterate over the segments with batch operations.
+
+`batch_deque` makes a good candidate for a container of cached or reusable elements, because it provides reference
+stability and inserting at either end with amortized linear complexity.
+
+[endsect]
+
 [endsect]
 
 [section:extended_functionality Extended functionality]
@@ -1005,7 +1016,7 @@ types to be value initializable via `std::memset` with value zero.
 
 [section:examples Examples]
 
-[section:devector_usage Devector usage]
+[section:devector_usage devector usage]
 
 [import ../example/doc_devector.cpp]
 
@@ -1079,6 +1090,28 @@ Most of the time, standard vector can be easily replaced by `devector`. If a cus
 is needed, however, extra template arguments must be specified:
 
 [doc_devector_replace_vector]
+
+[endsect]
+
+[section:batch_deque_usage batch_deque usage]
+
+[import ../example/doc_batch_deque.cpp]
+
+The `batch_deque` class template, contrary to the standard deque, allows custom sized segments, configurable via a policy template. This gives greater control over the implementation and ensures portable behavior:
+
+[doc_batch_deque_sizing]
+
+Assuming the user more or less can guess the average required buffer size, the right segment size can be specified to minimize the number of memory allocations.
+
+Since the segment size is configured by the user, it makes sense to be able to do batch operations over the elements of each segment. In the example below, the deque is used as a flexible output buffer. The `write` function is called for each segment, instead of for eahc element, resulting in better performance. Scatter/gather I/O is possible in a similar way.
+
+[doc_batch_deque_segment_iterator]
+
+Reference stability is an important feature of the `batch_deque`. Inserting elements to the front or to the back of the sequence never invalidates any references. Moreover, a special insert operation is provided, `stable_insert`, which takes an iterator, as a hint, and inserts a sequence of elements (not necessary directly) before the element pointed by the hint, in a way that it doesn't invalidate references. If needed, default constructs elements to avoid a gap in the sequence.
+
+[doc_batch_deque_stable_insert]
+
+This feature can be useful, if reference stability and relative order is required, but the exact number of the elements is flexible, e.g: when the sequence stores cached objects.
 
 [endsect]
 
