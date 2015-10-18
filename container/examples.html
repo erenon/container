@@ -269,7 +269,9 @@
 <p>
         Since the segment size is configured by the user, it makes sense to be able
         to do batch operations over the elements of each segment. In the example
-        below, the deque is used as a flexible output buffer:
+        below, the deque is used as a flexible output buffer. The <code class="computeroutput"><span class="identifier">write</span></code>
+        function is called for each segment, instead of for eahc element, resulting
+        in better performance. Scatter/gather I/O is possible in a similar way.
       </p>
 <p>
 </p>
