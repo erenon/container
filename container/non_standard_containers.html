@@ -2,25 +2,25 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
 <title>Non-standard containers</title>
-<link rel="stylesheet" href="http://www.boost.org/doc/libs/1_55_0/doc/src/boostbook.css" type="text/css">
+<link rel="stylesheet" href="http://www.boost.org/doc/libs/1_57_0/doc/src/boostbook.css" type="text/css">
 <meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
-<link rel="home" href="../index.html" title="Chapter&#160;1.&#160;Boost.Container">
-<link rel="up" href="../index.html" title="Chapter&#160;1.&#160;Boost.Container">
+<link rel="home" href="http://www.boost.org/doc/libs/1_57_0/index.html" title="Chapter&#160;1.&#160;Boost.Container">
+<link rel="up" href="http://www.boost.org/doc/libs/1_57_0/index.html" title="Chapter&#160;1.&#160;Boost.Container">
 <link rel="prev" href="exception_handling.html" title="Boost.Container and C++ exceptions">
 <link rel="next" href="extended_functionality.html" title="Extended functionality">
 </head>
 <body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
 <table cellpadding="2" width="100%"><tr>
 <td valign="top"><img alt="Boost C++ Libraries" width="277" height="86" src="http://www.boost.org/doc/libs/1_57_0/boost.png"></td>
-<td align="center"><a href="../../../../../index.html">Home</a></td>
-<td align="center"><a href="../../../../../libs/libraries.htm">Libraries</a></td>
+<td align="center"><a href="http://www.boost.org/doc/libs/1_57_0/index.html">Home</a></td>
+<td align="center"><a href="http://www.boost.org/doc/libs/1_57_0/libs/libraries.htm">Libraries</a></td>
 <td align="center"><a href="http://www.boost.org/users/people.html">People</a></td>
 <td align="center"><a href="http://www.boost.org/users/faq.html">FAQ</a></td>
-<td align="center"><a href="../../../../../more/index.htm">More</a></td>
+<td align="center"><a href="http://www.boost.org/doc/libs/1_57_0/more/index.htm">More</a></td>
 </tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="exception_handling.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/home.png" alt="Home"></a><a accesskey="n" href="extended_functionality.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/next.png" alt="Next"></a>
+<a accesskey="p" href="exception_handling.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/prev.png" alt="Prev"></a><a accesskey="u" href="http://www.boost.org/doc/libs/1_57_0/index.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/up.png" alt="Up"></a><a accesskey="h" href="http://www.boost.org/doc/libs/1_57_0/index.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/home.png" alt="Home"></a><a accesskey="n" href="extended_functionality.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/next.png" alt="Next"></a>
 </div>
 <div class="section">
 <div class="titlepage"><div><div><h2 class="title" style="clear: both">
@@ -34,6 +34,7 @@
 <dt><span class="section"><a href="non_standard_containers.html#container.non_standard_containers.static_vector"><span class="emphasis"><em>static_vector</em></span></a></span></dt>
 <dt><span class="section"><a href="non_standard_containers.html#container.non_standard_containers.small_vector"><span class="emphasis"><em>small_vector</em></span></a></span></dt>
 <dt><span class="section"><a href="non_standard_containers.html#container.non_standard_containers.devector"><span class="emphasis"><em>devector</em></span></a></span></dt>
+<dt><span class="section"><a href="non_standard_containers.html#container.non_standard_containers.batch_deque"><span class="emphasis"><em>batch_deque</em></span></a></span></dt>
 </dl></div>
 <div class="section">
 <div class="titlepage"><div><div><h3 class="title">
@@ -71,7 +72,7 @@
         data structure upon which to base the design of a stable vector:
       </p>
 <p>
-        <span class="inlinemediaobject"><img src="http://www.boost.org/doc/libs/1_57_0/../../../libs/container/doc/html/images/stable_vector.png" align="middle" width="50%" alt="stable_vector"></span>
+        <span class="inlinemediaobject"><img src="http://www.boost.org/doc/libs/1_57_0/doc/html/../../../libs/container/doc/html/images/stable_vector.png" align="middle" width="50%" alt="stable_vector"></span>
       </p>
 <p>
         Each element is stored in its own separate node. All the nodes are referenced
@@ -543,6 +544,24 @@
         in parameters?</em></span>)</a>.
       </p>
 </div>
+<div class="section">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="container.non_standard_containers.batch_deque"></a><a class="link" href="non_standard_containers.html#container.non_standard_containers.batch_deque" title="batch_deque"><span class="emphasis"><em>batch_deque</em></span></a>
+</h3></div></div></div>
+<p>
+        <code class="computeroutput"><span class="identifier">batch_deque</span></code> is very similar
+        to the standard <code class="computeroutput"><span class="identifier">deque</span></code>, with
+        a slight twist. It lets you specify its <span class="emphasis"><em>segment size</em></span>:
+        The size of the contiguous pages it uses to store its elements. This provides
+        a consistent layout across platforms, and lets you iterate over the segments
+        with batch operations.
+      </p>
+<p>
+        <code class="computeroutput"><span class="identifier">batch_deque</span></code> makes a good
+        candidate for a container of cached or reusable elements, because it provides
+        reference stability and inserting at either end with amortized linear complexity.
+      </p>
+</div>
 </div>
 <table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
 <td align="left"></td>
@@ -554,7 +573,7 @@
 </tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="exception_handling.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/home.png" alt="Home"></a><a accesskey="n" href="extended_functionality.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/next.png" alt="Next"></a>
+<a accesskey="p" href="exception_handling.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/prev.png" alt="Prev"></a><a accesskey="u" href="http://www.boost.org/doc/libs/1_57_0/index.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/up.png" alt="Up"></a><a accesskey="h" href="http://www.boost.org/doc/libs/1_57_0/index.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/home.png" alt="Home"></a><a accesskey="n" href="extended_functionality.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/next.png" alt="Next"></a>
 </div>
 </body>
 </html>

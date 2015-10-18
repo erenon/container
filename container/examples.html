@@ -2,34 +2,37 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
 <title>Examples</title>
-<link rel="stylesheet" href="http://www.boost.org/doc/libs/1_55_0/doc/src/boostbook.css" type="text/css">
+<link rel="stylesheet" href="http://www.boost.org/doc/libs/1_57_0/doc/src/boostbook.css" type="text/css">
 <meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
-<link rel="home" href="../index.html" title="Chapter&#160;1.&#160;Boost.Container">
-<link rel="up" href="../index.html" title="Chapter&#160;1.&#160;Boost.Container">
+<link rel="home" href="http://www.boost.org/doc/libs/1_57_0/index.html" title="Chapter&#160;1.&#160;Boost.Container">
+<link rel="up" href="http://www.boost.org/doc/libs/1_57_0/index.html" title="Chapter&#160;1.&#160;Boost.Container">
 <link rel="prev" href="Cpp11_conformance.html" title="C++11/C++14 Conformance">
 <link rel="next" href="known_issues.html" title="Known Issues">
 </head>
 <body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
 <table cellpadding="2" width="100%"><tr>
 <td valign="top"><img alt="Boost C++ Libraries" width="277" height="86" src="http://www.boost.org/doc/libs/1_57_0/boost.png"></td>
-<td align="center"><a href="../../../../../index.html">Home</a></td>
-<td align="center"><a href="../../../../../libs/libraries.htm">Libraries</a></td>
+<td align="center"><a href="http://www.boost.org/doc/libs/1_57_0/index.html">Home</a></td>
+<td align="center"><a href="http://www.boost.org/doc/libs/1_57_0/libs/libraries.htm">Libraries</a></td>
 <td align="center"><a href="http://www.boost.org/users/people.html">People</a></td>
 <td align="center"><a href="http://www.boost.org/users/faq.html">FAQ</a></td>
-<td align="center"><a href="../../../../../more/index.htm">More</a></td>
+<td align="center"><a href="http://www.boost.org/doc/libs/1_57_0/more/index.htm">More</a></td>
 </tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="Cpp11_conformance.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/home.png" alt="Home"></a><a accesskey="n" href="known_issues.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/next.png" alt="Next"></a>
+<a accesskey="p" href="Cpp11_conformance.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/prev.png" alt="Prev"></a><a accesskey="u" href="http://www.boost.org/doc/libs/1_57_0/index.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/up.png" alt="Up"></a><a accesskey="h" href="http://www.boost.org/doc/libs/1_57_0/index.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/home.png" alt="Home"></a><a accesskey="n" href="known_issues.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/next.png" alt="Next"></a>
 </div>
 <div class="section">
 <div class="titlepage"><div><div><h2 class="title" style="clear: both">
 <a name="container.examples"></a><a class="link" href="examples.html" title="Examples">Examples</a>
 </h2></div></div></div>
-<div class="toc"><dl class="toc"><dt><span class="section"><a href="examples.html#container.examples.devector_usage">Devector usage</a></span></dt></dl></div>
+<div class="toc"><dl class="toc">
+<dt><span class="section"><a href="examples.html#container.examples.devector_usage">devector usage</a></span></dt>
+<dt><span class="section"><a href="examples.html#container.examples.batch_deque_usage">batch_deque usage</a></span></dt>
+</dl></div>
 <div class="section">
 <div class="titlepage"><div><div><h3 class="title">
-<a name="container.examples.devector_usage"></a><a class="link" href="examples.html#container.examples.devector_usage" title="Devector usage">Devector usage</a>
+<a name="container.examples.devector_usage"></a><a class="link" href="examples.html#container.examples.devector_usage" title="devector usage">devector usage</a>
 </h3></div></div></div>
 <p>
         The <code class="computeroutput"><span class="identifier">devector</span></code> class template,
@@ -240,6 +243,70 @@
 <p>
       </p>
 </div>
+<div class="section">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="container.examples.batch_deque_usage"></a><a class="link" href="examples.html#container.examples.batch_deque_usage" title="batch_deque usage">batch_deque usage</a>
+</h3></div></div></div>
+<p>
+        The <code class="computeroutput"><span class="identifier">batch_deque</span></code> class template,
+        contrary to the standard deque, allows custom sized segments, configurable
+        via a policy template. This gives greater control over the implementation
+        and ensures portable behavior:
+      </p>
+<p>
+</p>
+<pre class="programlisting"><span class="keyword">using</span> <span class="keyword">namespace</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">container</span><span class="special">;</span> <span class="comment">// assumed here and below</span>
+
+<span class="identifier">batch_deque</span><span class="special">&lt;</span><span class="keyword">char</span><span class="special">,</span> <span class="identifier">batch_deque_policy</span><span class="special">&lt;</span><span class="number">256</span><span class="special">&gt;&gt;</span> <span class="identifier">deque</span><span class="special">;</span>
+</pre>
+<p>
+      </p>
+<p>
+        Assuming the user more or less can guess the average required buffer size,
+        the right segment size can be specified to minimize the number of memory
+        allocations.
+      </p>
+<p>
+        Since the segment size is configured by the user, it makes sense to be able
+        to do batch operations over the elements of each segment. In the example
+        below, the deque is used as a flexible output buffer:
+      </p>
+<p>
+</p>
+<pre class="programlisting"><span class="keyword">for</span> <span class="special">(</span><span class="keyword">auto</span> <span class="identifier">it</span> <span class="special">=</span> <span class="identifier">deque</span><span class="special">.</span><span class="identifier">segment_begin</span><span class="special">();</span> <span class="identifier">it</span> <span class="special">!=</span> <span class="identifier">deque</span><span class="special">.</span><span class="identifier">segment_end</span><span class="special">();</span> <span class="special">++</span><span class="identifier">it</span><span class="special">)</span>
+<span class="special">{</span>
+  <span class="identifier">write</span><span class="special">(</span><span class="identifier">fd</span><span class="special">,</span> <span class="identifier">it</span><span class="special">.</span><span class="identifier">data</span><span class="special">(),</span> <span class="identifier">it</span><span class="special">.</span><span class="identifier">data_size</span><span class="special">());</span>
+<span class="special">}</span>
+</pre>
+<p>
+      </p>
+<p>
+        Reference stability is an important feature of the <code class="computeroutput"><span class="identifier">batch_deque</span></code>.
+        Inserting elements to the front or to the back of the sequence never invalidates
+        any references. Moreover, a special insert operation is provided, <code class="computeroutput"><span class="identifier">stable_insert</span></code>, which takes an iterator,
+        as a hint, and inserts a sequence of elements (not necessary directly) before
+        the element pointed by the hint, in a way that it doesn't invalidate references.
+        If needed, default constructs elements to avoid a gap in the sequence.
+      </p>
+<p>
+</p>
+<pre class="programlisting"><span class="identifier">batch_deque</span><span class="special">&lt;</span><span class="keyword">int</span><span class="special">&gt;</span> <span class="identifier">deque</span><span class="special">{</span><span class="number">1</span><span class="special">,</span> <span class="number">2</span><span class="special">,</span> <span class="number">3</span><span class="special">,</span> <span class="number">4</span><span class="special">,</span> <span class="number">5</span><span class="special">,</span> <span class="number">6</span><span class="special">,</span> <span class="number">7</span><span class="special">,</span> <span class="number">8</span><span class="special">};</span>
+<span class="keyword">auto</span> <span class="identifier">four_it</span> <span class="special">=</span> <span class="identifier">deque</span><span class="special">.</span><span class="identifier">begin</span><span class="special">()</span> <span class="special">+</span> <span class="number">3</span><span class="special">;</span>
+<span class="keyword">int</span><span class="special">&amp;</span> <span class="identifier">four</span> <span class="special">=</span> <span class="special">*</span><span class="identifier">four_it</span><span class="special">;</span>
+
+<span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&lt;</span><span class="keyword">int</span><span class="special">&gt;</span> <span class="identifier">input</span><span class="special">(</span><span class="number">100</span><span class="special">,</span> <span class="number">9</span><span class="special">);</span>
+<span class="identifier">deque</span><span class="special">.</span><span class="identifier">stable_insert</span><span class="special">(</span><span class="identifier">four_it</span><span class="special">,</span> <span class="identifier">input</span><span class="special">.</span><span class="identifier">begin</span><span class="special">(),</span> <span class="identifier">input</span><span class="special">.</span><span class="identifier">end</span><span class="special">());</span>
+
+<span class="identifier">BOOST_ASSERT</span><span class="special">(</span><span class="identifier">four</span> <span class="special">==</span> <span class="number">4</span><span class="special">);</span> <span class="comment">// stable_insert ensures reference stability</span>
+</pre>
+<p>
+      </p>
+<p>
+        This feature can be useful, if reference stability and relative order is
+        required, but the exact number of the elements is flexible, e.g: when the
+        sequence stores cached objects.
+      </p>
+</div>
 </div>
 <table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
 <td align="left"></td>
@@ -251,7 +318,7 @@
 </tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="Cpp11_conformance.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/home.png" alt="Home"></a><a accesskey="n" href="known_issues.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/next.png" alt="Next"></a>
+<a accesskey="p" href="Cpp11_conformance.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/prev.png" alt="Prev"></a><a accesskey="u" href="http://www.boost.org/doc/libs/1_57_0/index.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/up.png" alt="Up"></a><a accesskey="h" href="http://www.boost.org/doc/libs/1_57_0/index.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/home.png" alt="Home"></a><a accesskey="n" href="known_issues.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/next.png" alt="Next"></a>
 </div>
 </body>
 </html>

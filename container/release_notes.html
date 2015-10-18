@@ -2,30 +2,32 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
 <title>Release Notes</title>
-<link rel="stylesheet" href="http://www.boost.org/doc/libs/1_55_0/doc/src/boostbook.css" type="text/css">
+<link rel="stylesheet" href="http://www.boost.org/doc/libs/1_57_0/doc/src/boostbook.css" type="text/css">
 <meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
-<link rel="home" href="../index.html" title="Chapter&#160;1.&#160;Boost.Container">
-<link rel="up" href="../index.html" title="Chapter&#160;1.&#160;Boost.Container">
+<link rel="home" href="http://www.boost.org/doc/libs/1_57_0/index.html" title="Chapter&#160;1.&#160;Boost.Container">
+<link rel="up" href="http://www.boost.org/doc/libs/1_57_0/index.html" title="Chapter&#160;1.&#160;Boost.Container">
 <link rel="prev" href="acknowledgements_notes.html" title="Acknowledgements, notes and links">
 </head>
 <body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
 <table cellpadding="2" width="100%"><tr>
 <td valign="top"><img alt="Boost C++ Libraries" width="277" height="86" src="http://www.boost.org/doc/libs/1_57_0/boost.png"></td>
-<td align="center"><a href="../../../../../index.html">Home</a></td>
-<td align="center"><a href="../../../../../libs/libraries.htm">Libraries</a></td>
+<td align="center"><a href="http://www.boost.org/doc/libs/1_57_0/index.html">Home</a></td>
+<td align="center"><a href="http://www.boost.org/doc/libs/1_57_0/libs/libraries.htm">Libraries</a></td>
 <td align="center"><a href="http://www.boost.org/users/people.html">People</a></td>
 <td align="center"><a href="http://www.boost.org/users/faq.html">FAQ</a></td>
-<td align="center"><a href="../../../../../more/index.htm">More</a></td>
+<td align="center"><a href="http://www.boost.org/doc/libs/1_57_0/more/index.htm">More</a></td>
 </tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="acknowledgements_notes.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/home.png" alt="Home"></a>
+<a accesskey="p" href="acknowledgements_notes.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/prev.png" alt="Prev"></a><a accesskey="u" href="http://www.boost.org/doc/libs/1_57_0/index.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/up.png" alt="Up"></a><a accesskey="h" href="http://www.boost.org/doc/libs/1_57_0/index.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/home.png" alt="Home"></a>
 </div>
 <div class="section">
 <div class="titlepage"><div><div><h2 class="title" style="clear: both">
 <a name="container.release_notes"></a><a class="link" href="release_notes.html" title="Release Notes">Release Notes</a>
 </h2></div></div></div>
 <div class="toc"><dl class="toc">
+<dt><span class="section"><a href="release_notes.html#container.release_notes.release_notes_boost_1_59_00">Boost
+      1.59 Release</a></span></dt>
 <dt><span class="section"><a href="release_notes.html#container.release_notes.release_notes_boost_1_58_00">Boost
       1.58 Release</a></span></dt>
 <dt><span class="section"><a href="release_notes.html#container.release_notes.release_notes_boost_1_57_00">Boost
@@ -51,12 +53,44 @@
 </dl></div>
 <div class="section">
 <div class="titlepage"><div><div><h3 class="title">
+<a name="container.release_notes.release_notes_boost_1_59_00"></a><a class="link" href="release_notes.html#container.release_notes.release_notes_boost_1_59_00" title="Boost 1.59 Release">Boost
+      1.59 Release</a>
+</h3></div></div></div>
+<div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; ">
+<li class="listitem">
+            <a href="https://github.com/boostorg/container/pull/26" target="_top">GitHub #26:
+            <span class="emphasis"><em>Fix bug in stable_vector::capacity()</em></span></a>. Thanks
+            to timsong-cpp/Arindam Mukerjee.
+          </li>
+<li class="listitem">
+            <a href="https://github.com/boostorg/container/pull/27" target="_top">GitHub #27:
+            <span class="emphasis"><em>fix stable_vector's index_of's doxygen comment</em></span></a>.
+            Thanks to kariya-mitsuru.
+          </li>
+<li class="listitem">
+            <a href="https://svn.boost.org/trac/boost/ticket/11380" target="_top">Trac #11380:
+            <span class="emphasis"><em>"Container library std forward declarations incorrect
+            in std_fwd.hpp on libc++ with gcc"</em></span></a>.
+          </li>
+<li class="listitem">
+            <a href="https://svn.boost.org/trac/boost/ticket/11388" target="_top">Trac #11388:
+            <span class="emphasis"><em>"boost::container::list::emplace_back broken on Visual
+            Studio 2010"</em></span></a>.
+          </li>
+<li class="listitem">
+            <a href="https://svn.boost.org/trac/boost/ticket/11339" target="_top">Trac #11339:
+            <span class="emphasis"><em>"VC12 LNK2005 error with boost::container::adaptive_pool"</em></span></a>.
+          </li>
+</ul></div>
+</div>
+<div class="section">
+<div class="titlepage"><div><div><h3 class="title">
 <a name="container.release_notes.release_notes_boost_1_58_00"></a><a class="link" href="release_notes.html#container.release_notes.release_notes_boost_1_58_00" title="Boost 1.58 Release">Boost
       1.58 Release</a>
 </h3></div></div></div>
 <div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; ">
 <li class="listitem">
-            Experimental <code class="computeroutput"><a class="link" href="../boost/container/small_vector.html" title="Class template small_vector">small_vector</a></code>
+            Experimental <code class="computeroutput"><a class="link" href="http://www.boost.org/doc/libs/1_57_0/boost/container/small_vector.html" title="Class template small_vector">small_vector</a></code>
             container.
           </li>
 <li class="listitem">
@@ -80,13 +114,14 @@
             Fixed bugs:
             <div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: circle; ">
 <li class="listitem">
-                  <a href="https://svn.boost.org/trac/boost/ticket/9931" target="_top">#9931:
-                  <span class="emphasis"><em>"flat_map::insert(ordered_unique_range_t...) fails
-                  with move_iterators"</em></span></a> (reopened).
+                  <a href="https://svn.boost.org/trac/boost/ticket/9931" target="_top">Trac
+                  #9931: <span class="emphasis"><em>"flat_map::insert(ordered_unique_range_t...)
+                  fails with move_iterators"</em></span></a> (reopened).
                 </li>
 <li class="listitem">
-                  <a href="https://svn.boost.org/trac/boost/ticket/11076" target="_top">#11076:
-                  <span class="emphasis"><em>"Unqualified calls to memmove/memcpy in container/detail/copy_move_algo.hpp"</em></span></a>.
+                  <a href="https://svn.boost.org/trac/boost/ticket/11076" target="_top">Trac
+                  #11076: <span class="emphasis"><em>"Unqualified calls to memmove/memcpy in
+                  container/detail/copy_move_algo.hpp"</em></span></a>.
                 </li>
 <li class="listitem">
                   <a href="https://svn.boost.org/trac/boost/ticket/10790" target="_top">Trac
@@ -109,7 +144,7 @@
 </ul></div>
           </li>
 <li class="listitem">
-            <span class="bold"><strong>Source Breaking</strong></span>: <code class="computeroutput"><a class="link" href="../boost/container/scoped_allocator_adaptor.html" title="Class template scoped_allocator_adaptor">scoped_allocator_adaptor</a></code>'s
+            <span class="bold"><strong>Source Breaking</strong></span>: <code class="computeroutput"><a class="link" href="http://www.boost.org/doc/libs/1_57_0/boost/container/scoped_allocator_adaptor.html" title="Class template scoped_allocator_adaptor">scoped_allocator_adaptor</a></code>'s
             <code class="computeroutput"><span class="identifier">propagate_on_container_copy_assignment</span></code>,
             <code class="computeroutput"><span class="identifier">propagate_on_container_move_assignment</span></code>
             and <code class="computeroutput"><span class="identifier">propagate_on_container_swap</span></code>
@@ -167,8 +202,8 @@
 <li class="listitem">
             <a class="link" href="extended_functionality.html#container.extended_functionality.configurable_tree_based_associative_containers" title="Configurable tree-based associative ordered containers">Improved
             configurability</a> of tree-based ordered associative containers.
-            AVL, Scapegoat and Splay trees are now available to implement <code class="computeroutput"><a class="link" href="../boost/container/set.html" title="Class template set">set</a></code>, <code class="computeroutput"><a class="link" href="../boost/container/multiset.html" title="Class template multiset">multiset</a></code>,
-            <code class="computeroutput"><a class="link" href="../boost/container/map.html" title="Class template map">map</a></code> and <code class="computeroutput"><a class="link" href="../boost/container/multimap.html" title="Class template multimap">multimap</a></code>.
+            AVL, Scapegoat and Splay trees are now available to implement <code class="computeroutput"><a class="link" href="http://www.boost.org/doc/libs/1_57_0/boost/container/set.html" title="Class template set">set</a></code>, <code class="computeroutput"><a class="link" href="http://www.boost.org/doc/libs/1_57_0/boost/container/multiset.html" title="Class template multiset">multiset</a></code>,
+            <code class="computeroutput"><a class="link" href="http://www.boost.org/doc/libs/1_57_0/boost/container/map.html" title="Class template map">map</a></code> and <code class="computeroutput"><a class="link" href="http://www.boost.org/doc/libs/1_57_0/boost/container/multimap.html" title="Class template multimap">multimap</a></code>.
           </li>
 <li class="listitem">
             Fixed bugs:
@@ -406,7 +441,7 @@
 </tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="acknowledgements_notes.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/home.png" alt="Home"></a>
+<a accesskey="p" href="acknowledgements_notes.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/prev.png" alt="Prev"></a><a accesskey="u" href="http://www.boost.org/doc/libs/1_57_0/index.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/up.png" alt="Up"></a><a accesskey="h" href="http://www.boost.org/doc/libs/1_57_0/index.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/home.png" alt="Home"></a>
 </div>
 </body>
 </html>

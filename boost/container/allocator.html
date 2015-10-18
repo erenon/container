@@ -2,25 +2,25 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
 <title>Class template allocator</title>
-<link rel="stylesheet" href="http://www.boost.org/doc/libs/1_55_0/doc/src/boostbook.css" type="text/css">
+<link rel="stylesheet" href="http://www.boost.org/doc/libs/1_57_0/doc/src/boostbook.css" type="text/css">
 <meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
-<link rel="home" href="../../index.html" title="Chapter&#160;1.&#160;Boost.Container">
-<link rel="up" href="../../boost_container_header_reference.html#header.boost.container.allocator_hpp" title="Header &lt;boost/container/allocator.hpp&gt;">
+<link rel="home" href="http://www.boost.org/doc/libs/1_57_0/index.html" title="Chapter&#160;1.&#160;Boost.Container">
+<link rel="up" href="http://www.boost.org/doc/libs/1_57_0/boost_container_header_reference.html#header.boost.container.allocator_hpp" title="Header &lt;boost/container/allocator.hpp&gt;">
 <link rel="prev" href="adaptive_pool/rebind.html" title="Struct template rebind">
 <link rel="next" href="allocator/rebind.html" title="Struct template rebind">
 </head>
 <body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
 <table cellpadding="2" width="100%"><tr>
 <td valign="top"><img alt="Boost C++ Libraries" width="277" height="86" src="http://www.boost.org/doc/libs/1_57_0/boost.png"></td>
-<td align="center"><a href="../../../../../../index.html">Home</a></td>
-<td align="center"><a href="../../../../../../libs/libraries.htm">Libraries</a></td>
+<td align="center"><a href="http://www.boost.org/doc/libs/1_57_0/index.html">Home</a></td>
+<td align="center"><a href="http://www.boost.org/doc/libs/1_57_0/libs/libraries.htm">Libraries</a></td>
 <td align="center"><a href="http://www.boost.org/users/people.html">People</a></td>
 <td align="center"><a href="http://www.boost.org/users/faq.html">FAQ</a></td>
-<td align="center"><a href="../../../../../../more/index.htm">More</a></td>
+<td align="center"><a href="http://www.boost.org/doc/libs/1_57_0/more/index.htm">More</a></td>
 </tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="adaptive_pool/rebind.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/prev.png" alt="Prev"></a><a accesskey="u" href="../../boost_container_header_reference.html#header.boost.container.allocator_hpp"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/home.png" alt="Home"></a><a accesskey="n" href="allocator/rebind.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/next.png" alt="Next"></a>
+<a accesskey="p" href="adaptive_pool/rebind.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/prev.png" alt="Prev"></a><a accesskey="u" href="http://www.boost.org/doc/libs/1_57_0/boost_container_header_reference.html#header.boost.container.allocator_hpp"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/up.png" alt="Up"></a><a accesskey="h" href="http://www.boost.org/doc/libs/1_57_0/index.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/home.png" alt="Home"></a><a accesskey="n" href="allocator/rebind.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/next.png" alt="Next"></a>
 </div>
 <div class="refentry">
 <a name="boost.container.allocator"></a><div class="titlepage"></div>
@@ -29,7 +29,7 @@
 <p>boost::container::allocator</p>
 </div>
 <h2 xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv-title">Synopsis</h2>
-<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../../boost_container_header_reference.html#header.boost.container.allocator_hpp" title="Header &lt;boost/container/allocator.hpp&gt;">boost/container/allocator.hpp</a>&gt;
+<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="http://www.boost.org/doc/libs/1_57_0/boost_container_header_reference.html#header.boost.container.allocator_hpp" title="Header &lt;boost/container/allocator.hpp&gt;">boost/container/allocator.hpp</a>&gt;
 
 </span><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T<span class="special">&gt;</span> 
 <span class="keyword">class</span> <a class="link" href="allocator.html" title="Class template allocator">allocator</a> <span class="special">{</span>
@@ -52,137 +52,137 @@
   <span class="special">}</span><span class="special">;</span>
 
   <span class="comment">// <a class="link" href="allocator.html#boost.container.allocatorconstruct-copy-destruct">construct/copy/destruct</a></span>
-  <a class="link" href="allocator.html#idp48040480-bb"><span class="identifier">allocator</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span>
-  <a class="link" href="allocator.html#idp48041472-bb"><span class="identifier">allocator</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="allocator.html" title="Class template allocator">allocator</a> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span>
-  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> <a class="link" href="allocator.html#idp48043616-bb"><span class="identifier">allocator</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="allocator.html" title="Class template allocator">allocator</a><span class="special">&lt;</span> <span class="identifier">T2</span> <span class="special">&gt;</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span>
+  <a class="link" href="allocator.html#idp56209680-bb"><span class="identifier">allocator</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span>
+  <a class="link" href="allocator.html#idp56210672-bb"><span class="identifier">allocator</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="allocator.html" title="Class template allocator">allocator</a> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> <a class="link" href="allocator.html#idp56212816-bb"><span class="identifier">allocator</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="allocator.html" title="Class template allocator">allocator</a><span class="special">&lt;</span> <span class="identifier">T2</span> <span class="special">&gt;</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="allocator.html#idp48007264-bb">public member functions</a></span>
-  <span class="identifier">pointer</span> <a class="link" href="allocator.html#idp48007824-bb"><span class="identifier">allocate</span></a><span class="special">(</span><span class="identifier">size_type</span><span class="special">,</span> <span class="keyword">const</span> <span class="keyword">void</span> <span class="special">*</span> <span class="special">=</span> <span class="number">0</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="allocator.html#idp48010960-bb"><span class="identifier">deallocate</span></a><span class="special">(</span><span class="identifier">pointer</span><span class="special">,</span> <span class="identifier">size_type</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span>
-  <span class="identifier">size_type</span> <a class="link" href="allocator.html#idp48013904-bb"><span class="identifier">max_size</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span> <span class="keyword">noexcept</span><span class="special">;</span>
-  <span class="identifier">pointer</span> <a class="link" href="allocator.html#idp48015408-bb"><span class="identifier">allocation_command</span></a><span class="special">(</span><span class="identifier">allocation_type</span><span class="special">,</span> <span class="identifier">size_type</span><span class="special">,</span> <span class="identifier">size_type</span> <span class="special">&amp;</span><span class="special">,</span> 
+  <span class="comment">// <a class="link" href="allocator.html#idp56176272-bb">public member functions</a></span>
+  <span class="identifier">pointer</span> <a class="link" href="allocator.html#idp56176832-bb"><span class="identifier">allocate</span></a><span class="special">(</span><span class="identifier">size_type</span><span class="special">,</span> <span class="keyword">const</span> <span class="keyword">void</span> <span class="special">*</span> <span class="special">=</span> <span class="number">0</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="allocator.html#idp56179968-bb"><span class="identifier">deallocate</span></a><span class="special">(</span><span class="identifier">pointer</span><span class="special">,</span> <span class="identifier">size_type</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span>
+  <span class="identifier">size_type</span> <a class="link" href="allocator.html#idp56182912-bb"><span class="identifier">max_size</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span> <span class="keyword">noexcept</span><span class="special">;</span>
+  <span class="identifier">pointer</span> <a class="link" href="allocator.html#idp56184512-bb"><span class="identifier">allocation_command</span></a><span class="special">(</span><span class="identifier">allocation_type</span><span class="special">,</span> <span class="identifier">size_type</span><span class="special">,</span> <span class="identifier">size_type</span> <span class="special">&amp;</span><span class="special">,</span> 
                              <span class="identifier">pointer</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
-  <span class="identifier">size_type</span> <a class="link" href="allocator.html#idp48019680-bb"><span class="identifier">size</span></a><span class="special">(</span><span class="identifier">pointer</span><span class="special">)</span> <span class="keyword">const</span> <span class="keyword">noexcept</span><span class="special">;</span>
-  <span class="identifier">pointer</span> <a class="link" href="allocator.html#idp48022112-bb"><span class="identifier">allocate_one</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="allocator.html#idp48023568-bb"><span class="identifier">allocate_individual</span></a><span class="special">(</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">size_t</span><span class="special">,</span> <span class="identifier">multiallocation_chain</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="allocator.html#idp48026256-bb"><span class="identifier">deallocate_one</span></a><span class="special">(</span><span class="identifier">pointer</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="allocator.html#idp48028672-bb"><span class="identifier">deallocate_individual</span></a><span class="special">(</span><span class="identifier">multiallocation_chain</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="allocator.html#idp48031008-bb"><span class="identifier">allocate_many</span></a><span class="special">(</span><span class="identifier">size_type</span><span class="special">,</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">size_t</span><span class="special">,</span> <span class="identifier">multiallocation_chain</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="allocator.html#idp48034480-bb"><span class="identifier">allocate_many</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">size_type</span> <span class="special">*</span><span class="special">,</span> <span class="identifier">size_type</span><span class="special">,</span> <span class="identifier">multiallocation_chain</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="allocator.html#idp48037968-bb"><span class="identifier">deallocate_many</span></a><span class="special">(</span><span class="identifier">multiallocation_chain</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span>
+  <span class="identifier">size_type</span> <a class="link" href="allocator.html#idp56188784-bb"><span class="identifier">size</span></a><span class="special">(</span><span class="identifier">pointer</span><span class="special">)</span> <span class="keyword">const</span> <span class="keyword">noexcept</span><span class="special">;</span>
+  <span class="identifier">pointer</span> <a class="link" href="allocator.html#idp56191216-bb"><span class="identifier">allocate_one</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="allocator.html#idp56192672-bb"><span class="identifier">allocate_individual</span></a><span class="special">(</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">size_t</span><span class="special">,</span> <span class="identifier">multiallocation_chain</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="allocator.html#idp56195456-bb"><span class="identifier">deallocate_one</span></a><span class="special">(</span><span class="identifier">pointer</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="allocator.html#idp56197872-bb"><span class="identifier">deallocate_individual</span></a><span class="special">(</span><span class="identifier">multiallocation_chain</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="allocator.html#idp56200208-bb"><span class="identifier">allocate_many</span></a><span class="special">(</span><span class="identifier">size_type</span><span class="special">,</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">size_t</span><span class="special">,</span> <span class="identifier">multiallocation_chain</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="allocator.html#idp56203680-bb"><span class="identifier">allocate_many</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">size_type</span> <span class="special">*</span><span class="special">,</span> <span class="identifier">size_type</span><span class="special">,</span> <span class="identifier">multiallocation_chain</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="allocator.html#idp56207168-bb"><span class="identifier">deallocate_many</span></a><span class="special">(</span><span class="identifier">multiallocation_chain</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="allocator.html#idp48046608-bb">friend functions</a></span>
-  <span class="keyword">friend</span> <span class="keyword">void</span> <a class="link" href="allocator.html#idp48047168-bb"><span class="identifier">swap</span></a><span class="special">(</span><span class="identifier">self_t</span> <span class="special">&amp;</span><span class="special">,</span> <span class="identifier">self_t</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span>
-  <span class="keyword">friend</span> <span class="keyword">bool</span> <a class="link" href="allocator.html#idp48050128-bb"><span class="keyword">operator</span><span class="special">==</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="allocator.html" title="Class template allocator">allocator</a> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <a class="link" href="allocator.html" title="Class template allocator">allocator</a> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span>
-  <span class="keyword">friend</span> <span class="keyword">bool</span> <a class="link" href="allocator.html#idp48054032-bb"><span class="keyword">operator</span><span class="special">!=</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="allocator.html" title="Class template allocator">allocator</a> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <a class="link" href="allocator.html" title="Class template allocator">allocator</a> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span>
+  <span class="comment">// <a class="link" href="allocator.html#idp56215808-bb">friend functions</a></span>
+  <span class="keyword">friend</span> <span class="keyword">void</span> <a class="link" href="allocator.html#idp56216368-bb"><span class="identifier">swap</span></a><span class="special">(</span><span class="identifier">self_t</span> <span class="special">&amp;</span><span class="special">,</span> <span class="identifier">self_t</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span>
+  <span class="keyword">friend</span> <span class="keyword">bool</span> <a class="link" href="allocator.html#idp56219328-bb"><span class="keyword">operator</span><span class="special">==</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="allocator.html" title="Class template allocator">allocator</a> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <a class="link" href="allocator.html" title="Class template allocator">allocator</a> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span>
+  <span class="keyword">friend</span> <span class="keyword">bool</span> <a class="link" href="allocator.html#idp56223232-bb"><span class="keyword">operator</span><span class="special">!=</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="allocator.html" title="Class template allocator">allocator</a> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <a class="link" href="allocator.html" title="Class template allocator">allocator</a> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="allocator.html#idp48058096-bb">private member functions</a></span>
-  <span class="identifier">pointer</span> <a class="link" href="allocator.html#idp48058672-bb"><span class="identifier">priv_allocation_command</span></a><span class="special">(</span><span class="identifier">allocation_type</span><span class="special">,</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">size_t</span><span class="special">,</span> <span class="identifier">size_type</span> <span class="special">&amp;</span><span class="special">,</span> 
+  <span class="comment">// <a class="link" href="allocator.html#idp56227296-bb">private member functions</a></span>
+  <span class="identifier">pointer</span> <a class="link" href="allocator.html#idp56227872-bb"><span class="identifier">priv_allocation_command</span></a><span class="special">(</span><span class="identifier">allocation_type</span><span class="special">,</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">size_t</span><span class="special">,</span> <span class="identifier">size_type</span> <span class="special">&amp;</span><span class="special">,</span> 
                                   <span class="identifier">pointer</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
 <span class="special">}</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idp98602560"></a><h2>Description</h2>
+<a name="idp87672000"></a><h2>Description</h2>
 <div class="refsect2">
-<a name="idp98602976"></a><h3>
+<a name="idp87672416"></a><h3>
 <a name="boost.container.allocatorconstruct-copy-destruct"></a><code class="computeroutput">allocator</code> 
         public
        construct/copy/destruct</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
 <li class="listitem">
-<pre class="literallayout"><a name="idp48040480-bb"></a><span class="identifier">allocator</span><span class="special">(</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span></pre>
+<pre class="literallayout"><a name="idp56209680-bb"></a><span class="identifier">allocator</span><span class="special">(</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span></pre>
 <p>Default constructor Never throws </p>
 </li>
 <li class="listitem">
-<pre class="literallayout"><a name="idp48041472-bb"></a><span class="identifier">allocator</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="allocator.html" title="Class template allocator">allocator</a> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span></pre>
+<pre class="literallayout"><a name="idp56210672-bb"></a><span class="identifier">allocator</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="allocator.html" title="Class template allocator">allocator</a> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span></pre>
 <p>Constructor from other allocator. Never throws </p>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> <a name="idp48043616-bb"></a><span class="identifier">allocator</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="allocator.html" title="Class template allocator">allocator</a><span class="special">&lt;</span> <span class="identifier">T2</span> <span class="special">&gt;</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> <a name="idp56212816-bb"></a><span class="identifier">allocator</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="allocator.html" title="Class template allocator">allocator</a><span class="special">&lt;</span> <span class="identifier">T2</span> <span class="special">&gt;</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span></pre>
 <p>Constructor from related allocator. Never throws </p>
 </li>
 </ol></div>
 </div>
 <div class="refsect2">
-<a name="idp98627728"></a><h3>
-<a name="idp48007264-bb"></a><code class="computeroutput">allocator</code> public member functions</h3>
+<a name="idp87697168"></a><h3>
+<a name="idp56176272-bb"></a><code class="computeroutput">allocator</code> public member functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
 <li class="listitem">
-<pre class="literallayout"><span class="identifier">pointer</span> <a name="idp48007824-bb"></a><span class="identifier">allocate</span><span class="special">(</span><span class="identifier">size_type</span> count<span class="special">,</span> <span class="keyword">const</span> <span class="keyword">void</span> <span class="special">*</span> hint <span class="special">=</span> <span class="number">0</span><span class="special">)</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="identifier">pointer</span> <a name="idp56176832-bb"></a><span class="identifier">allocate</span><span class="special">(</span><span class="identifier">size_type</span> count<span class="special">,</span> <span class="keyword">const</span> <span class="keyword">void</span> <span class="special">*</span> hint <span class="special">=</span> <span class="number">0</span><span class="special">)</span><span class="special">;</span></pre>
 <p>Allocates memory for an array of count elements. Throws std::bad_alloc if there is no enough memory If Version is 2, this allocated memory can only be deallocated with deallocate() or (for Version == 2) deallocate_many() </p>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">void</span> <a name="idp48010960-bb"></a><span class="identifier">deallocate</span><span class="special">(</span><span class="identifier">pointer</span> ptr<span class="special">,</span> <span class="identifier">size_type</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="keyword">void</span> <a name="idp56179968-bb"></a><span class="identifier">deallocate</span><span class="special">(</span><span class="identifier">pointer</span> ptr<span class="special">,</span> <span class="identifier">size_type</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span></pre>
 <p>Deallocates previously allocated memory. Never throws </p>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="identifier">size_type</span> <a name="idp48013904-bb"></a><span class="identifier">max_size</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span> <span class="keyword">noexcept</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="identifier">size_type</span> <a name="idp56182912-bb"></a><span class="identifier">max_size</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span> <span class="keyword">noexcept</span><span class="special">;</span></pre>
 <p>Returns the maximum number of elements that could be allocated. Never throws </p>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="identifier">pointer</span> <a name="idp48015408-bb"></a><span class="identifier">allocation_command</span><span class="special">(</span><span class="identifier">allocation_type</span> command<span class="special">,</span> <span class="identifier">size_type</span> limit_size<span class="special">,</span> 
+<pre class="literallayout"><span class="identifier">pointer</span> <a name="idp56184512-bb"></a><span class="identifier">allocation_command</span><span class="special">(</span><span class="identifier">allocation_type</span> command<span class="special">,</span> <span class="identifier">size_type</span> limit_size<span class="special">,</span> 
                            <span class="identifier">size_type</span> <span class="special">&amp;</span> prefer_in_recvd_out_size<span class="special">,</span> 
                            <span class="identifier">pointer</span> <span class="special">&amp;</span> reuse<span class="special">)</span><span class="special">;</span></pre>
 <p>An advanced function that offers in-place expansion shrink to fit and new allocation capabilities. Memory allocated with this function can only be deallocated with deallocate() or deallocate_many(). This function is available only with Version == 2 </p>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="identifier">size_type</span> <a name="idp48019680-bb"></a><span class="identifier">size</span><span class="special">(</span><span class="identifier">pointer</span> p<span class="special">)</span> <span class="keyword">const</span> <span class="keyword">noexcept</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="identifier">size_type</span> <a name="idp56188784-bb"></a><span class="identifier">size</span><span class="special">(</span><span class="identifier">pointer</span> p<span class="special">)</span> <span class="keyword">const</span> <span class="keyword">noexcept</span><span class="special">;</span></pre>
 <p>Returns maximum the number of objects the previously allocated memory pointed by p can hold. Memory must not have been allocated with allocate_one or allocate_individual. This function is available only with Version == 2 </p>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="identifier">pointer</span> <a name="idp48022112-bb"></a><span class="identifier">allocate_one</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="identifier">pointer</span> <a name="idp56191216-bb"></a><span class="identifier">allocate_one</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>
 <p>Allocates just one object. Memory allocated with this function must be deallocated only with deallocate_one(). Throws bad_alloc if there is no enough memory This function is available only with Version == 2 </p>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">void</span> <a name="idp48023568-bb"></a><span class="identifier">allocate_individual</span><span class="special">(</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">size_t</span> num_elements<span class="special">,</span> 
+<pre class="literallayout"><span class="keyword">void</span> <a name="idp56192672-bb"></a><span class="identifier">allocate_individual</span><span class="special">(</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">size_t</span> num_elements<span class="special">,</span> 
                          <span class="identifier">multiallocation_chain</span> <span class="special">&amp;</span> chain<span class="special">)</span><span class="special">;</span></pre>
 <p>Allocates many elements of size == 1. Elements must be individually deallocated with deallocate_one() This function is available only with Version == 2 </p>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">void</span> <a name="idp48026256-bb"></a><span class="identifier">deallocate_one</span><span class="special">(</span><span class="identifier">pointer</span> p<span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="keyword">void</span> <a name="idp56195456-bb"></a><span class="identifier">deallocate_one</span><span class="special">(</span><span class="identifier">pointer</span> p<span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span></pre>
 <p>Deallocates memory previously allocated with allocate_one(). You should never use deallocate_one to deallocate memory allocated with other functions different from allocate_one() or allocate_individual. </p>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">void</span> <a name="idp48028672-bb"></a><span class="identifier">deallocate_individual</span><span class="special">(</span><span class="identifier">multiallocation_chain</span> <span class="special">&amp;</span> chain<span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="keyword">void</span> <a name="idp56197872-bb"></a><span class="identifier">deallocate_individual</span><span class="special">(</span><span class="identifier">multiallocation_chain</span> <span class="special">&amp;</span> chain<span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span></pre>
 <p>Deallocates memory allocated with allocate_one() or allocate_individual(). This function is available only with Version == 2 </p>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">void</span> <a name="idp48031008-bb"></a><span class="identifier">allocate_many</span><span class="special">(</span><span class="identifier">size_type</span> elem_size<span class="special">,</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">size_t</span> n_elements<span class="special">,</span> 
+<pre class="literallayout"><span class="keyword">void</span> <a name="idp56200208-bb"></a><span class="identifier">allocate_many</span><span class="special">(</span><span class="identifier">size_type</span> elem_size<span class="special">,</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">size_t</span> n_elements<span class="special">,</span> 
                    <span class="identifier">multiallocation_chain</span> <span class="special">&amp;</span> chain<span class="special">)</span><span class="special">;</span></pre>
 <p>Allocates many elements of size elem_size. Elements must be individually deallocated with deallocate() This function is available only with Version == 2 </p>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">void</span> <a name="idp48034480-bb"></a><span class="identifier">allocate_many</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">size_type</span> <span class="special">*</span> elem_sizes<span class="special">,</span> <span class="identifier">size_type</span> n_elements<span class="special">,</span> 
+<pre class="literallayout"><span class="keyword">void</span> <a name="idp56203680-bb"></a><span class="identifier">allocate_many</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">size_type</span> <span class="special">*</span> elem_sizes<span class="special">,</span> <span class="identifier">size_type</span> n_elements<span class="special">,</span> 
                    <span class="identifier">multiallocation_chain</span> <span class="special">&amp;</span> chain<span class="special">)</span><span class="special">;</span></pre>
 <p>Allocates n_elements elements, each one of size elem_sizes[i] Elements must be individually deallocated with deallocate() This function is available only with Version == 2 </p>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">void</span> <a name="idp48037968-bb"></a><span class="identifier">deallocate_many</span><span class="special">(</span><span class="identifier">multiallocation_chain</span> <span class="special">&amp;</span> chain<span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="keyword">void</span> <a name="idp56207168-bb"></a><span class="identifier">deallocate_many</span><span class="special">(</span><span class="identifier">multiallocation_chain</span> <span class="special">&amp;</span> chain<span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span></pre>
 <p>Deallocates several elements allocated by allocate_many(), allocate(), or allocation_command(). This function is available only with Version == 2 </p>
 </li>
 </ol></div>
 </div>
 <div class="refsect2">
-<a name="idp98723760"></a><h3>
-<a name="idp48046608-bb"></a><code class="computeroutput">allocator</code> friend functions</h3>
+<a name="idp87793072"></a><h3>
+<a name="idp56215808-bb"></a><code class="computeroutput">allocator</code> friend functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">friend</span> <span class="keyword">void</span> <a name="idp48047168-bb"></a><span class="identifier">swap</span><span class="special">(</span><span class="identifier">self_t</span> <span class="special">&amp;</span><span class="special">,</span> <span class="identifier">self_t</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="keyword">friend</span> <span class="keyword">void</span> <a name="idp56216368-bb"></a><span class="identifier">swap</span><span class="special">(</span><span class="identifier">self_t</span> <span class="special">&amp;</span><span class="special">,</span> <span class="identifier">self_t</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span></pre>
 <p>Swaps two allocators, does nothing because this allocator is stateless </p>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">friend</span> <span class="keyword">bool</span> <a name="idp48050128-bb"></a><span class="keyword">operator</span><span class="special">==</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="allocator.html" title="Class template allocator">allocator</a> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <a class="link" href="allocator.html" title="Class template allocator">allocator</a> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="keyword">friend</span> <span class="keyword">bool</span> <a name="idp56219328-bb"></a><span class="keyword">operator</span><span class="special">==</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="allocator.html" title="Class template allocator">allocator</a> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <a class="link" href="allocator.html" title="Class template allocator">allocator</a> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span></pre>
 <p>An allocator always compares to true, as memory allocated with one instance can be deallocated by another instance </p>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">friend</span> <span class="keyword">bool</span> <a name="idp48054032-bb"></a><span class="keyword">operator</span><span class="special">!=</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="allocator.html" title="Class template allocator">allocator</a> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <a class="link" href="allocator.html" title="Class template allocator">allocator</a> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="keyword">friend</span> <span class="keyword">bool</span> <a name="idp56223232-bb"></a><span class="keyword">operator</span><span class="special">!=</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="allocator.html" title="Class template allocator">allocator</a> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <a class="link" href="allocator.html" title="Class template allocator">allocator</a> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">noexcept</span><span class="special">;</span></pre>
 <p>An allocator always compares to false, as memory allocated with one instance can be deallocated by another instance </p>
 </li>
 </ol></div>
 </div>
 <div class="refsect2">
-<a name="idp98757984"></a><h3>
-<a name="idp48058096-bb"></a><code class="computeroutput">allocator</code> private member functions</h3>
-<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><span class="identifier">pointer</span> <a name="idp48058672-bb"></a><span class="identifier">priv_allocation_command</span><span class="special">(</span><span class="identifier">allocation_type</span> command<span class="special">,</span> 
+<a name="idp87827232"></a><h3>
+<a name="idp56227296-bb"></a><code class="computeroutput">allocator</code> private member functions</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><span class="identifier">pointer</span> <a name="idp56227872-bb"></a><span class="identifier">priv_allocation_command</span><span class="special">(</span><span class="identifier">allocation_type</span> command<span class="special">,</span> 
                                 <span class="identifier">std</span><span class="special">::</span><span class="identifier">size_t</span> limit_size<span class="special">,</span> 
                                 <span class="identifier">size_type</span> <span class="special">&amp;</span> prefer_in_recvd_out_size<span class="special">,</span> 
                                 <span class="identifier">pointer</span> <span class="special">&amp;</span> reuse_ptr<span class="special">)</span><span class="special">;</span></pre></li></ol></div>
@@ -199,7 +199,7 @@
 </tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="adaptive_pool/rebind.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/prev.png" alt="Prev"></a><a accesskey="u" href="../../boost_container_header_reference.html#header.boost.container.allocator_hpp"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/home.png" alt="Home"></a><a accesskey="n" href="allocator/rebind.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/next.png" alt="Next"></a>
+<a accesskey="p" href="adaptive_pool/rebind.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/prev.png" alt="Prev"></a><a accesskey="u" href="http://www.boost.org/doc/libs/1_57_0/boost_container_header_reference.html#header.boost.container.allocator_hpp"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/up.png" alt="Up"></a><a accesskey="h" href="http://www.boost.org/doc/libs/1_57_0/index.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/home.png" alt="Home"></a><a accesskey="n" href="allocator/rebind.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/next.png" alt="Next"></a>
 </div>
 </body>
 </html>

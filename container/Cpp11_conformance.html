@@ -2,25 +2,25 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
 <title>C++11/C++14 Conformance</title>
-<link rel="stylesheet" href="http://www.boost.org/doc/libs/1_55_0/doc/src/boostbook.css" type="text/css">
+<link rel="stylesheet" href="http://www.boost.org/doc/libs/1_57_0/doc/src/boostbook.css" type="text/css">
 <meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
-<link rel="home" href="../index.html" title="Chapter&#160;1.&#160;Boost.Container">
-<link rel="up" href="../index.html" title="Chapter&#160;1.&#160;Boost.Container">
+<link rel="home" href="http://www.boost.org/doc/libs/1_57_0/index.html" title="Chapter&#160;1.&#160;Boost.Container">
+<link rel="up" href="http://www.boost.org/doc/libs/1_57_0/index.html" title="Chapter&#160;1.&#160;Boost.Container">
 <link rel="prev" href="extended_functionality.html" title="Extended functionality">
 <link rel="next" href="examples.html" title="Examples">
 </head>
 <body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
 <table cellpadding="2" width="100%"><tr>
 <td valign="top"><img alt="Boost C++ Libraries" width="277" height="86" src="http://www.boost.org/doc/libs/1_57_0/boost.png"></td>
-<td align="center"><a href="../../../../../index.html">Home</a></td>
-<td align="center"><a href="../../../../../libs/libraries.htm">Libraries</a></td>
+<td align="center"><a href="http://www.boost.org/doc/libs/1_57_0/index.html">Home</a></td>
+<td align="center"><a href="http://www.boost.org/doc/libs/1_57_0/libs/libraries.htm">Libraries</a></td>
 <td align="center"><a href="http://www.boost.org/users/people.html">People</a></td>
 <td align="center"><a href="http://www.boost.org/users/faq.html">FAQ</a></td>
-<td align="center"><a href="../../../../../more/index.htm">More</a></td>
+<td align="center"><a href="http://www.boost.org/doc/libs/1_57_0/more/index.htm">More</a></td>
 </tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="extended_functionality.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/home.png" alt="Home"></a><a accesskey="n" href="examples.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/next.png" alt="Next"></a>
+<a accesskey="p" href="extended_functionality.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/prev.png" alt="Prev"></a><a accesskey="u" href="http://www.boost.org/doc/libs/1_57_0/index.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/up.png" alt="Up"></a><a accesskey="h" href="http://www.boost.org/doc/libs/1_57_0/index.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/home.png" alt="Home"></a><a accesskey="n" href="examples.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/next.png" alt="Next"></a>
 </div>
 <div class="section">
 <div class="titlepage"><div><div><h2 class="title" style="clear: both">
@@ -98,7 +98,7 @@
         <code class="computeroutput"><span class="identifier">allocator_traits</span></code> requirements.
         <span class="bold"><strong>Boost.Container</strong></span> not only supports this model
         with C++11 but also <span class="bold"><strong>backports it to C++03</strong></span>
-        via <code class="computeroutput"><a class="link" href="../boost/container/allocator_traits.html" title="Struct template allocator_traits">boost::container::allocator_traits</a></code>
+        via <code class="computeroutput"><a class="link" href="http://www.boost.org/doc/libs/1_57_0/boost/container/allocator_traits.html" title="Struct template allocator_traits">boost::container::allocator_traits</a></code>
         including some C++17 changes. This class offers some workarounds for C++03
         compilers to achieve the same allocator guarantees as <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">allocator_traits</span></code>.
       </p>
@@ -135,12 +135,12 @@
         elements, and so on.
       </p>
 <p>
-        <span class="bold"><strong>Boost.Container</strong></span> implements its own <code class="computeroutput"><a class="link" href="../boost/container/scoped_allocator_adaptor.html" title="Class template scoped_allocator_adaptor">scoped_allocator_adaptor</a></code>
+        <span class="bold"><strong>Boost.Container</strong></span> implements its own <code class="computeroutput"><a class="link" href="http://www.boost.org/doc/libs/1_57_0/boost/container/scoped_allocator_adaptor.html" title="Class template scoped_allocator_adaptor">scoped_allocator_adaptor</a></code>
         class and <span class="bold"><strong>backports this feature also to C++03 compilers</strong></span>.
         Due to C++03 limitations, in those compilers the allocator propagation implemented
         by <code class="computeroutput"><span class="identifier">scoped_allocator_adaptor</span><span class="special">::</span><span class="identifier">construct</span></code>
-        functions will be based on traits (<code class="computeroutput"><a class="link" href="../boost/container/constructible__idp52657248.html" title="Struct template constructible_with_allocator_suffix">constructible_with_allocator_suffix</a></code>
-        and <code class="computeroutput"><a class="link" href="../boost/container/constructible__idp52665520.html" title="Struct template constructible_with_allocator_prefix">constructible_with_allocator_prefix</a></code>)
+        functions will be based on traits (<code class="computeroutput"><a class="link" href="http://www.boost.org/doc/libs/1_57_0/boost/container/constructible__idp61091568.html" title="Struct template constructible_with_allocator_suffix">constructible_with_allocator_suffix</a></code>
+        and <code class="computeroutput"><a class="link" href="http://www.boost.org/doc/libs/1_57_0/boost/container/constructible__idp61081200.html" title="Struct template constructible_with_allocator_prefix">constructible_with_allocator_prefix</a></code>)
         proposed in <a href="http://www.open-std.org/jtc1/sc22/WG21/docs/papers/2008/n2554.pdf" target="_top">N2554:
         The Scoped Allocator Model (Rev 2) proposal</a>. In conforming C++11
         compilers or compilers supporting SFINAE expressions (when <code class="computeroutput"><span class="identifier">BOOST_NO_SFINAE_EXPR</span></code> is NOT defined), traits
@@ -226,7 +226,7 @@
       exception guarantees</a>
 </h3></div></div></div>
 <p>
-        <code class="computeroutput"><a class="link" href="../boost/container/vector.html" title="Class template vector">vector</a></code> does not support
+        <code class="computeroutput"><a class="link" href="http://www.boost.org/doc/libs/1_57_0/boost/container/vector.html" title="Class template vector">vector</a></code> does not support
         the strong exception guarantees given by <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span></code>
         in functions like <code class="computeroutput"><span class="identifier">insert</span></code>,
         <code class="computeroutput"><span class="identifier">push_back</span></code>, <code class="computeroutput"><span class="identifier">emplace</span></code>, <code class="computeroutput"><span class="identifier">emplace_back</span></code>,
@@ -245,7 +245,7 @@
         Allocators</a> to know more about these optimizations.
       </p>
 <p>
-        <code class="computeroutput"><a class="link" href="../boost/container/vector.html" title="Class template vector">vector</a></code> always uses
+        <code class="computeroutput"><a class="link" href="http://www.boost.org/doc/libs/1_57_0/boost/container/vector.html" title="Class template vector">vector</a></code> always uses
         move constructors/assignments to rearrange elements in the vector and uses
         memory expansion mechanisms if the allocator supports them, while offering
         only basic safety guarantees. It trades off exception guarantees for an improved
@@ -407,7 +407,7 @@
 </tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="extended_functionality.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/home.png" alt="Home"></a><a accesskey="n" href="examples.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/next.png" alt="Next"></a>
+<a accesskey="p" href="extended_functionality.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/prev.png" alt="Prev"></a><a accesskey="u" href="http://www.boost.org/doc/libs/1_57_0/index.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/up.png" alt="Up"></a><a accesskey="h" href="http://www.boost.org/doc/libs/1_57_0/index.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/home.png" alt="Home"></a><a accesskey="n" href="examples.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/next.png" alt="Next"></a>
 </div>
 </body>
 </html>

@@ -2,7 +2,7 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
 <title>Chapter&#160;1.&#160;Boost.Container</title>
-<link rel="stylesheet" href="http://www.boost.org/doc/libs/1_55_0/doc/src/boostbook.css" type="text/css">
+<link rel="stylesheet" href="http://www.boost.org/doc/libs/1_57_0/doc/src/boostbook.css" type="text/css">
 <meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
 <link rel="home" href="index.html" title="Chapter&#160;1.&#160;Boost.Container">
 <link rel="next" href="container/intro.html" title="Introduction">
@@ -10,11 +10,11 @@
 <body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
 <table cellpadding="2" width="100%"><tr>
 <td valign="top"><img alt="Boost C++ Libraries" width="277" height="86" src="http://www.boost.org/doc/libs/1_57_0/boost.png"></td>
-<td align="center"><a href="../../../../index.html">Home</a></td>
-<td align="center"><a href="../../../../libs/libraries.htm">Libraries</a></td>
+<td align="center"><a href="http://www.boost.org/doc/libs/1_57_0/index.html">Home</a></td>
+<td align="center"><a href="http://www.boost.org/doc/libs/1_57_0/libs/libraries.htm">Libraries</a></td>
 <td align="center"><a href="http://www.boost.org/users/people.html">People</a></td>
 <td align="center"><a href="http://www.boost.org/users/faq.html">FAQ</a></td>
-<td align="center"><a href="../../../../more/index.htm">More</a></td>
+<td align="center"><a href="http://www.boost.org/doc/libs/1_57_0/more/index.htm">More</a></td>
 </tr></table>
 <hr>
 <div class="spirit-nav"><a accesskey="n" href="container/intro.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/next.png" alt="Next"></a></div>
@@ -60,6 +60,7 @@
 <dt><span class="section"><a href="container/non_standard_containers.html#container.non_standard_containers.static_vector"><span class="emphasis"><em>static_vector</em></span></a></span></dt>
 <dt><span class="section"><a href="container/non_standard_containers.html#container.non_standard_containers.small_vector"><span class="emphasis"><em>small_vector</em></span></a></span></dt>
 <dt><span class="section"><a href="container/non_standard_containers.html#container.non_standard_containers.devector"><span class="emphasis"><em>devector</em></span></a></span></dt>
+<dt><span class="section"><a href="container/non_standard_containers.html#container.non_standard_containers.batch_deque"><span class="emphasis"><em>batch_deque</em></span></a></span></dt>
 </dl></dd>
 <dt><span class="section"><a href="container/extended_functionality.html">Extended functionality</a></span></dt>
 <dd><dl>
@@ -99,7 +100,10 @@
       value initialization using <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">memset</span></code></a></span></dt>
 </dl></dd>
 <dt><span class="section"><a href="container/examples.html">Examples</a></span></dt>
-<dd><dl><dt><span class="section"><a href="container/examples.html#container.examples.devector_usage">Devector usage</a></span></dt></dl></dd>
+<dd><dl>
+<dt><span class="section"><a href="container/examples.html#container.examples.devector_usage">devector usage</a></span></dt>
+<dt><span class="section"><a href="container/examples.html#container.examples.batch_deque_usage">batch_deque usage</a></span></dt>
+</dl></dd>
 <dt><span class="section"><a href="container/known_issues.html">Known Issues</a></span></dt>
 <dd><dl><dt><span class="section"><a href="container/known_issues.html#container.known_issues.move_emulation_limitations">Move
       emulation limitations in C++03 compilers</a></span></dt></dl></dd>
@@ -113,21 +117,21 @@
 </dl></dd>
 <dt><span class="section"><a href="container/index.html">Indexes</a></span></dt>
 <dd><dl>
-<dt><span class="section"><a href="container/index.html#idp96257040">Class Index</a></span></dt>
-<dt><span class="section"><a href="container/index.html#idp96444752">Typedef Index</a></span></dt>
-<dt><span class="section"><a href="container/index.html#idp97049008">Function Index</a></span></dt>
+<dt><span class="section"><a href="container/index.html#idp85291296">Class Index</a></span></dt>
+<dt><span class="section"><a href="container/index.html#idp85476768">Typedef Index</a></span></dt>
+<dt><span class="section"><a href="container/index.html#idp86088352">Function Index</a></span></dt>
 </dl></dd>
 <dt><span class="section"><a href="boost_container_header_reference.html">Boost.Container Header Reference</a></span></dt>
 <dd><dl>
 <dt><span class="section"><a href="boost_container_header_reference.html#header.boost.container.adaptive_pool_hpp">Header &lt;boost/container/adaptive_pool.hpp&gt;</a></span></dt>
 <dt><span class="section"><a href="boost_container_header_reference.html#header.boost.container.allocator_hpp">Header &lt;boost/container/allocator.hpp&gt;</a></span></dt>
 <dt><span class="section"><a href="boost_container_header_reference.html#header.boost.container.allocator_traits_hpp">Header &lt;boost/container/allocator_traits.hpp&gt;</a></span></dt>
+<dt><span class="section"><a href="boost_container_header_reference.html#header.boost.container.batch_deque_hpp">Header &lt;boost/container/batch_deque.hpp&gt;</a></span></dt>
 <dt><span class="section"><a href="boost_container_header_reference.html#header.boost.container.container_fwd_hpp">Header &lt;boost/container/container_fwd.hpp&gt;</a></span></dt>
 <dt><span class="section"><a href="boost_container_header_reference.html#header.boost.container.deque_hpp">Header &lt;boost/container/deque.hpp&gt;</a></span></dt>
 <dt><span class="section"><a href="boost_container_header_reference.html#header.boost.container.devector_hpp">Header &lt;boost/container/devector.hpp&gt;</a></span></dt>
 <dt><span class="section"><a href="boost_container_header_reference.html#header.boost.container.flat_map_hpp">Header &lt;boost/container/flat_map.hpp&gt;</a></span></dt>
 <dt><span class="section"><a href="boost_container_header_reference.html#header.boost.container.flat_set_hpp">Header &lt;boost/container/flat_set.hpp&gt;</a></span></dt>
-<dt><span class="section"><a href="boost_container_header_reference.html#header.boost.container.flex_deque_hpp">Header &lt;boost/container/flex_deque.hpp&gt;</a></span></dt>
 <dt><span class="section"><a href="boost_container_header_reference.html#header.boost.container.list_hpp">Header &lt;boost/container/list.hpp&gt;</a></span></dt>
 <dt><span class="section"><a href="boost_container_header_reference.html#header.boost.container.map_hpp">Header &lt;boost/container/map.hpp&gt;</a></span></dt>
 <dt><span class="section"><a href="boost_container_header_reference.html#header.boost.container.new_allocator_hpp">Header &lt;boost/container/new_allocator.hpp&gt;</a></span></dt>
@@ -148,6 +152,8 @@
     and links</a></span></dt>
 <dt><span class="section"><a href="container/release_notes.html">Release Notes</a></span></dt>
 <dd><dl>
+<dt><span class="section"><a href="container/release_notes.html#container.release_notes.release_notes_boost_1_59_00">Boost
+      1.59 Release</a></span></dt>
 <dt><span class="section"><a href="container/release_notes.html#container.release_notes.release_notes_boost_1_58_00">Boost
       1.58 Release</a></span></dt>
 <dt><span class="section"><a href="container/release_notes.html#container.release_notes.release_notes_boost_1_57_00">Boost
@@ -175,7 +181,7 @@
 </div>
 </div>
 <table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
-<td align="left"><p><small>Last revised: July 26, 2015 at 13:49:05 GMT</small></p></td>
+<td align="left"><p><small>Last revised: October 18, 2015 at 21:05:36 GMT</small></p></td>
 <td align="right"><div class="copyright-footer"></div></td>
 </tr></table>
 <hr>
