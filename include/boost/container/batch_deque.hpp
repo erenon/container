@@ -74,8 +74,13 @@ template <
   typename BatchDequePolicy = batch_deque_policy<512>,
   typename Allocator = std::allocator<T>
 >
-class batch_deque : Allocator
+class batch_deque
+  #ifndef BOOST_CONTAINER_DOXYGEN_INVOKED
+    : Allocator
+  #endif // ifndef BOOST_CONTAINER_DOXYGEN_INVOKED
 {
+#ifndef BOOST_CONTAINER_DOXYGEN_INVOKED
+
   struct allocator_traits : public std::allocator_traits<Allocator>
   {
     // before C++14, std::allocator does not specify propagate_on_container_move_assignment,
@@ -95,6 +100,8 @@ class batch_deque : Allocator
   // TODO use is_trivially_copyable instead of is_pod when available
   static constexpr bool t_is_trivially_copyable = std::is_pod<T>::type::value;
 
+#endif // ifndef BOOST_CONTAINER_DOXYGEN_INVOKED
+
 public:
 
   typedef T value_type;
@@ -109,6 +116,8 @@ public:
   typedef BOOST_CONTAINER_IMPDEF(std::ptrdiff_t) difference_type;
 
 private:
+#ifndef BOOST_CONTAINER_DOXYGEN_INVOKED
+
 
   typedef typename allocator_traits::template rebind_alloc<pointer> map_allocator;
   typedef devector<pointer, devector_small_buffer_policy<0>, devector_growth_policy, map_allocator> map_t;
@@ -325,6 +334,8 @@ private:
     segment_pointer _p_segment;
     size_type _index;
   };
+
+#endif // ifndef BOOST_CONTAINER_DOXYGEN_INVOKED
 
 public:
 
@@ -1731,6 +1742,7 @@ public:
   }
 
 private:
+#ifndef BOOST_CONTAINER_DOXYGEN_INVOKED
 
   allocator_type& get_allocator_ref()
   {
@@ -2096,6 +2108,8 @@ private:
   map_t _map;
   iterator _begin;
   iterator _end;
+
+#endif // ifndef BOOST_CONTAINER_DOXYGEN_INVOKED
 };
 
 template <class T, class PX, class AX, class PY, class AY>
