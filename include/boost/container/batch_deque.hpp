@@ -1685,17 +1685,23 @@ public:
     iterator ncfirst = unconst_iterator(first);
     iterator nclast  = unconst_iterator(last);
 
-    // TODO possible optimization: decide on erased end
-    // based on range position
+    const size_type to_begin = ncfirst - begin();
+    const size_type to_end = end() - nclast;
 
-    const size_type n = ncfirst - begin();
-
-    iterator new_end = std::move(nclast, end(), ncfirst);
-    erase_at_end(new_end);
+    if (to_end <= to_begin)
+    {
+      iterator new_end = std::move(nclast, end(), ncfirst);
+      erase_at_end(new_end);
+    }
+    else
+    {
+      iterator new_begin = std::move_backward(begin(), ncfirst, nclast);
+      erase_at_begin(new_begin);
+    }
 
     BOOST_ASSERT(invariants_ok());
 
-    return begin() + n;
+    return begin() + to_begin;
   }
 
   /**
@@ -2003,6 +2009,15 @@ private:
     BOOST_ASSERT(_begin._p_segment == _map.begin());
     _begin._index = 0;
     _end = dst;
+  }
+
+  void erase_at_begin(iterator new_begin)
+  {
+    destroy_elements(begin(), new_begin);
+
+    const_map_iterator new_map_begin = new_begin._p_segment;
+    _map.erase(_map.begin(), new_map_begin);
+    _begin = new_begin;
   }
 
   void erase_at_end(iterator new_end)
