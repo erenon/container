@@ -100,7 +100,7 @@ struct unsafe_uninitialized_tag {};
  * **Exceptions**: The exception specifications assume `T` is nothrow [Destructible].
  *
  * Most methods providing the strong exception guarantee assume `T` either has a move
- * constructor marked noexcept or is [CopyInsertable] into the devector. If it's not true,
+ * constructor marked noexcept or is [CopyInsertable] into the devector. If it isn't true,
  * and the move constructor throws, the guarantee is waived and the effects are unspecified.
  *
  * In addition to the exceptions specified in the **Throws** clause, the following operations
@@ -388,7 +388,7 @@ public:
    * iterator does not meet the forward iterator requirements, `T` shall also be [MoveInsertable]
    * into `*this`.
    *
-   * **Postcondition**: `size() == std::distance(first, last) && front_free_capacity() == 0`.
+   * **Postcondition**: `size() == std::distance(first, last)
    *
    * **Exceptions**: Strong exception guarantee.
    *
@@ -520,6 +520,7 @@ public:
      _front_index(rhs._front_index),
      _back_index(rhs._back_index)
   {
+    // TODO should move elems-by-elems if the two allocators differ
     if (rhs.is_small() == false)
     {
       // buffer is already acquired, reset rhs
@@ -555,8 +556,6 @@ public:
   }
 
   /**
-   * [CopyInsertable]: http://en.cppreference.com/w/cpp/concept/CopyInsertable
-   *
    * **Effects**: Copies elements of `x` to `*this`. Previously
    * held elements get copy assigned to or destroyed.
    *
@@ -574,6 +573,7 @@ public:
    *
    * **Complexity**: Linear in the size of `x` and `*this`.
    *
+   * [CopyInsertable]: http://en.cppreference.com/w/cpp/concept/CopyInsertable
    * [propagate_on_container_copy_assignment]: http://en.cppreference.com/w/cpp/memory/allocator_traits
    */
   devector& operator=(const devector& x)
@@ -609,12 +609,12 @@ public:
   }
 
   /**
-   * [CopyInsertable]: http://en.cppreference.com/w/cpp/concept/CopyInsertable
+   * [MoveInsertable]: http://en.cppreference.com/w/cpp/concept/MoveInsertable
    *
    * **Effects**: Moves elements of `x` to `*this`. Previously
    * held elements get move/copy assigned to or destroyed.
    *
-   * **Requires**: `T` shall be [CopyInsertable] into `*this`.
+   * **Requires**: `T` shall be [MoveInsertable] into `*this`.
    *
    * **Postcondition**: `x` is left in an unspecified but valid state.
    *
@@ -1370,7 +1370,7 @@ public:
    *
    * **Precondition**: `n < size()`.
    *
-   * **Complexity**: constant.
+   * **Complexity**: Constant.
    */
   reference operator[](size_type n) noexcept
   {
@@ -1384,7 +1384,7 @@ public:
    *
    * **Precondition**: `n < size()`.
    *
-   * **Complexity**: constant.
+   * **Complexity**: Constant.
    */
   const_reference operator[](size_type n) const noexcept
   {
@@ -1400,7 +1400,7 @@ public:
    *
    * **Exceptions**: Strong exception guarantee.
    *
-   * **Complexity**: constant.
+   * **Complexity**: Constant.
    */
   reference at(size_type n)
   {
@@ -1415,7 +1415,7 @@ public:
    *
    * **Exceptions**: Strong exception guarantee.
    *
-   * **Complexity**: constant.
+   * **Complexity**: Constant.
    */
   const_reference at(size_type n) const
   {
@@ -1428,7 +1428,7 @@ public:
    *
    * **Precondition**: `!empty()`.
    *
-   * **Complexity**: constant.
+   * **Complexity**: Constant.
    */
   reference front() noexcept
   {
@@ -1442,7 +1442,7 @@ public:
    *
    * **Precondition**: `!empty()`.
    *
-   * **Complexity**: constant.
+   * **Complexity**: Constant.
    */
   const_reference front() const noexcept
   {
@@ -1456,7 +1456,7 @@ public:
    *
    * **Precondition**: `!empty()`.
    *
-   * **Complexity**: constant.
+   * **Complexity**: Constant.
    */
   reference back() noexcept
   {
@@ -1470,7 +1470,7 @@ public:
    *
    * **Precondition**: `!empty()`.
    *
-   * **Complexity**: constant.
+   * **Complexity**: Constant.
    */
   const_reference back() const noexcept
   {
@@ -1484,7 +1484,7 @@ public:
    * The range `[data(); data() + size())` is always valid. For a non-empty devector,
    * `data() == &front()`.
    *
-   * **Complexity**: constant.
+   * **Complexity**: Constant.
    */
   T* data() noexcept
   {
@@ -1496,7 +1496,7 @@ public:
    * The range `[data(); data() + size())` is always valid. For a non-empty devector,
    * `data() == &front()`.
    *
-   * **Complexity**: constant.
+   * **Complexity**: Constant.
    */
   const T* data() const noexcept
   {
@@ -1904,7 +1904,7 @@ public:
    * using each element in the rage pointed by `first` and `last` as constructor arguments.
    * Invalidates iterators if reallocation is needed.
    *
-   * **Requires**: `T` shall be [EmplaceConstructible] into `*this`. If the specified iterator
+   * **Requires**: `T` shall be [EmplaceConstructible] into `*this` from `*first`. If the specified iterator
    * does not meet the forward iterator requirements, `T` shall also be [MoveInsertable] into `*this`
    * and [MoveAssignable].
    *
@@ -1913,7 +1913,7 @@ public:
    * **Returns**: Iterator pointing to the first inserted element, or `position`, if `first == last`.
    *
    * **Complexity**: Linear in the size of `*this` and `N` (where `N` is the distance between `first` and `last`).
-   * Makes only `N` calls to the copy constructor of `T` and no reallocations if iterators `first` and `last`
+   * Makes only `N` calls to the constructor of `T` and no reallocations if iterators `first` and `last`
    * are of forward, bidirectional, or random access categories. It makes 2N calls to the copy constructor of `T`
    * and allocates memory twice at most if they are just input iterators.
    *
@@ -1995,8 +1995,7 @@ public:
    * **Exceptions**: Strong exception guarantee if `T` is `NothrowAssignable`,
    * Basic exception guarantee otherwise.
    *
-   * **Complexity**: Linear in half the size of `*this`
-   * plus the distance between `first` and `last`.
+   * **Complexity**: Linear in half the size of `*this`.
    */
   iterator erase(const_iterator position)
   {
@@ -2907,8 +2906,6 @@ private:
   template <typename ForwardIterator>
   void overwrite_buffer(ForwardIterator first, ForwardIterator last)
   {
-    BOOST_ASSERT(capacity() >= static_cast<size_type>(std::distance(first, last)));
-
     if (
        t_is_trivially_copyable
     && std::is_pointer<ForwardIterator>::value
