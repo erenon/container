@@ -36,7 +36,16 @@ using namespace boost::container;
 template <typename T>
 using small_devector = devector<T, devector_small_buffer_policy<16>>;
 
-// TODO test custom allocator
+template <typename T>
+struct different_allocator : public std::allocator<T>
+{
+  bool operator==(const different_allocator&) const { return false; }
+
+  using propagate_on_container_copy_assignment = std::true_type;
+  using propagate_on_container_move_assignment = std::false_type;
+  using propagate_on_container_swap = std::true_type;
+};
+
 
 #if 1
 typedef boost::mpl::list<
@@ -46,12 +55,16 @@ typedef boost::mpl::list<
   devector<noex_copy>,
   devector<only_movable>,
   devector<no_default_ctor>,
+
   small_devector<unsigned>,
   small_devector<regular_elem>,
   small_devector<noex_move>,
   small_devector<noex_copy>,
   small_devector<only_movable>,
   small_devector<no_default_ctor>
+
+  devector<unsigned, devector_small_buffer_policy<0>, devector_growth_policy, different_allocator<unsigned>>,
+  devector<unsigned, devector_small_buffer_policy<16>, devector_growth_policy, different_allocator<unsigned>>
 > all_devectors;
 #else
 typedef boost::mpl::list<

@@ -634,7 +634,7 @@ public:
   )
   {
     constexpr bool copy_alloc = allocator_traits::propagate_on_move_assignment;
-    const bool equal_alloc = get_allocator_ref() == x.get_allocator_ref();
+    const bool equal_alloc = (get_allocator_ref() == x.get_allocator_ref());
 
     if ((copy_alloc || equal_alloc) && x.is_small() == false)
     {
@@ -660,15 +660,22 @@ public:
       // if the allocator shouldn't be copied and they do not compare equal
       // or the rvalue has a small buffer, we can't steal memory.
 
+      auto xbegin = std::make_move_iterator(x.begin());
+      auto xend = std::make_move_iterator(x.end());
+
       if (copy_alloc)
       {
         get_allocator_ref() = std::move(x.get_allocator_ref());
       }
 
-      overwrite_buffer(
-        std::make_move_iterator(x.begin()),
-        std::make_move_iterator(x.end())
-      );
+      if (capacity() >= x.size())
+      {
+        overwrite_buffer(xbegin, xend);
+      }
+      else
+      {
+        allocate_and_copy_range(xbegin, xend);
+      }
     }
 
     BOOST_ASSERT(invariants_ok());
