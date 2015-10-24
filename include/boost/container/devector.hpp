@@ -2107,7 +2107,7 @@ public:
   void swap(devector& b) noexcept(no_small_buffer || t_is_nothrow_constructible) // && nothrow_swappable
   {
     BOOST_ASSERT(
-       ! allocator_traits::propagate_on_container_swap::value
+       allocator_traits::propagate_on_container_swap::value
     || get_allocator_ref() == b.get_allocator_ref()
     ); // else it's undefined behavior
 
