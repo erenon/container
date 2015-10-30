@@ -22,7 +22,7 @@
 namespace boost {
 namespace container {
 
-/** * Controls the deques implementation defined behavior */
+/** * Controls the batch_deques implementation defined behavior */
 template <std::size_t SegmentSize>
 struct batch_deque_policy
 {
@@ -46,7 +46,7 @@ struct batch_deque_policy
  *
  * **Requires**:
  *  - `T` shall be [MoveInsertable] into the batch_deque.
- *  - `T` shall be [Erasable] from any `batch_deque<T, P, Allocator>`.
+ *  - `T` shall be [Erasable] from any batch_deque.
  *  - `BatchDequePolicy` must model the concept with the same name.
  *
  * **Definition**: `T` is `NothrowConstructible` if it's either nothrow move constructible or
@@ -60,10 +60,12 @@ struct batch_deque_policy
  *
  * Type | Name | Description
  * -----|------|------------
- * `size_type` | `segment_size` | The number of elements a segment can hold
+ * `size_type` | `segment_size` | The number of elements a segment can hold. Power of two recommended.
  *
- * @ref devector_small_buffer_policy models the `SmallBufferPolicy` concept.
+ * @ref batch_deque_policy models the `BatchDequePolicy` concept.
  *
+ * [MoveInsertable]: http://en.cppreference.com/w/cpp/concept/MoveInsertable
+ * [Erasable]: http://en.cppreference.com/w/cpp/concept/Erasable
  * [SequenceContainer]: http://en.cppreference.com/w/cpp/concept/SequenceContainer
  * [ReversibleContainer]: http://en.cppreference.com/w/cpp/concept/ReversibleContainer
  * [AllocatorAwareContainer]: http://en.cppreference.com/w/cpp/concept/AllocatorAwareContainer
@@ -344,13 +346,13 @@ public:
   typedef std::reverse_iterator<iterator> reverse_iterator;
   typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
 
-  typedef deque_segment_iterator<false> segment_iterator;
-  typedef deque_segment_iterator<true> const_segment_iterator;
+  typedef BOOST_CONTAINER_IMPDEF(deque_segment_iterator<false>) segment_iterator;
+  typedef BOOST_CONTAINER_IMPDEF(deque_segment_iterator<true>) const_segment_iterator;
 
   // construct/copy/destroy:
 
   /**
-   * **Effects**: Constructs an empty deque.
+   * **Effects**: Constructs an empty batch_deque.
    *
    * **Postcondition**: `empty()
    *
@@ -362,7 +364,7 @@ public:
   }
 
   /**
-   * **Effects**: Constructs an empty deque, using the specified allocator.
+   * **Effects**: Constructs an empty batch_deque, using the specified allocator.
    *
    * **Postcondition**: `empty()
    *
@@ -379,7 +381,7 @@ public:
   /**
    * [DefaultInsertable]: http://en.cppreference.com/w/cpp/concept/DefaultInsertable
    *
-   * **Effects**: Constructs a deque with `n` default-inserted elements using the specified allocator.
+   * **Effects**: Constructs a batch_deque with `n` default-inserted elements using the specified allocator.
    *
    * **Requires**: `T` shall be [DefaultInsertable] into `*this`.
    *
@@ -427,7 +429,7 @@ public:
   /**
    * [CopyInsertable]: http://en.cppreference.com/w/cpp/concept/CopyInsertable
    *
-   * **Effects**: Constructs a deque with `n` copies of `value`, using the specified allocator.
+   * **Effects**: Constructs a batch_deque with `n` copies of `value`, using the specified allocator.
    *
    * **Requires**: `T` shall be [CopyInsertable] into `*this`.
    *
@@ -442,7 +444,7 @@ public:
   {}
 
   /**
-   * **Effects**: Constructs a deque equal to the range `[first,last)`, using the specified allocator.
+   * **Effects**: Constructs a batch_deque equal to the range `[first,last)`, using the specified allocator.
    *
    * **Requires**: `T` shall be [EmplaceConstructible] into `*this` from `*first`. If the specified
    * iterator does not meet the forward iterator requirements, `T` shall also be [MoveInsertable]
@@ -530,7 +532,7 @@ public:
   /**
    * [CopyInsertable]: http://en.cppreference.com/w/cpp/concept/CopyInsertable
    *
-   * **Effects**: Copy constructs a devector.
+   * **Effects**: Copy constructs a batch_deque.
    *
    * **Requires**: `T` shall be [CopyInsertable] into `*this`.
    *
@@ -548,7 +550,7 @@ public:
   /**
    * [CopyInsertable]: http://en.cppreference.com/w/cpp/concept/CopyInsertable
    *
-   * **Effects**: Copy constructs a devector, using the specified allocator.
+   * **Effects**: Copy constructs a batch_deque, using the specified allocator.
    *
    * **Requires**: `T` shall be [CopyInsertable] into `*this`.
    *
@@ -876,8 +878,8 @@ public:
   // iterators:
 
   /**
-   * **Returns**: A iterator pointing to the first element in the devector,
-   * or the past the end iterator if the devector is empty.
+   * **Returns**: A iterator pointing to the first element in the batch_deque,
+   * or the past the end iterator if the batch_deque is empty.
    *
    * **Complexity**: Constant.
    */
@@ -887,8 +889,8 @@ public:
   }
 
   /**
-   * **Returns**: A constant iterator pointing to the first element in the devector,
-   * or the past the end iterator if the devector is empty.
+   * **Returns**: A constant iterator pointing to the first element in the batch_deque,
+   * or the past the end iterator if the batch_deque is empty.
    *
    * **Complexity**: Constant.
    */
@@ -918,8 +920,8 @@ public:
   }
 
   /**
-   * **Returns**: A reverse iterator pointing to the first element in the reversed devector,
-   * or the reverse past the end iterator if the devector is empty.
+   * **Returns**: A reverse iterator pointing to the first element in the reversed batch_deque,
+   * or the reverse past the end iterator if the batch_deque is empty.
    *
    * **Complexity**: Constant.
    */
@@ -930,8 +932,8 @@ public:
 
   /**
    * **Returns**: A constant reverse iterator
-   * pointing to the first element in the reversed devector,
-   * or the reverse past the end iterator if the devector is empty.
+   * pointing to the first element in the reversed batch_deque,
+   * or the reverse past the end iterator if the batch_deque is empty.
    *
    * **Complexity**: Constant.
    */
@@ -963,8 +965,8 @@ public:
   }
 
   /**
-   * **Returns**: A constant iterator pointing to the first element in the devector,
-   * or the past the end iterator if the devector is empty.
+   * **Returns**: A constant iterator pointing to the first element in the batch_deque,
+   * or the past the end iterator if the batch_deque is empty.
    *
    * **Complexity**: Constant.
    */
@@ -985,8 +987,8 @@ public:
 
   /**
    * **Returns**: A constant reverse iterator
-   * pointing to the first element in the reversed devector,
-   * or the reverse past the end iterator if the devector is empty.
+   * pointing to the first element in the reversed batch_deque,
+   * or the reverse past the end iterator if the batch_deque is empty.
    *
    * **Complexity**: Constant.
    */
@@ -1134,7 +1136,7 @@ public:
    *
    * **Remarks**: Any empty segment is retained only if it's
    * the last segment of the container. Therefore, this method has
-   * no effects if the container is not empty.
+   * no effects unless the container is empty.
    */
   void shrink_to_fit() noexcept
   {
@@ -1159,7 +1161,7 @@ public:
    *
    * **Complexity**: Constant.
    */
-  reference operator[](size_type n)
+  reference operator[](size_type n) noexcept
   {
     BOOST_ASSERT(n < size());
 
@@ -1173,7 +1175,7 @@ public:
    *
    * **Complexity**: Constant.
    */
-  const_reference operator[](size_type n) const
+  const_reference operator[](size_type n) const noexcept
   {
     BOOST_ASSERT(n < size());
 
@@ -1191,12 +1193,12 @@ public:
    */
   reference at(size_type n)
   {
-    if (n >= size()) { throw_out_of_range("devector::at out of range"); }
+    if (n >= size()) { throw_out_of_range("batch_deque::at out of range"); }
     return (*this)[n];
   }
 
   /**
-   * **Returns**: A constant reference to the `n`th element in the devector.
+   * **Returns**: A constant reference to the `n`th element in the batch_deque.
    *
    * **Throws**: `std::out_of_range`, if `n >= size()`.
    *
@@ -1206,12 +1208,12 @@ public:
    */
   const_reference at(size_type n) const
   {
-    if (n >= size()) { throw_out_of_range("devector::at out of range"); }
+    if (n >= size()) { throw_out_of_range("batch_deque::at out of range"); }
     return (*this)[n];
   }
 
   /**
-   * **Returns**: A reference to the first element in the devector.
+   * **Returns**: A reference to the first element in the batch_deque.
    *
    * **Precondition**: `!empty()`.
    *
@@ -1225,7 +1227,7 @@ public:
   }
 
   /**
-   * **Returns**: A constant reference to the first element in the devector.
+   * **Returns**: A constant reference to the first element in the batch_deque.
    *
    * **Precondition**: `!empty()`.
    *
@@ -1239,7 +1241,7 @@ public:
   }
 
   /**
-   * **Returns**: A reference to the last element in the devector.
+   * **Returns**: A reference to the last element in the batch_deque.
    *
    * **Precondition**: `!empty()`.
    *
@@ -1254,7 +1256,7 @@ public:
   }
 
   /**
-   * **Returns**: A constant reference to the last element in the devector.
+   * **Returns**: A constant reference to the last element in the batch_deque.
    *
    * **Precondition**: `!empty()`.
    *
@@ -1275,13 +1277,13 @@ public:
    *
    * **Effects**: Constructs a new element at the front of the sequence.
    * The element is constructed in-place, using the perfect forwarded `args`
-   * as constructor arguments. Might invalidate iterators.
+   * as constructor arguments. Invalidates iterators.
    *
    * **Requires**: `T` shall be [EmplaceConstructible] from `args`.
    *
    * **Exceptions**: Strong exception guarantee.
    *
-   * **Complexity**: Amortized linear in the number of segments the deque has.
+   * **Complexity**: Amortized linear in the number of segments the batch_deque has.
    *
    */
   template <class... Args>
@@ -1305,13 +1307,13 @@ public:
    *
    * **Effects**: Constructs a new element at the back of the sequence.
    * The element is constructed in-place, using the perfect forwarded `args`
-   * as constructor arguments. Might invalidate iterators.
+   * as constructor arguments. Invalidates iterators.
    *
    * **Requires**: `T` shall be [EmplaceConstructible] from `args`.
    *
    * **Exceptions**: Strong exception guarantee.
    *
-   * **Complexity**: Amortized linear in the number of segments the deque has.
+   * **Complexity**: Amortized linear in the number of segments the batch_deque has.
    */
   template <class... Args>
   void emplace_back(Args&&... args)
@@ -1332,7 +1334,7 @@ public:
   /**
    * **Effects**: Constructs a new element before the element pointed by `position`.
    * The element is constructed in-place, using the perfect forwarded `args`
-   * as constructor arguments. Might invalidate iterators.
+   * as constructor arguments. Invalidates iterators.
    *
    * **Requires**: `T` shall be [EmplaceConstructible] from `args` and [MoveAssignable]
    *
@@ -1374,13 +1376,13 @@ public:
    * [CopyInsertable]: http://en.cppreference.com/w/cpp/concept/CopyInsertable
    *
    * **Effects**: Pushes the copy of `x` to the front of the sequence.
-   * Might invalidate iterators.
+   * Invalidates iterators.
    *
    * **Requires**: `T` shall be [CopyInsertable] into `*this`.
    *
    * **Exceptions**: Strong exception guarantee.
    *
-   * **Complexity**: Amortized linear in the number of segments the deque has.
+   * **Complexity**: Amortized linear in the number of segments the batch_deque has.
    */
   void push_front(const T& x)
   {
@@ -1391,13 +1393,13 @@ public:
    * [MoveInsertable]: http://en.cppreference.com/w/cpp/concept/MoveInsertable
    *
    * **Effects**: Move constructs a new element at the front of the sequence using `x`.
-   * Might invalidate iterators.
+   * Invalidates iterators.
    *
    * **Requires**: `T` shall be [MoveInsertable] into `*this`.
    *
    * **Exceptions**: Strong exception guarantee, not regarding the state of `x`.
    *
-   * **Complexity**: Amortized linear in the number of segments the deque has.
+   * **Complexity**: Amortized linear in the number of segments the batch_deque has.
    */
   void push_front(T&& x)
   {
@@ -1408,13 +1410,13 @@ public:
    * [CopyInsertable]: http://en.cppreference.com/w/cpp/concept/CopyInsertable
    *
    * **Effects**: Pushes the copy of `x` to the back of the sequence.
-   * Might invalidate iterators.
+   * Invalidates iterators.
    *
    * **Requires**: `T` shall be [CopyInsertable] into `*this`.
    *
    * **Exceptions**: Strong exception guarantee.
    *
-   * **Complexity**: Amortized linear in the number of segments the deque has.
+   * **Complexity**: Amortized linear in the number of segments the batch_deque has.
    */
   void push_back(const T& x)
   {
@@ -1425,13 +1427,13 @@ public:
    * [MoveInsertable]: http://en.cppreference.com/w/cpp/concept/MoveInsertable
    *
    * **Effects**: Move constructs a new element at the back of the sequence using `x`.
-   * Might invalidate iterators.
+   * Invalidates iterators.
    *
    * **Requires**: `T` shall be [MoveInsertable] into `*this`.
    *
    * **Exceptions**: Strong exception guarantee, not regarding the state of `x`.
    *
-   * **Complexity**: Amortized linear in the number of segments the deque has.
+   * **Complexity**: Amortized linear in the number of segments the batch_deque has.
    */
   void push_back(T&& x)
   {
@@ -1595,7 +1597,7 @@ public:
    *
    * **Complexity**: Constant.
    */
-  void pop_front()
+  void pop_front() noexcept
   {
     BOOST_ASSERT(!empty());
 
@@ -1621,7 +1623,7 @@ public:
    *
    * **Complexity**: Constant.
    */
-  void pop_back()
+  void pop_back() noexcept
   {
     BOOST_ASSERT(!empty());
 
@@ -1706,7 +1708,7 @@ public:
 
   /**
    * **Effects**: exchanges the contents of `*this` with those of `rhs`. Does not invoke any move, copy, or swap operations on individual elements.
-   * All iterators and references remain valid. The past-the-end iterator is invalidated.
+   * All iterators and references remain valid.
    *
    * **Precondition**: The allocators should allow propagation or should compare equal.
    *
@@ -1734,6 +1736,7 @@ public:
   /**
    * **Effects**: Destroys all elements in the sequence.
    * Invalidates all references, pointers and iterators.
+   * Deallocates all segments.
    *
    * **Postcondition**: `empty()`.
    *

@@ -564,11 +564,11 @@ In general, `devector` uses `move_if_noexcept` whenever necessary, offering stro
 [section:batch_deque ['batch_deque]]
 
 `batch_deque` is very similar to the standard `deque`, with a slight twist. It lets you specify its /segment size/:
-The size of the contiguous pages it uses to store its elements. This provides a consistent layout across platforms,
+The size of the contiguous memory segments it uses to store its elements. This provides a consistent layout across platforms,
 and lets you iterate over the segments with batch operations.
 
 `batch_deque` makes a good candidate for a container of cached or reusable elements, because it provides reference
-stability and inserting at either end with amortized linear complexity.
+stability while inserting at either end with amortized linear complexity.
 
 [endsect]
 
