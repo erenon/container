@@ -61,7 +61,7 @@ typedef boost::mpl::list<
   small_devector<noex_move>,
   small_devector<noex_copy>,
   small_devector<only_movable>,
-  small_devector<no_default_ctor>
+  small_devector<no_default_ctor>,
 
   devector<unsigned, devector_small_buffer_policy<0>, devector_growth_policy, different_allocator<unsigned>>,
   devector<unsigned, devector_small_buffer_policy<16>, devector_growth_policy, different_allocator<unsigned>>
