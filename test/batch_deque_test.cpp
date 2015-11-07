@@ -177,6 +177,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(segment_iterator, Deque, t_is_trivial)
 
   devector<T> expected = get_range<devector<T>>();
   Deque a = get_range<Deque>();
+  a.reserve_front(139);
+  a.reserve_back(147);
 
   expected.pop_front();
   expected.pop_front();
@@ -1155,17 +1157,60 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(resize_copy, Deque, t_is_copy_constructible)
   }
 }
 
+BOOST_AUTO_TEST_CASE_TEMPLATE(reserve_front, Deque, all_deques)
+{
+  Deque a;
+
+  a.reserve_front(100);
+  for (unsigned i = 0; i < 100u; ++i)
+  {
+    a.push_front(i);
+  }
+
+  Deque b;
+  b.reserve_front(4);
+  b.reserve_front(6);
+  b.reserve_front(4);
+  b.reserve_front(8);
+  b.reserve_front(16);
+}
+
+BOOST_AUTO_TEST_CASE_TEMPLATE(reserve_back, Deque, all_deques)
+{
+  Deque a;
+
+  a.reserve_back(100);
+  for (unsigned i = 0; i < 100; ++i)
+  {
+    a.push_back(i);
+  }
+
+  Deque b;
+  b.reserve_back(4);
+  b.reserve_back(6);
+  b.reserve_back(4);
+  b.reserve_back(8);
+  b.reserve_back(16);
+}
+
 BOOST_AUTO_TEST_CASE_TEMPLATE(shrink_to_fit, Deque, all_deques)
 {
   Deque a;
   a.shrink_to_fit();
+  BOOST_TEST(a.front_free_capacity() == 0u);
 
   a.emplace_front(1);
   a.pop_front();
   a.shrink_to_fit();
+  BOOST_TEST(a.front_free_capacity() == 0u);
 
   a.emplace_front(1);
   a.shrink_to_fit();
+
+  const auto min_cap = a.front_free_capacity();
+  a.reserve_front(123);
+  a.shrink_to_fit();
+  BOOST_TEST(a.front_free_capacity() == min_cap);
 }
 
 template <typename Deque, typename MutableDeque>
@@ -1354,6 +1399,75 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(push_front_rvalue, Deque, all_deques)
   }
 }
 
+BOOST_AUTO_TEST_CASE_TEMPLATE(unsafe_push_front_copy, Deque, t_is_copy_constructible)
+{
+  typedef typename Deque::value_type T;
+
+  {
+    Deque a;
+    a.reserve_front(12);
+
+    for (int i = 1; i <= 12; ++i)
+    {
+      const T elem(i);
+      a.unsafe_push_front(elem);
+    }
+
+    test_equal_range(a, {12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1});
+  }
+
+  if (! std::is_nothrow_copy_constructible<T>::value)
+  {
+    Deque b = get_range<Deque>(10);
+    b.reserve_front(11);
+
+    try
+    {
+      const T elem(404);
+      test_elem_throw::on_copy_after(1);
+      b.unsafe_push_front(elem);
+      BOOST_TEST(false);
+    }
+    catch (const test_exception&) {}
+
+    test_equal_range(b, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+  }
+}
+
+BOOST_AUTO_TEST_CASE_TEMPLATE(unsafe_push_front_rvalue, Deque, all_deques)
+{
+  typedef typename Deque::value_type T;
+
+  {
+    Deque a;
+    a.reserve_front(12);
+
+    for (int i = 1; i <= 12; ++i)
+    {
+      T elem(i);
+      a.unsafe_push_front(std::move(elem));
+    }
+
+    test_equal_range(a, {12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1});
+  }
+
+  if (! std::is_nothrow_move_constructible<T>::value)
+  {
+    Deque b = get_range<Deque>(8);
+    b.reserve_front(9);
+
+    try
+    {
+      test_elem_throw::on_move_after(1);
+      b.unsafe_push_front(T(404));
+      BOOST_TEST(false);
+    }
+    catch (const test_exception&) {}
+
+    test_equal_range(b, {1, 2, 3, 4, 5, 6, 7, 8});
+  }
+}
+
 BOOST_AUTO_TEST_CASE_TEMPLATE(emplace_back, Deque, all_deques)
 {
   typedef typename Deque::value_type T;
@@ -1441,6 +1555,75 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(push_back_rvalue, Deque, all_deques)
     {
       test_elem_throw::on_move_after(1);
       b.push_back(T(404));
+      BOOST_TEST(false);
+    }
+    catch (const test_exception&) {}
+
+    test_equal_range(b, {1, 2, 3, 4, 5, 6, 7, 8});
+  }
+}
+
+BOOST_AUTO_TEST_CASE_TEMPLATE(unsafe_push_back_copy, Deque, t_is_copy_constructible)
+{
+  typedef typename Deque::value_type T;
+
+  {
+    Deque a;
+    a.reserve_back(12);
+
+    for (int i = 1; i <= 12; ++i)
+    {
+      const T elem(i);
+      a.unsafe_push_back(elem);
+    }
+
+    test_equal_range(a, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
+  }
+
+  if (! std::is_nothrow_copy_constructible<T>::value)
+  {
+    Deque b = get_range<Deque>(10);
+    b.reserve_back(11);
+
+    try
+    {
+      const T elem(404);
+      test_elem_throw::on_copy_after(1);
+      b.unsafe_push_back(elem);
+      BOOST_TEST(false);
+    }
+    catch (const test_exception&) {}
+
+    test_equal_range(b, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+  }
+}
+
+BOOST_AUTO_TEST_CASE_TEMPLATE(unsafe_push_back_rvalue, Deque, all_deques)
+{
+  typedef typename Deque::value_type T;
+
+  {
+    Deque a;
+    a.reserve_back(12);
+
+    for (std::size_t i = 1; i <= 12; ++i)
+    {
+      T elem(i);
+      a.unsafe_push_back(std::move(elem));
+    }
+
+    test_equal_range(a, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
+  }
+
+  if (! std::is_nothrow_move_constructible<T>::value)
+  {
+    Deque b = get_range<Deque>(8);
+    b.reserve_back(9);
+
+    try
+    {
+      test_elem_throw::on_move_after(1);
+      b.unsafe_push_back(T(404));
       BOOST_TEST(false);
     }
     catch (const test_exception&) {}
@@ -2309,6 +2492,15 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(clear, Deque, all_deques)
     Deque b = get_range<Deque>();
     b.clear();
     BOOST_TEST(b.empty());
+  }
+
+  {
+    Deque c = get_range<Deque>();
+    c.clear();
+    c.emplace_back(1);
+    c.emplace_back(2);
+    c.emplace_back(3);
+    c.emplace_back(4);
   }
 }
 

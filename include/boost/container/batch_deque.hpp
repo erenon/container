@@ -285,12 +285,14 @@ private:
 
     size_type data_size() const noexcept
     {
-      const size_type map_size = _p_container->_map.size();
-      const auto map_end = _p_container->_map.end();
-
-      if (map_size == 0 || _p_segment == map_end) { return 0; }
-      if (map_size == 1 || _p_segment + 1 == map_end) { return _p_container->_end._index - _index; }
-      return segment_size - _index;
+      if (_p_segment != _p_container->_end._p_segment)
+      {
+        return segment_size - _index;
+      }
+      else
+      {
+        return _p_container->_end._index - _index;
+      }
     }
 
   private:
@@ -315,9 +317,9 @@ private:
     void decrement() noexcept
     {
       --_p_segment;
-      if (_p_segment == _p_container->_map.begin())
+      if (_p_segment == _p_container->_begin._p_segment)
       {
-        _index = _p_container->_end_index;
+        _index = _p_container->_begin._index;
       }
     }
 
@@ -1011,22 +1013,22 @@ public:
   // segment iterators:
   segment_iterator segment_begin()
   {
-    return segment_iterator{this, _map.begin(), _begin._index};
+    return segment_iterator{this, _begin._p_segment, _begin._index};
   }
 
   const_segment_iterator segment_begin() const
   {
-    return const_segment_iterator{this, _map.begin(), _begin._index};
+    return const_segment_iterator{this, _begin._p_segment, _begin._index};
   }
 
   segment_iterator segment_end()
   {
-    return segment_iterator{this, _map.end(), 0};
+    return segment_iterator{this, _end._p_segment + (_end._index > 0), 0};
   }
 
   const_segment_iterator segment_end() const
   {
-    return const_segment_iterator{this, _map.end(), 0};
+    return const_segment_iterator{this, _end._p_segment + (_end._index > 0), 0};
   }
 
   // capacity:
@@ -1059,6 +1061,30 @@ public:
   size_type max_size() const noexcept
   {
     return allocator_traits::max_size(get_allocator_ref());
+  }
+
+  /**
+   * **Returns**: The total number of elements that can be pushed to the front of the
+   * sequence without requiring a new segment to be allocated.
+   *
+   * **Complexity**: Constant.
+   */
+  size_type front_free_capacity() const noexcept
+  {
+    return (_begin._p_segment - _map.begin()) * segment_size
+          + _begin._index;
+  }
+
+  /**
+   * **Returns**: The total number of elements that can be pushed to the back of the
+   * sequence without requiring a new segment to be allocated.
+   *
+   * **Complexity**: Constant.
+   */
+  size_type back_free_capacity() const noexcept
+  {
+    return (_map.end() - _end._p_segment) * segment_size
+         + (segment_size - _end._index) % segment_size;
   }
 
   /**
@@ -1129,24 +1155,90 @@ public:
     BOOST_ASSERT(invariants_ok());
   }
 
+  /** **Equivalent to**: `reserve_back(new_capacity)` */
+  void reserve(size_type new_capacity) { reserve_back(new_capacity); }
+
+  /**
+   * **Effects**: Ensures that `n` elements can be pushed to the front
+   * without requiring a segment to be allocated, where `n` is `new_capacity - size()`,
+   * if `n` is positive. Otherwise, there are no effects.
+   *
+   * **Complexity**: Linear in `new_capacity / segment_size`.
+   *
+   * **Exceptions**: Strong exception guarantee.
+   *
+   * **Remark**: Establishes the precondition of `n` subsequent `unsafe_push_front`
+   * calls.
+   */
+  void reserve_front(size_type new_capacity)
+  {
+    const size_type front_capacity = front_free_capacity() + size();
+    if (new_capacity <= front_capacity) { return; }
+
+    const size_type req_capacity = new_capacity - front_capacity;
+    const size_type req_segments = segment_count(req_capacity);
+
+    saved_iterators si = save_iterators();
+    _map.reserve_front(_map.size() + req_segments);
+    restore_iterators(si);
+
+    for (size_type i = req_segments; i; --i)
+    {
+      _map.unsafe_push_front(allocate_segment());
+    }
+
+    BOOST_ASSERT(invariants_ok());
+  }
+
+  /**
+   * **Effects**: Ensures that `n` elements can be pushed to the back
+   * without requiring a segment to be allocated, where `n` is `new_capacity - size()`,
+   * if `n` is positive. Otherwise, there are no effects.
+   *
+   * **Complexity**: Linear in `new_capacity / segment_size`.
+   *
+   * **Exceptions**: Strong exception guarantee.
+   *
+   * **Remark**: Establishes the precondition of `n` subsequent `unsafe_push_back`
+   * calls.
+   */
+  void reserve_back(size_type new_capacity)
+  {
+    const size_type back_capacity = back_free_capacity() + size();
+    if (new_capacity <= back_capacity) { return; }
+
+    const size_type req_capacity = new_capacity - back_capacity;
+    const size_type req_segments = segment_count(req_capacity);
+
+    const saved_iterators si = save_iterators();
+    _map.reserve_back(_map.size() + req_segments);
+    restore_iterators(si);
+
+    for (size_type i = req_segments; i; --i)
+    {
+      _map.unsafe_push_back(allocate_segment());
+    }
+
+    BOOST_ASSERT(invariants_ok());
+  }
+
   /**
    * **Effects**: Deallocates empty segments.
    *
-   * **Complexity**: Constant.
-   *
-   * **Remarks**: Any empty segment is retained only if it's
-   * the last segment of the container. Therefore, this method has
-   * no effects unless the container is empty.
+   * **Complexity**: Linear in the number of segments.
    */
   void shrink_to_fit() noexcept
   {
-    if (empty() && ! _map.empty())
+    for (auto it = _map.begin(); it != _begin._p_segment; ++it)
     {
-      deallocate_segment(_map.back());
-      _map.pop_back();
-      _map.shrink_to_fit();
+      deallocate_segment(*it);
+      _map.pop_front();
+    }
 
-      _end = _begin = {_map.begin(), 0};
+    for (auto it = _end._p_segment; it != _map.end(); ++it)
+    {
+      deallocate_segment(*it);
+      _map.pop_back();
     }
 
     BOOST_ASSERT(invariants_ok());
@@ -1287,8 +1379,9 @@ public:
   {
     if (front_free_capacity())
     {
-      alloc_construct(_map.front() + (_begin._index - 1), std::forward<Args>(args)...);
-      --_begin;
+      const iterator new_begin = _begin - 1;
+      alloc_construct(&*new_begin, std::forward<Args>(args)...);
+      _begin = new_begin;
     }
     else
     {
@@ -1316,7 +1409,7 @@ public:
   {
     if (back_free_capacity())
     {
-      alloc_construct(_map.back() + _end._index, std::forward<Args>(args)...);
+      alloc_construct(&*_end, std::forward<Args>(args)...);
       ++_end;
     }
     else
@@ -1405,6 +1498,60 @@ public:
   /**
    * [CopyInsertable]: http://en.cppreference.com/w/cpp/concept/CopyInsertable
    *
+   * **Effects**: Pushes the copy of `x` to the front of the sequence.
+   *
+   * **Requires**: `T` shall be [CopyInsertable] into `*this`.
+   *
+   * **Precondition**: `front_free_capacity() > 0`.
+   *
+   * **Postcondition**: `size()` is incremented by 1,
+   * `front_free_capacity() is decremented by 1`
+   *
+   * **Exceptions**: Strong exception guarantee.
+   *
+   * **Complexity**: Constant.
+   */
+  void unsafe_push_front(const T& x)
+  {
+    BOOST_ASSERT(front_free_capacity());
+
+    const iterator new_begin = _begin - 1;
+    alloc_construct(&*new_begin, x);
+    _begin = new_begin;
+
+    BOOST_ASSERT(invariants_ok());
+  }
+
+  /**
+   * [MoveInsertable]: http://en.cppreference.com/w/cpp/concept/MoveInsertable
+   *
+   * **Effects**: Move constructs a new element at the front of the sequence using `x`.
+   *
+   * **Requires**: `T` shall be [MoveInsertable] into `*this`.
+   *
+   * **Precondition**: `front_free_capacity() > 0`.
+   *
+   * **Postcondition**: `size()` is incremented by 1,
+   * `front_free_capacity() is decremented by 1`
+   *
+   * **Exceptions**: Strong exception guarantee, not regarding the state of `x`.
+   *
+   * **Complexity**: Constant.
+   */
+  void unsafe_push_front(T&& x)
+  {
+    BOOST_ASSERT(front_free_capacity());
+
+    const iterator new_begin = _begin - 1;
+    alloc_construct(&*new_begin, std::move(x));
+    _begin = new_begin;
+
+    BOOST_ASSERT(invariants_ok());
+  }
+
+  /**
+   * [CopyInsertable]: http://en.cppreference.com/w/cpp/concept/CopyInsertable
+   *
    * **Effects**: Pushes the copy of `x` to the back of the sequence.
    * Invalidates iterators.
    *
@@ -1434,6 +1581,58 @@ public:
   void push_back(T&& x)
   {
     emplace_back(std::move(x));
+  }
+
+  /**
+   * [CopyInsertable]: http://en.cppreference.com/w/cpp/concept/CopyInsertable
+   *
+   * **Effects**: Pushes the copy of `x` to the back of the sequence.
+   *
+   * **Requires**: `T` shall be [CopyInsertable] into `*this`.
+   *
+   * **Precondition**: `back_free_capacity() > 0`.
+   *
+   * **Postcondition**: `size()` is incremented by 1,
+   * `back_free_capacity() is decremented by 1`
+   *
+   * **Exceptions**: Strong exception guarantee.
+   *
+   * **Complexity**: Constant.
+   */
+  void unsafe_push_back(const T& x)
+  {
+    BOOST_ASSERT(back_free_capacity());
+
+    alloc_construct(&*_end, x);
+    ++_end;
+
+    BOOST_ASSERT(invariants_ok());
+  }
+
+  /**
+   * [MoveInsertable]: http://en.cppreference.com/w/cpp/concept/MoveInsertable
+   *
+   * **Effects**: Move constructs a new element at the back of the sequence using `x`.
+   *
+   * **Requires**: `T` shall be [MoveInsertable] into `*this`.
+   *
+   * **Precondition**: `back_free_capacity() > 0`.
+   *
+   * **Postcondition**: `size()` is incremented by 1,
+   * `back_free_capacity() is decremented by 1`
+   *
+   * **Exceptions**: Strong exception guarantee, not regarding the state of `x`.
+   *
+   * **Complexity**: Constant.
+   */
+  void unsafe_push_back(T&& x)
+  {
+    BOOST_ASSERT(back_free_capacity());
+
+    alloc_construct(&*_end, std::move(x));
+    ++_end;
+
+    BOOST_ASSERT(invariants_ok());
   }
 
   /**
@@ -1572,9 +1771,14 @@ public:
       batch_deque tmp(first, last);
       tmp.resize(tmp.size() + tmp.back_free_capacity());
 
+      pointer begin_segment = *_begin._p_segment;
+      pointer end_segment   = *_end._p_segment;
+
       const const_map_iterator hint_segment = unconst_iterator(position_hint)._p_segment;
       map_iterator result_segment = _map.insert(hint_segment, tmp._map.begin(), tmp._map.end());
-      fix_iterators();
+
+      _begin._p_segment = &*std::find(_map.begin(), _map.end(), begin_segment);
+      _end._p_segment   = &*std::find(_map.begin(), _map.end(),   end_segment);
 
       tmp._map.clear();
       tmp._end = tmp._begin = {tmp._map.begin(), 0};
@@ -1598,13 +1802,6 @@ public:
     allocator_traits::destroy(get_allocator_ref(), &front());
     ++_begin;
 
-    if (_begin._index == 0)
-    {
-      // TODO keep the last segment
-      deallocate_segment(_map.front());
-      _map.pop_front();
-    }
-
     BOOST_ASSERT(invariants_ok());
   }
 
@@ -1621,13 +1818,6 @@ public:
 
     allocator_traits::destroy(get_allocator_ref(), &back());
     --_end;
-
-    if (_end._index == 0)
-    {
-      // TODO keep the last segment
-      deallocate_segment(_map.back());
-      _map.pop_back();
-    }
 
     BOOST_ASSERT(invariants_ok());
   }
@@ -1728,17 +1918,18 @@ public:
   /**
    * **Effects**: Destroys all elements in the sequence.
    * Invalidates all references, pointers and iterators.
-   * Deallocates all segments.
    *
    * **Postcondition**: `empty()`.
    *
    * **Complexity**: Linear in the size of `*this`.
+   *
+   * **Remark**: Doesn't deallocate segments. Call `shrink_to_fit`
+   * if segments must be released.
    */
   void clear() noexcept
   {
-    destructor_impl();
+    destroy_elements(begin(), end());
 
-    _map.clear();
     _end = _begin = {_map.begin(), 0};
   }
 
@@ -1802,23 +1993,14 @@ private:
     );
   }
 
-  size_type front_free_capacity() const noexcept
-  {
-    return _begin._index;
-  }
-
-  size_type back_free_capacity() const noexcept
-  {
-    return (segment_size - _end._index) % segment_size;
-  }
-
   template <typename... Args>
   void emplace_front_slow_path(Args&&... args)
   {
     BOOST_ASSERT(front_free_capacity() == 0);
 
+    const saved_iterators si = save_iterators();
     _map.reserve_front(new_map_capacity());
-    fix_iterators();
+    restore_iterators(si);
 
     pointer new_segment = allocate_segment();
     allocation_guard new_segment_guard(new_segment, get_allocator_ref(), segment_size);
@@ -1838,8 +2020,9 @@ private:
   {
     BOOST_ASSERT(back_free_capacity() == 0);
 
+    const saved_iterators si = save_iterators();
     _map.reserve_back(new_map_capacity());
-    fix_iterators();
+    restore_iterators(si);
 
     pointer new_segment = allocate_segment();
     allocation_guard new_segment_guard(new_segment, get_allocator_ref(), segment_size);
@@ -1874,10 +2057,17 @@ private:
     }
   }
 
-  void fix_iterators()
+  typedef std::pair<ptrdiff_t, ptrdiff_t> saved_iterators;
+
+  saved_iterators save_iterators()
   {
-    _begin = {_map.begin(), _begin._index};
-    _end = (_end._index) ? iterator{&_map.back(), _end._index} : iterator{_map.end(), 0};
+    return {_begin._p_segment - _map.begin(), _map.end() - _end._p_segment};
+  }
+
+  void restore_iterators(const saved_iterators& si)
+  {
+    _begin._p_segment = _map.begin() + si.first;
+    _end._p_segment = _map.end() - si.second;
   }
 
   size_type new_map_capacity() const
@@ -2102,10 +2292,10 @@ private:
   {
     return (! _map.empty() || (_begin == _end))
       &&    _begin <= _end
-      &&    _begin._p_segment == _map.begin()
       &&    _begin._index < segment_size
-      &&    (_end._index ? *_end._p_segment == _map.back() : _end._p_segment == _map.end())
-      &&    _end._index  < segment_size;
+      &&    _end._index  < segment_size
+      &&    _begin._p_segment >= _map.begin()
+      &&    _end._p_segment <= _map.end();
   }
 
   template <typename N>
