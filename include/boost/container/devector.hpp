@@ -1634,11 +1634,9 @@ public:
    *
    * **Postcondition**: `front_free_capacity()` is incremented by 1.
    *
-   * **Exceptions**: Strong exception guarantee.
-   *
    * **Complexity**: Constant.
    */
-  void pop_front()
+  void pop_front() noexcept
   {
     BOOST_ASSERT(! empty());
     allocator_traits::destroy(get_allocator_ref(), _buffer + _front_index);
@@ -1777,11 +1775,9 @@ public:
    *
    * **Postcondition**: `back_free_capacity()` is incremented by 1.
    *
-   * **Exceptions**: Strong exception guarantee.
-   *
    * **Complexity**: Constant.
    */
-  void pop_back()
+  void pop_back() noexcept
   {
     BOOST_ASSERT(! empty());
     --_back_index;
