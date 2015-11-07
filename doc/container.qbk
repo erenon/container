@@ -568,7 +568,8 @@ The size of the contiguous memory segments it uses to store its elements. This p
 and lets you iterate over the segments with batch operations.
 
 `batch_deque` makes a good candidate for a container of cached or reusable elements, because it provides reference
-stability while inserting at either end with amortized linear complexity.
+stability while inserting at either end with amortized linear complexity. Reference stability also makes it
+possible to store the elements of an intrusive container.
 
 [endsect]
 
