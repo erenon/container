@@ -536,15 +536,15 @@ public:
    *
    * **Requires**: `T` shall be [CopyInsertable] into `*this`.
    *
-   * **Postcondition**: `this->size() == x.size()`
+   * **Postcondition**: `this->size() == rhs.size()`
    *
    * **Exceptions**: Strong exception guarantee.
    *
-   * **Complexity**: Linear in the size of `x`.
+   * **Complexity**: Linear in the size of `rhs`.
    */
-  batch_deque(const batch_deque& x)
-    :batch_deque(x,
-        allocator_traits::select_on_container_copy_construction(x.get_allocator_ref()))
+  batch_deque(const batch_deque& rhs)
+    :batch_deque(rhs,
+        allocator_traits::select_on_container_copy_construction(rhs.get_allocator_ref()))
   {}
 
   /**
@@ -554,11 +554,11 @@ public:
    *
    * **Requires**: `T` shall be [CopyInsertable] into `*this`.
    *
-   * **Postcondition**: `this->size() == x.size()
+   * **Postcondition**: `this->size() == rhs.size()
    *
    * **Exceptions**: Strong exception guarantee.
    *
-   * **Complexity**: Linear in the size of `x`.
+   * **Complexity**: Linear in the size of `rhs`.
    */
   batch_deque(const batch_deque& rhs, const Allocator& allocator)
     :Allocator(allocator),
@@ -602,52 +602,52 @@ public:
   /**
    * **Effects**: Moves `rhs`'s resources to `*this`.
    *
-   * **Postcondition**: `rhs` is left in an unspecified but valid state.
+   * **Postcondition**: `rhs.empty()`
    *
    * **Complexity**: Constant.
    */
-  batch_deque(batch_deque&& x) noexcept
-    :Allocator(std::move(x.get_allocator_ref())),
-     _map(std::move(x._map)),
-     _begin(x._begin),
-     _end(x._end)
+  batch_deque(batch_deque&& rhs) noexcept
+    :Allocator(std::move(rhs.get_allocator_ref())),
+     _map(std::move(rhs._map)),
+     _begin(rhs._begin),
+     _end(rhs._end)
   {
-    x._end = x._begin = {x._map.begin(), 0};
+    rhs._end = rhs._begin = {rhs._map.begin(), 0};
 
     BOOST_ASSERT(invariants_ok());
-    BOOST_ASSERT(x.invariants_ok());
+    BOOST_ASSERT(rhs.invariants_ok());
   }
 
   /**
    * **Effects**: Moves `rhs`'s resources to `*this`,
    *
-   * **Postcondition**: `rhs` is left in an unspecified but valid state.
+   * **Postcondition**: `rhs.empty()`
    *
    * **Complexity**: Constant.
    */
-  batch_deque(batch_deque&& x, const Allocator& allocator) noexcept
+  batch_deque(batch_deque&& rhs, const Allocator& allocator) noexcept
     :Allocator(allocator),
-     _map(std::move(x._map)),
-     _begin(x._begin),
-     _end(x._end)
+     _map(std::move(rhs._map)),
+     _begin(rhs._begin),
+     _end(rhs._end)
   {
-    if (allocator == x.get_allocator_ref())
+    if (allocator == rhs.get_allocator_ref())
     {
-      x._end = x._begin = {x._map.begin(), 0};
+      rhs._end = rhs._begin = {rhs._map.begin(), 0};
     }
     else
     {
-      x._map = std::move(_map);
+      rhs._map = std::move(_map);
       _map.clear();
       _end = _begin = {_map.begin(), 0};
 
-      auto first = std::make_move_iterator(x.begin());
-      auto last = std::make_move_iterator(x.end());
+      auto first = std::make_move_iterator(rhs.begin());
+      auto last = std::make_move_iterator(rhs.end());
       assign(first, last);
     }
 
     BOOST_ASSERT(invariants_ok());
-    BOOST_ASSERT(x.invariants_ok());
+    BOOST_ASSERT(rhs.invariants_ok());
   }
 
   /**
@@ -669,13 +669,13 @@ public:
   }
 
   /**
-   * **Effects**: Copies elements of `x` to `*this`. Previously
+   * **Effects**: Copies elements of `rhs` to `*this`. Previously
    * held elements get copy assigned to or destroyed.
    *
    * **Requires**: `T` shall be [CopyInsertable] into `*this`.
    *
-   * **Postcondition**: `this->size() == x.size()`, the elements of
-   * `*this` are copies of elements in `x` in the same order.
+   * **Postcondition**: `this->size() == rhs.size()`, the elements of
+   * `*this` are copies of elements in `rhs` in the same order.
    *
    * **Returns**: `*this`.
    *
@@ -685,26 +685,26 @@ public:
    * ([propagate_on_container_copy_assignment] is false),
    * Basic exception guarantee otherwise.
    *
-   * **Complexity**: Linear in the size of `x` and `*this`.
+   * **Complexity**: Linear in the size of `rhs` and `*this`.
    *
    * [CopyInsertable]: http://en.cppreference.com/w/cpp/concept/CopyInsertable
    * [propagate_on_container_copy_assignment]: http://en.cppreference.com/w/cpp/memory/allocator_traits
    */
-  batch_deque& operator=(const batch_deque& x)
+  batch_deque& operator=(const batch_deque& rhs)
   {
-    if (this == &x) { return *this; } // skip self
+    if (this == &rhs) { return *this; } // skip self
 
     if (allocator_traits::propagate_on_container_copy_assignment::value)
     {
-      if (get_allocator_ref() != x.get_allocator_ref())
+      if (get_allocator_ref() != rhs.get_allocator_ref())
       {
         clear(); // new allocator cannot free existing storage
       }
 
-      get_allocator_ref() = x.get_allocator_ref();
+      get_allocator_ref() = rhs.get_allocator_ref();
     }
 
-    assign(x.begin(), x.end());
+    assign(rhs.begin(), rhs.end());
 
     return *this;
   }
@@ -712,44 +712,44 @@ public:
   /**
    * [MoveInsertable]: http://en.cppreference.com/w/cpp/concept/MoveInsertable
    *
-   * **Effects**: `*this` takes ownership of the resources of `x`.
+   * **Effects**: `*this` takes ownership of the resources of `rhs`.
    * The fate of the previously held elements are unspecified.
    *
    * **Requires**: `T` shall be [MoveInsertable] into `*this`.
    *
-   * **Postcondition**: `x` is left in an unspecified but valid state.
+   * **Postcondition**: `rhs` is left in an unspecified but valid state.
    *
    * **Returns**: `*this`.
    *
    * **Exceptions**: Basic exception guarantee if not `noexcept`.
    *
    * Remark: If the allocator forbids propagation,
-   * the contents of `x` is moved one-by-one instead of stealing the buffer.
+   * the contents of `rhs` is moved one-by-one instead of stealing the buffer.
    *
    * **Complexity**: Constant, if allocator can be propagated or the two
-   * allocators compare equal, linear in the size of `x` and `*this` otherwise.
+   * allocators compare equal, linear in the size of `rhs` and `*this` otherwise.
    */
-  batch_deque& operator=(batch_deque&& x) noexcept(
+  batch_deque& operator=(batch_deque&& rhs) noexcept(
       t_is_nothrow_constructible
    || allocator_traits::is_always_equal
    || allocator_traits::propagate_on_move_assignment
   )
   {
     constexpr bool copy_alloc = allocator_traits::propagate_on_move_assignment;
-    const bool equal_alloc = (get_allocator_ref() == x.get_allocator_ref());
+    const bool equal_alloc = (get_allocator_ref() == rhs.get_allocator_ref());
 
     if ((copy_alloc || equal_alloc))
     {
       if (copy_alloc)
       {
-        get_allocator_ref() = std::move(x.get_allocator_ref());
+        get_allocator_ref() = std::move(rhs.get_allocator_ref());
       }
 
       using std::swap; // enable ADL
 
-      swap(_map, x._map);
-      swap(_begin, x._begin);
-      swap(_end, x._end);
+      swap(_map, rhs._map);
+      swap(_begin, rhs._begin);
+      swap(_end, rhs._end);
     }
     else
     {
@@ -758,11 +758,11 @@ public:
 
       if (copy_alloc)
       {
-        get_allocator_ref() = std::move(x.get_allocator_ref());
+        get_allocator_ref() = std::move(rhs.get_allocator_ref());
       }
 
-      auto first = std::make_move_iterator(x.begin());
-      auto last = std::make_move_iterator(x.end());
+      auto first = std::make_move_iterator(rhs.begin());
+      auto last = std::make_move_iterator(rhs.end());
 
       overwrite_buffer(first, last);
 
@@ -1187,8 +1187,6 @@ public:
    *
    * **Throws**: `std::out_of_range`, if `n >= size()`.
    *
-   * **Exceptions**: Strong exception guarantee.
-   *
    * **Complexity**: Constant.
    */
   reference at(size_type n)
@@ -1201,8 +1199,6 @@ public:
    * **Returns**: A constant reference to the `n`th element in the batch_deque.
    *
    * **Throws**: `std::out_of_range`, if `n >= size()`.
-   *
-   * **Exceptions**: Strong exception guarantee.
    *
    * **Complexity**: Constant.
    */
@@ -1593,8 +1589,6 @@ public:
    *
    * **Precondition**: `!empty()`.
    *
-   * **Exceptions**: Strong exception guarantee.
-   *
    * **Complexity**: Constant.
    */
   void pop_front() noexcept
@@ -1618,8 +1612,6 @@ public:
    * **Effects**: Removes the last element of `*this`.
    *
    * **Precondition**: `!empty()`.
-   *
-   * **Exceptions**: Strong exception guarantee.
    *
    * **Complexity**: Constant.
    */
