@@ -2,12 +2,12 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
 <title>Struct scoped_allocator_operator_equal&lt;true&gt;</title>
-<link rel="stylesheet" href="http://www.boost.org/doc/libs/1_55_0/doc/src/boostbook.css" type="text/css">
+<link rel="stylesheet" href="http://www.boost.org/doc/libs/1_57_0/doc/src/boostbook.css" type="text/css">
 <meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
 <link rel="home" href="http://www.boost.org/doc/libs/1_57_0/index.html" title="Chapter&#160;1.&#160;Boost.Container">
 <link rel="up" href="http://www.boost.org/doc/libs/1_57_0/boost_container_header_reference.html#header.boost.container.scoped_allocator_hpp" title="Header &lt;boost/container/scoped_allocator.hpp&gt;">
-<link rel="prev" href="scoped_allocat_idp52623600.html" title="Struct template scoped_allocator_operator_equal">
-<link rel="next" href="constructible__idp52657248.html" title="Struct template constructible_with_allocator_suffix">
+<link rel="prev" href="scoped_allocat_idp35043584.html" title="Struct template scoped_allocator_operator_equal">
+<link rel="next" href="uses_allocator.html" title="Struct template uses_allocator">
 </head>
 <body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
 <table cellpadding="2" width="100%"><tr>
@@ -20,10 +20,10 @@
 </tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="scoped_allocat_idp52623600.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/prev.png" alt="Prev"></a><a accesskey="u" href="http://www.boost.org/doc/libs/1_57_0/boost_container_header_reference.html#header.boost.container.scoped_allocator_hpp"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/up.png" alt="Up"></a><a accesskey="h" href="http://www.boost.org/doc/libs/1_57_0/index.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/home.png" alt="Home"></a><a accesskey="n" href="constructible__idp52657248.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/next.png" alt="Next"></a>
+<a accesskey="p" href="scoped_allocat_idp35043584.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/prev.png" alt="Prev"></a><a accesskey="u" href="http://www.boost.org/doc/libs/1_57_0/boost_container_header_reference.html#header.boost.container.scoped_allocator_hpp"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/up.png" alt="Up"></a><a accesskey="h" href="http://www.boost.org/doc/libs/1_57_0/index.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/home.png" alt="Home"></a><a accesskey="n" href="uses_allocator.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/next.png" alt="Next"></a>
 </div>
 <div class="refentry">
-<a name="boost.container.scoped_allocat_idp52636464"></a><div class="titlepage"></div>
+<a name="boost.container.scoped_allocat_idp35056448"></a><div class="titlepage"></div>
 <div class="refnamediv">
 <h2><span class="refentrytitle">Struct scoped_allocator_operator_equal&lt;true&gt;</span></h2>
 <p>boost::container::scoped_allocator_operator_equal&lt;true&gt;</p>
@@ -32,21 +32,21 @@
 <div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="http://www.boost.org/doc/libs/1_57_0/boost_container_header_reference.html#header.boost.container.scoped_allocator_hpp" title="Header &lt;boost/container/scoped_allocator.hpp&gt;">boost/container/scoped_allocator.hpp</a>&gt;
 
 </span>
-<span class="keyword">struct</span> <a class="link" href="scoped_allocat_idp52636464.html" title="Struct scoped_allocator_operator_equal&lt;true&gt;">scoped_allocator_operator_equal</a><span class="special">&lt;</span><span class="keyword">true</span><span class="special">&gt;</span> <span class="special">:</span>
+<span class="keyword">struct</span> <a class="link" href="scoped_allocat_idp35056448.html" title="Struct scoped_allocator_operator_equal&lt;true&gt;">scoped_allocator_operator_equal</a><span class="special">&lt;</span><span class="keyword">true</span><span class="special">&gt;</span> <span class="special">:</span>
   <span class="keyword">public</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">container</span><span class="special">::</span><span class="identifier">scoped_allocator_operator_equal</span><span class="special">&lt;</span> <span class="keyword">false</span> <span class="special">&gt;</span>
 <span class="special">{</span>
 
-  <span class="comment">// <a class="link" href="scoped_allocat_idp52636464.html#idp52638192-bb">public static functions</a></span>
+  <span class="comment">// <a class="link" href="scoped_allocat_idp35056448.html#idp35058176-bb">public static functions</a></span>
   <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> IA1<span class="special">,</span> <span class="keyword">typename</span> IA2<span class="special">&gt;</span> 
-    <span class="keyword">static</span> <span class="keyword">bool</span> <a class="link" href="scoped_allocat_idp52636464.html#idp52638752-bb"><span class="identifier">equal_inner</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">IA1</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">IA2</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+    <span class="keyword">static</span> <span class="keyword">bool</span> <a class="link" href="scoped_allocat_idp35056448.html#idp35058736-bb"><span class="identifier">equal_inner</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">IA1</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">IA2</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
 <span class="special">}</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idp117187936"></a><h2>Description</h2>
+<a name="idp103518048"></a><h2>Description</h2>
 <div class="refsect2">
-<a name="idp117188352"></a><h3>
-<a name="idp52638192-bb"></a><code class="computeroutput">scoped_allocator_operator_equal</code> public static functions</h3>
+<a name="idp103518464"></a><h3>
+<a name="idp35058176-bb"></a><code class="computeroutput">scoped_allocator_operator_equal</code> public static functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> IA1<span class="special">,</span> <span class="keyword">typename</span> IA2<span class="special">&gt;</span> 
-  <span class="keyword">static</span> <span class="keyword">bool</span> <a name="idp52638752-bb"></a><span class="identifier">equal_inner</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">IA1</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">IA2</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span></pre></li></ol></div>
+  <span class="keyword">static</span> <span class="keyword">bool</span> <a name="idp35058736-bb"></a><span class="identifier">equal_inner</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">IA1</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">IA2</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span></pre></li></ol></div>
 </div>
 </div>
 </div>
@@ -60,7 +60,7 @@
 </tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="scoped_allocat_idp52623600.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/prev.png" alt="Prev"></a><a accesskey="u" href="http://www.boost.org/doc/libs/1_57_0/boost_container_header_reference.html#header.boost.container.scoped_allocator_hpp"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/up.png" alt="Up"></a><a accesskey="h" href="http://www.boost.org/doc/libs/1_57_0/index.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/home.png" alt="Home"></a><a accesskey="n" href="constructible__idp52657248.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/next.png" alt="Next"></a>
+<a accesskey="p" href="scoped_allocat_idp35043584.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/prev.png" alt="Prev"></a><a accesskey="u" href="http://www.boost.org/doc/libs/1_57_0/boost_container_header_reference.html#header.boost.container.scoped_allocator_hpp"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/up.png" alt="Up"></a><a accesskey="h" href="http://www.boost.org/doc/libs/1_57_0/index.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/home.png" alt="Home"></a><a accesskey="n" href="uses_allocator.html"><img src="http://www.boost.org/doc/libs/1_57_0/doc/src/images/next.png" alt="Next"></a>
 </div>
 </body>
 </html>
