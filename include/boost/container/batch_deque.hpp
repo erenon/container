@@ -1371,8 +1371,7 @@ public:
    *
    * **Exceptions**: Strong exception guarantee.
    *
-   * **Complexity**: Amortized linear in the number of segments the batch_deque has.
-   *
+   * **Complexity**: Amortized constant.
    */
   template <class... Args>
   void emplace_front(Args&&... args)
@@ -1402,7 +1401,7 @@ public:
    *
    * **Exceptions**: Strong exception guarantee.
    *
-   * **Complexity**: Amortized linear in the number of segments the batch_deque has.
+   * **Complexity**: Amortized constant.
    */
   template <class... Args>
   void emplace_back(Args&&... args)
@@ -1471,7 +1470,7 @@ public:
    *
    * **Exceptions**: Strong exception guarantee.
    *
-   * **Complexity**: Amortized linear in the number of segments the batch_deque has.
+   * **Complexity**: Amortized constant.
    */
   void push_front(const T& x)
   {
@@ -1488,7 +1487,7 @@ public:
    *
    * **Exceptions**: Strong exception guarantee, not regarding the state of `x`.
    *
-   * **Complexity**: Amortized linear in the number of segments the batch_deque has.
+   * **Complexity**: Amortized constant.
    */
   void push_front(T&& x)
   {
@@ -1559,7 +1558,7 @@ public:
    *
    * **Exceptions**: Strong exception guarantee.
    *
-   * **Complexity**: Amortized linear in the number of segments the batch_deque has.
+   * **Complexity**: Amortized constant.
    */
   void push_back(const T& x)
   {
@@ -1576,7 +1575,7 @@ public:
    *
    * **Exceptions**: Strong exception guarantee, not regarding the state of `x`.
    *
-   * **Complexity**: Amortized linear in the number of segments the batch_deque has.
+   * **Complexity**: Amortized constant.
    */
   void push_back(T&& x)
   {
